@@ -14,7 +14,6 @@ find_library(ZMQ_LIB NAMES zmq)
 
 find_library(CZMQ_LIB NAMES czmq)
 
-
 # Check for C++11.
 include(CheckCXXCompilerFlag)
 CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
@@ -23,6 +22,16 @@ if(COMPILER_SUPPORTS_CXX11)
 else()
     message(FATAL_ERROR "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support. Please use a different C++ compiler.")
 endif()
+
+if (NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE "release")
+endif (NOT CMAKE_BUILD_TYPE)
+string(TOLOWER ${CMAKE_BUILD_TYPE} QORE_BUILD_TYPE_LWR)
+if (${QORE_BUILD_TYPE_LWR} MATCHES "debug")
+    add_definitions(-DDEBUG)
+else ()
+    add_definitions(-DNDEBUG)
+endif ()
 
 set(QPP_SRC
     src/QC_ZSocket.qpp

@@ -46,7 +46,7 @@ ZSocket::copy() {
    xsink->raiseException("ZSOCKET-COPY-ERROR", "copying ZSocket objects is not currently supported");
 }
 
-//! Bind a socket to a formatted endpoint
+//! Bind the ZSocket to a formatted endpoint
 /** @par Examples:
     @code{.py}
 # bind to first free port from C000 up
@@ -68,8 +68,8 @@ zsock.bind("tcp://127.0.0.1:![55000-55999]");
     both first and last may be empty. To bind to a random port within the
     range, use "!" in place of "*".
 
-    @param format the format string
-    @param ... argument for the format string
+    @param format the format string for the endpoint
+    @param ... optional arguments for the format string
 
     @return On success, returns the actual port number used, for tcp:// endpoints,
     and 0 for other transports. On failure, a \c ZSOCKET-BIND-ERROR exception is thrown.
@@ -90,4 +90,119 @@ int ZSocket::bind(string format, ...) {
       return QoreValue();
    }
    return rc;
+}
+
+//! Returns the last bound endpoint, if any or @ref nothing if not
+/** @par Examples:
+    @code{.py}
+*string endpoint = zsock.endpoint();
+    @endcode
+
+    @return the last bound endpoint, if any or @ref nothing if not
+ */
+*string ZSocket::endpoint() [flags=CONSTANT] {
+   const char* str = zsock_endpoint(**zsock);
+   return str ? QoreValue(new QoreStringNode(str)) : QoreValue();
+}
+
+//! Unbinds the socket from a formatted endpoint
+/** @par Examples:
+    @code{.py}
+zsock.unbind(str);
+    @endcode
+
+    @param format the format string for the endpoint
+    @param ... optional arguments for the format string
+
+    Throws an exception if the endpoint was invalid or the function isn't supported on the current socket
+
+    @throw ZSOCKET-UNBIND-ERROR thrown if the endpoint was invalid or the function isn't supported on the current socket
+*/
+nothing ZSocket::unbind(string format, ...) {
+   SimpleRefHolder<QoreStringNode> str(q_sprintf(args, 0, 0, xsink));
+   if (*xsink)
+      return QoreValue();
+
+   int rc = zsock_unbind(**zsock, "%s", str->c_str());
+   if (rc < 0)
+      zmq_error(xsink, "ZSOCKET-UNBIND-ERROR", "error in ZSocket::unbind(\"%s\")", str->c_str());
+}
+
+//! Connects the socket to a formatted endpoint
+/** @par Examples:
+    @code{.py}
+zsock.unbind(str);
+    @endcode
+
+    @param format the format string for the endpoint
+    @param ... optional arguments for the format string
+
+    Throws an exception if an error occurs connecting to the endpoint
+
+    @throw ZSOCKET-CONNECT-ERROR thrown if an error occurs connecting to the endpoint
+ */
+nothing ZSocket::connect(string format, ...) {
+   SimpleRefHolder<QoreStringNode> str(q_sprintf(args, 0, 0, xsink));
+   if (*xsink)
+      return QoreValue();
+
+   int rc = zsock_connect(**zsock, "%s", str->c_str());
+   if (rc < 0)
+      zmq_error(xsink, "ZSOCKET-CONNECT-ERROR", "error in ZSocket::connect(\"%s\")", str->c_str());
+}
+
+//! Disconnects the socket from a formatted endpoint
+/** @par Examples:
+    @code{.py}
+zsock.disconnect(str);
+    @endcode
+
+    @param format the format string for the endpoint
+    @param ... optional arguments for the format string
+
+    Throws an exception if the endpoint was invalid or the function isn't supported on the current socket
+
+    @throw ZSOCKET-DISCONNECT-ERROR thrown if the endpoint was invalid or the function isn't supported on the current socket
+ */
+nothing ZSocket::disconnect(string format, ...) {
+   SimpleRefHolder<QoreStringNode> str(q_sprintf(args, 0, 0, xsink));
+   if (*xsink)
+      return QoreValue();
+
+   int rc = zsock_disconnect(**zsock, "%s", str->c_str());
+   if (rc < 0)
+      zmq_error(xsink, "ZSOCKET-DISCONNECT-ERROR", "error in ZSocket::disconnect(\"%s\")", str->c_str());
+}
+
+//! Attaches the socket to zero or more endpoints
+/** @par Examples:
+    @code{.py}
+zsock.attach(endpoints_str, True);
+    @endcode
+
+    @param endpoints zero or more endpoints, separated by commas and prefixed by \c '@' (to bind the socket) or \c '>' (to connect the socket)
+    @param serverish determines if endpoints not prefixed with \c '@' or \c '>' are bound (\a serverish = @ref Qore::True "True") or connected (\a serverish = @ref Qore::False "False", the default)
+
+    Throws an exception if there was a syntax error in the \a endpoints argument
+
+    @throw ZSOCKET-ATTACH-ERROR thrown if there was a syntax error in the \a endpoints argument
+*/
+nothing ZSocket::attach(*string endpoints, bool serverish = False) {
+   int rc = zsock_attach(**zsock, endpoints ? endpoints->c_str() : nullptr, serverish);
+   if (rc < 0)
+      zmq_error(xsink, "ZSOCKET-ATTACH-ERROR", "error in ZSocket::attach(%s%s%s, %s)", endpoints ? "'" : "", endpoints ? endpoints->c_str() : "", endpoints ? "'" : "", serverish ? "True" : "False");
+}
+
+//! Returns the socket type as a string
+/** @par Examples:
+    @code{.py}
+string type = zsock.type();
+    @endcode
+
+    @return the socket type as a string
+ */
+string ZSocket::type() [flags=CONSTANT] {
+   const char* str = zsock_type_str(**zsock);
+   assert(str);
+   return new QoreStringNode(str);
 }
