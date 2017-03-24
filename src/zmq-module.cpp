@@ -19,9 +19,7 @@
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-//#include "zmq-module.h"
-
-#include <qore/Qore.h>
+#include "zmq-module.h"
 
 static QoreStringNode* zmq_module_init();
 static void zmq_module_ns_init(QoreNamespace* rns, QoreNamespace* qns);
@@ -83,4 +81,24 @@ static void zmq_module_ns_init(QoreNamespace* rns, QoreNamespace* qns) {
 }
 
 static void zmq_module_delete() {
+}
+
+// module library functions
+void zmq_error(ExceptionSink* xsink, const char* err, const char* desc_fmt, ...) {
+   va_list args;
+
+   QoreString desc;
+
+   while (true) {
+      va_start(args, desc_fmt);
+      int rc = desc.vsprintf(desc_fmt, args);
+      va_end(args);
+      if (!rc)
+         break;
+   }
+
+   desc.concat(": ");
+   desc.concat(zmq_strerror(errno));
+
+   xsink->raiseException(err, desc.c_str());
 }

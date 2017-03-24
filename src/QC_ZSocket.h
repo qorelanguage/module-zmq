@@ -40,6 +40,14 @@ public:
    DLLLOCAL QoreZSock(int type) : sock(zsock_new(type)) {
    }
 
+   DLLLOCAL zsock_t* operator*() {
+      return sock;
+   }
+
+   DLLLOCAL const zsock_t* operator*() const {
+      return sock;
+   }
+
 protected:
    DLLLOCAL QoreZSock(zsock_t* sock) : sock(sock) {
    }
@@ -49,7 +57,7 @@ protected:
    }
 
 private:
-   zsock_t* sock = 0;
+   zsock_t* sock = nullptr;
 };
 
 DLLLOCAL extern QoreClass* QC_ZSOCKET;

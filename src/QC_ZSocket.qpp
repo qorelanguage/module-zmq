@@ -22,22 +22,21 @@
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-//#include "qore-zmq-module.h"
+#include "zmq-module.h"
 
 #include "QC_ZSocket.h"
 
 //! The ZSocket class provides the abstract base class for ZeroMQ socket classes
 /**
  */
-qclass ZSocket [arg=QoreZSock* i; ns=Qore::ZMQ];
+qclass ZSocket [arg=QoreZSock* zsock; ns=Qore::ZMQ];
 
-//! Creates the ZSocket object
-/** @par Example:
-    @code
-    @endcode
+//! Private constructor; use a child class instead
+/**
  */
-ZSocket::constructor(int type) {
-
+abstract private:internal ZSocket::constructor() {
+   // this method can never be called
+   assert(false);
 }
 
 //! Throws an exception; copying ZSocket objects is not currently supported
@@ -45,4 +44,50 @@ ZSocket::constructor(int type) {
 */
 ZSocket::copy() {
    xsink->raiseException("ZSOCKET-COPY-ERROR", "copying ZSocket objects is not currently supported");
+}
+
+//! Bind a socket to a formatted endpoint
+/** @par Examples:
+    @code{.py}
+# bind to first free port from C000 up
+zsock.bind("tcp://127.0.0.1:*");
+# bind to random port from C000 to FFFF
+zsock.bind("tcp://127.0.0.1:!");
+# bind to first free port from 60000 up
+zsock.bind("tcp://127.0.0.1:*[60000-]");
+# bind to random port from C000 to 60000
+zsock.bind("tcp://127.0.0.1:![-60000]");
+# bind to random port from 55000 to 55999
+zsock.bind("tcp://127.0.0.1:![55000-55999]");
+    @endcode
+
+    For tcp:// endpoints, supports ephemeral ports, if you specify the port number as "*".
+    By default zsock uses the IANA designated range from C000 (49152) to FFFF (65535).
+
+    To override this range, follow the "*" with "[first-last]". Either or
+    both first and last may be empty. To bind to a random port within the
+    range, use "!" in place of "*".
+
+    @param format the format string
+    @param ... argument for the format string
+
+    @return On success, returns the actual port number used, for tcp:// endpoints,
+    and 0 for other transports. On failure, a \c ZSOCKET-BIND-ERROR exception is thrown.
+    Note that when using ephemeral ports, a port may be reused by different services without
+    clients being aware. Protocols that run on ephemeral ports should take
+    this into account.
+
+    @throw ZSOCKET-BIND-ERROR if an error occurs, this exception is thrown
+ */
+int ZSocket::bind(string format, ...) {
+   SimpleRefHolder<QoreStringNode> str(q_sprintf(args, 0, 0, xsink));
+   if (*xsink)
+      return QoreValue();
+
+   int rc = zsock_bind(**zsock, "%s", str->c_str());
+   if (rc < 0) {
+      zmq_error(xsink, "ZSOCKET-BIND-ERROR", "error in ZSocket::bind(\"%s\")", str->c_str());
+      return QoreValue();
+   }
+   return rc;
 }
