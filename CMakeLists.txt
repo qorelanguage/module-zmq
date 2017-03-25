@@ -10,9 +10,11 @@ set(PROJECT_VERSION "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}")
 
 find_package(Qore 0.8.13 REQUIRED)
 
-find_library(ZMQ_LIB NAMES zmq)
+include("${CMAKE_SOURCE_DIR}/cmake/find-zmq.cmake")
+include("${CMAKE_SOURCE_DIR}/cmake/find-czmq.cmake")
 
-find_library(CZMQ_LIB NAMES czmq)
+include_directories(${CZMQ_INCLUDE_DIRS})
+include_directories(${ZMQ_INCLUDE_DIRS})
 
 # Check for C++11.
 include(CheckCXXCompilerFlag)
@@ -66,7 +68,7 @@ include_directories(${ZMQ_INCLUDE_DIRS})
 include_directories(${CMAKE_SOURCE_DIR}/src)
 target_include_directories(${module_name} PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>)
 
-target_link_libraries(${module_name} ${ZMQ_LIB} ${CZMQ_LIB})
+target_link_libraries(${module_name} ${ZMQ_LIBRARIES} ${CZMQ_LIBRARIES})
 
 qore_binary_module(${module_name} ${PROJECT_VERSION})
 
