@@ -39,6 +39,7 @@ QoreClass* initXSubZSocketClass(QoreNamespace& ns);
 QoreClass* initPairZSocketClass(QoreNamespace& ns);
 QoreClass* initStreamZSocketClass(QoreNamespace& ns);
 QoreClass* initZFrameClass(QoreNamespace& ns);
+QoreClass* initSimpleZMsgClass(QoreNamespace& ns);
 
 // qore module symbols
 DLLEXPORT char qore_module_name[] = "zmq";
@@ -75,6 +76,7 @@ static QoreStringNode* zmq_module_init() {
    zmqns.addSystemClass(initStreamZSocketClass(zmqns));
 
    zmqns.addSystemClass(initZFrameClass(zmqns));
+   zmqns.addSystemClass(initSimpleZMsgClass(zmqns));
 
    return 0;
 }

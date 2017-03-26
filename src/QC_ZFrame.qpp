@@ -29,7 +29,7 @@
 #include <zframe.h>
 
 //! The ZFrame class implements a ZeroMQ frame
-/**
+/** This class does not support modifications after the constructor in order to remain lock-free
  */
 qclass ZFrame [arg=QoreZFrame* frame; ns=Qore::ZMQ];
 
@@ -77,7 +77,7 @@ ZFrame::copy() {
    self->setPrivate(CID_ZFRAME, new QoreZFrame(*frame));
 }
 
-//! Returns the bytes size of the frame's data
+//! Returns the byte size of the frame's data
 /** @par Example
     @code
 int size = frame.size();
@@ -131,4 +131,59 @@ string ZFrame::strhex() [flags=CONSTANT] {
    assert(val);
    size_t len = strlen(val);
    return new QoreStringNode(val, len, len + 1, QCS_UTF8);
+}
+
+//! Returns the frame's contents as a binary object
+/** @par Example
+    @code
+binary b = frame.bin();
+    @endcode
+
+    @return the frame's contents as a binary object
+ */
+binary ZFrame::bin() [flags=CONSTANT] {
+   size_t size = zframe_size(**frame);
+   if (!size)
+      return new BinaryNode;
+   return new BinaryNode(zframe_strdup(**frame), size);
+}
+
+//! Returns the frame's MORE indicator
+/** @par Example
+    @code
+bool b = frame.more();
+    @endcode
+
+    @return the frame's MORE indicator
+ */
+bool ZFrame::more() [flags=CONSTANT] {
+   return zframe_more(**frame);
+}
+
+//! Returns @ref Qore::True "True" if two frames have identical size and data
+/** @par Example
+    @code
+bool b = frame.more();
+    @endcode
+
+    @param frm the frame to compare
+
+    @return @ref Qore::True "True" if two frames have identical size and data
+*/
+bool ZFrame::eq(ZFrame[QoreZFrame] frm) [flags=CONSTANT] {
+   ReferenceHolder<QoreZFrame> holder(frm, xsink);
+
+   return zframe_eq(**frame, **frm);
+}
+
+//! Sends a message to the zsys log sink (may be stdout, or system facility)
+/** @par Example
+    @code
+frame.print("my-frame");
+    @endcode
+
+    @param prefix an optional string to log before the frame
+*/
+nothing ZFrame::print(*string prefix) {
+   zframe_print(**frame, prefix ? prefix->c_str() : nullptr);
 }

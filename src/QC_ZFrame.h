@@ -52,6 +52,10 @@ public:
       return frame;
    }
 
+   DLLLOCAL zframe_t** getPtr() {
+      return &frame;
+   }
+
 protected:
    DLLLOCAL QoreZFrame(zframe_t* frame) : frame(frame) {
    }
@@ -65,5 +69,6 @@ private:
 };
 
 DLLLOCAL extern QoreClass* QC_ZFRAME;
+DLLLOCAL extern qore_classid_t CID_ZFRAME;
 
 #endif // _QORE_ZMQ_QC_ZFRAME_H

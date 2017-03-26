@@ -1,0 +1,162 @@
+/* -*- mode: c++; indent-tabs-mode: nil -*- */
+/** @file SimpleZMsg.qpp defines the SimpleZMsg class */
+/*
+  QC_SimpleZMsg.qpp
+
+  Qore Programming Language
+
+  Copyright (C) 2017 Qore Technologies, s.r.o.
+
+  This library is free software; you can redistribute it and/or
+  modify it under the terms of the GNU Lesser General Sublic
+  License as sublished by the Free Software Foundation; either
+  version 2.1 of the License, or (at your option) any later version.
+
+  This library is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  Lesser General Sublic License for more details.
+
+  You should have received a copy of the GNU Lesser General Sublic
+  License along with this library; if not, write to the Free Software
+  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+*/
+
+//#include "qore-zmq-module.h"
+
+#include "QC_SimpleZMsg.h"
+#include "QC_ZFrame.h"
+
+#include <zmsg.h>
+
+int QoreSimpleZMsg::addFrames(const QoreListNode* l, ExceptionSink* xsink) {
+   ConstListIterator i(l);
+   while (i.next()) {
+      if (addFrame(i.getValue(), i.index(), i.max(), xsink))
+          return -1;
+   }
+   return 0;
+}
+
+int QoreSimpleZMsg::addFrames(const QoreValueList* l, ExceptionSink* xsink) {
+   ConstValueListIterator i(l);
+   while (i.next()) {
+      if (addFrame(i.getValue(), i.index(), i.max(), xsink))
+          return -1;
+   }
+   return 0;
+}
+
+int QoreSimpleZMsg::addFrame(const QoreValue v, int i, int max, ExceptionSink* xsink) {
+   switch (v.getType()) {
+      case NT_OBJECT: {
+         const QoreObject* obj = v.get<const QoreObject>();
+         TryPrivateDataRefHolder<QoreZFrame> frame(obj, CID_ZFRAME, xsink);
+         if (*xsink)
+            return -1;
+         if (!frame) {
+            xsink->raiseException("ZMSG-ERROR", "don't know how to add object of class \"%s\" in position %d/%d", obj->getClassName(), i, max);
+            return -1;
+         }
+         zmsg_append(msg, frame->getPtr());
+         const_cast<QoreObject*>(obj)->doDelete(xsink);
+         if (*xsink)
+            return -1;
+         break;
+      }
+      default:
+         xsink->raiseException("ZMSG-ERROR", "don't know how to add type \"%s\" in position %d/%d", v.getTypeName(), i, max);
+         return -1;
+   }
+   return 0;
+}
+
+//! The SimpleZMsg class implements a ZeroMQ message
+/** This class does not support modifications after the constructor in order to remain lock-free
+
+    @see the @ref Qore::ZMQ::ZMsg "ZMsg"
+ */
+qclass SimpleZMsg [arg=QoreSimpleZMsg* msg; ns=Qore::ZMQ];
+
+//! constructs a SimpleZMsg from the  @ref Qore::ZMQ::ZFrame "ZFrame" objects supplied
+/** @par Example
+    @code
+SimpleZMsg msg(frame1, frame2);
+    @endcode
+ */
+SimpleZMsg::constructor() {
+   ReferenceHolder<QoreSimpleZMsg> msg(new QoreSimpleZMsg, xsink);
+   if (msg->addFrames(args, xsink))
+      return;
+   self->setPrivate(CID_SIMPLEZMSG, msg.release());
+}
+
+//! constructs a SimpleZMsg from the list of @ref Qore::ZMQ::ZFrame "ZFrame" objects supplied
+/** @par Example
+    @code
+SimpleZMsg msg(l);
+    @endcode
+
+ */
+SimpleZMsg::constructor(list l) {
+   ReferenceHolder<QoreSimpleZMsg> msg(new QoreSimpleZMsg, xsink);
+   if (msg->addFrames(l, xsink))
+      return;
+   self->setPrivate(CID_SIMPLEZMSG, msg.release());
+}
+
+//! copies a SimpleZMsg object
+/** @par Example
+    @code
+SimpleZMsg msg_new = msg.copy();
+    @endcode
+ */
+SimpleZMsg::copy() {
+   self->setPrivate(CID_SIMPLEZMSG, new QoreSimpleZMsg(*msg));
+}
+
+//! Returns the number of frames in the message
+/** @par Example
+    @code
+int size = msg.size();
+    @endcode
+ */
+int SimpleZMsg::size() [flags=CONSTANT] {
+   return zmsg_size(**msg);
+}
+
+//! Returns the byte size of all frames in the message
+/** @par Example
+    @code
+int size = msg.contentSize();
+    @endcode
+ */
+int SimpleZMsg::contentSize() [flags=CONSTANT] {
+   return zmsg_content_size(**msg);
+}
+
+//! Returns @ref Qore::True "True" if two msgs have identical size and data
+/** @par Example
+    @code
+bool b = msg.more();
+    @endcode
+
+    @param frm the msg to compare
+
+    @return @ref Qore::True "True" if two msgs have identical size and data
+*/
+bool SimpleZMsg::eq(SimpleZMsg[QoreSimpleZMsg] frm) [flags=CONSTANT] {
+   ReferenceHolder<QoreSimpleZMsg> holder(frm, xsink);
+
+   return zmsg_eq(**msg, **frm);
+}
+
+//! Sends a message to the zsys log sink (may be stdout, or system facility)
+/** @par Example
+    @code
+msg.print();
+    @endcode
+*/
+nothing SimpleZMsg::print() {
+   zmsg_print(**msg);
+}
