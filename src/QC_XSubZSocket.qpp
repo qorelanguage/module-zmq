@@ -26,10 +26,10 @@
 
 #include "QC_XSubZSocket.h"
 
-//! The XSubZSocket class provides the pub base class for ZeroMQ socket classes
+//! The XSubZSocket class implements a ZeroMQ XSUB socket
 /**
  */
-qclass XSubZSocket [arg=QoreZSock* i; ns=Qore::ZMQ; vparent=ZSocket];
+qclass XSubZSocket [arg=QoreZSock* sock; ns=Qore::ZMQ; vparent=ZSocket; dom=NETWORK];
 
 //! constructs a PUB zsocket
 /** @par Example

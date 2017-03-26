@@ -26,10 +26,10 @@
 
 #include "QC_PullZSocket.h"
 
-//! The PullZSocket class provides the pub base class for ZeroMQ socket classes
+//! The PullZSocket class implements a ZeroMQ PULL socket
 /**
  */
-qclass PullZSocket [arg=QoreZSock* i; ns=Qore::ZMQ; vparent=ZSocket];
+qclass PullZSocket [arg=QoreZSock* sock; ns=Qore::ZMQ; vparent=ZSocket; dom=NETWORK];
 
 //! constructs a PUB zsocket
 /** @par Example

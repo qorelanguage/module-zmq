@@ -5,11 +5,10 @@
 # CZMQ_LIBRARIES - The libraries needed to use CZMQ
 # CZMQ_DEFINITIONS - Compiler switches required for using CZMQ
 
-find_path ( CZMQ_INCLUDE_DIRS czmq.h )
-find_library ( CZMQ_LIBRARY NAMES czmq )
+find_path(CZMQ_INCLUDE_DIRS czmq.h HINTS $ENV{ZMQ_DIR}/include)
+find_library(CZMQ_LIBRARY NAMES czmq HINTS $ENV{ZMQ_DIR}/lib)
 
-set ( CZMQ_LIBRARIES ${CZMQ_LIBRARY} )
-set ( CZMQ_INCLUDE_DIRS ${CZMQ_INCLUDE_DIR} )
+set(CZMQ_LIBRARIES ${CZMQ_LIBRARY})
 
 include ( FindPackageHandleStandardArgs )
 # handle the QUIETLY and REQUIRED arguments and set CZMQ_FOUND to TRUE

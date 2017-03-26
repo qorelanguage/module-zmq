@@ -26,10 +26,10 @@
 
 #include "QC_DealerZSocket.h"
 
-//! The DealerZSocket class provides the pub base class for ZeroMQ socket classes
+//! The DealerZSocket class implements a ZeroMQ DEALER socket
 /**
  */
-qclass DealerZSocket [arg=QoreZSock* i; ns=Qore::ZMQ; vparent=ZSocket];
+qclass DealerZSocket [arg=QoreZSock* sock; ns=Qore::ZMQ; vparent=ZSocket; dom=NETWORK];
 
 //! constructs a PUB zsocket
 /** @par Example

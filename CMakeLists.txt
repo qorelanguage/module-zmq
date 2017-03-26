@@ -49,6 +49,7 @@ set(QPP_SRC
     src/QC_XSubZSocket.qpp
     src/QC_PairZSocket.qpp
     src/QC_StreamZSocket.qpp
+    src/QC_ZFrame.qpp
 )
 
 set(CPP_SRC

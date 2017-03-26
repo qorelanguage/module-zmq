@@ -26,10 +26,10 @@
 
 #include "QC_RepZSocket.h"
 
-//! The RepZSocket class provides the pub base class for ZeroMQ socket classes
+//! The RepZSocket class implements a ZeroMQ REP socket
 /**
  */
-qclass RepZSocket [arg=QoreZSock* i; ns=Qore::ZMQ; vparent=ZSocket];
+qclass RepZSocket [arg=QoreZSock* sock; ns=Qore::ZMQ; vparent=ZSocket; dom=NETWORK];
 
 //! constructs a PUB zsocket
 /** @par Example

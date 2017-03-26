@@ -26,10 +26,10 @@
 
 #include "QC_StreamZSocket.h"
 
-//! The StreamZSocket class provides the pub base class for ZeroMQ socket classes
+//! The StreamZSocket class implements a ZeroMQ STREAM socket
 /**
  */
-qclass StreamZSocket [arg=QoreZSock* i; ns=Qore::ZMQ; vparent=ZSocket];
+qclass StreamZSocket [arg=QoreZSock* sock; ns=Qore::ZMQ; vparent=ZSocket; dom=NETWORK];
 
 //! constructs a PUB zsocket
 /** @par Example

@@ -1,0 +1,134 @@
+/* -*- mode: c++; indent-tabs-mode: nil -*- */
+/** @file ZFrame.qpp defines the ZFrame class */
+/*
+  QC_ZFrame.qpp
+
+  Qore Programming Language
+
+  Copyright (C) 2017 Qore Technologies, s.r.o.
+
+  This library is free software; you can redistribute it and/or
+  modify it under the terms of the GNU Lesser General Sublic
+  License as sublished by the Free Software Foundation; either
+  version 2.1 of the License, or (at your option) any later version.
+
+  This library is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  Lesser General Sublic License for more details.
+
+  You should have received a copy of the GNU Lesser General Sublic
+  License along with this library; if not, write to the Free Software
+  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+*/
+
+//#include "qore-zmq-module.h"
+
+#include "QC_ZFrame.h"
+
+#include <zframe.h>
+
+//! The ZFrame class implements a ZeroMQ frame
+/**
+ */
+qclass ZFrame [arg=QoreZFrame* frame; ns=Qore::ZMQ];
+
+//! constructs an empty ZFrame
+/** @par Example
+    @code
+ZFrame frame();
+    @endcode
+ */
+ZFrame::constructor() {
+   self->setPrivate(CID_ZFRAME, new QoreZFrame);
+}
+
+//! constructs a ZFrame from the string supplied
+/** @par Example
+    @code
+ZFrame frame(str);
+    @endcode
+
+    The string data is copied to the frame's memory.
+ */
+ZFrame::constructor(string str) {
+   self->setPrivate(CID_ZFRAME, new QoreZFrame(str->c_str(), str->size()));
+}
+
+//! constructs a ZFrame from the binary data supplied
+/** @par Example
+    @code
+ZFrame frame(bin);
+    @endcode
+
+    The binary data is copied to the frame's memory.
+ */
+ZFrame::constructor(binary b) {
+   self->setPrivate(CID_ZFRAME, new QoreZFrame(b->getPtr(), b->size()));
+}
+
+//! copies a ZFrame object
+/** @par Example
+    @code
+ZFrame frame_new = frame.copy();
+    @endcode
+ */
+ZFrame::copy() {
+   self->setPrivate(CID_ZFRAME, new QoreZFrame(*frame));
+}
+
+//! Returns the bytes size of the frame's data
+/** @par Example
+    @code
+int size = frame.size();
+    @endcode
+ */
+int ZFrame::size() [flags=CONSTANT] {
+   return zframe_size(**frame);
+}
+
+//! Returns meta data property for the frame
+/** @par Example
+    @code
+*string str = frame.meta("Socket-Type");
+    @endcode
+
+    @param property a meta-data property for the frame; the following properties are available:
+    - \c "Socket-Type":
+    - \c "Identity":
+    - \c "Resource":
+    - \c "Peer-Address" if supported by the undelying transport; this property will return the IP address of the remote endpoint as returned by \c getnameinfo(2).
+
+    @return a string in UTF-8 encoding giving the property value or @ref nothing if no such property is set for the frame
+
+    @note
+    - the input string is converted to UTF-8 encoding if necessary
+    - Other properties may be defined based on the underlying security mechanism
+ */
+*string ZFrame::meta(string property) [flags=CONSTANT] {
+   TempEncodingHelper prop(property, QCS_UTF8, xsink);
+   if (*xsink)
+      return QoreValue();
+
+   const char* val = zframe_meta(**frame, prop->c_str());
+   if (!val)
+      return QoreValue();
+
+   size_t len = strlen(val);
+   return new QoreStringNode((char*)val, len, len + 1, QCS_UTF8);
+}
+
+//! Returns frame data encoded as printable hex string, useful for ØMQ UUIDs
+/** @par Example
+    @code
+string str = frame.strhex();
+    @endcode
+
+    @return frame data encoded as printable hex string, useful for ØMQ UUIDs
+ */
+string ZFrame::strhex() [flags=CONSTANT] {
+   char* val = zframe_strhex(**frame);
+   assert(val);
+   size_t len = strlen(val);
+   return new QoreStringNode(val, len, len + 1, QCS_UTF8);
+}

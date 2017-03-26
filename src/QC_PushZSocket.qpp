@@ -26,10 +26,10 @@
 
 #include "QC_PushZSocket.h"
 
-//! The PushZSocket class provides the pub base class for ZeroMQ socket classes
+//! The PushZSocket class implements a ZeroMQ PUSH socket
 /**
  */
-qclass PushZSocket [arg=QoreZSock* i; ns=Qore::ZMQ; vparent=ZSocket];
+qclass PushZSocket [arg=QoreZSock* sock; ns=Qore::ZMQ; vparent=ZSocket; dom=NETWORK];
 
 //! constructs a PUB zsocket
 /** @par Example

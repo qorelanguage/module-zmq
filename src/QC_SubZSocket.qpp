@@ -26,10 +26,10 @@
 
 #include "QC_SubZSocket.h"
 
-//! The SubZSocket class provides the sub base class for ZeroMQ socket classes
+//! The SubZSocket class implements a ZeroMQ SUB socket
 /**
  */
-qclass SubZSocket [arg=QoreZSock* i; ns=Qore::ZMQ; vparent=ZSocket];
+qclass SubZSocket [arg=QoreZSock* sock; ns=Qore::ZMQ; vparent=ZSocket; dom=NETWORK];
 
 //! constructs a SUB zsocket
 /** @par Example

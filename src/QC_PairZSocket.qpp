@@ -26,10 +26,10 @@
 
 #include "QC_PairZSocket.h"
 
-//! The PairZSocket class provides the pub base class for ZeroMQ socket classes
+//! The PairZSocket class implements a ZeroMQ PAIR socket
 /**
  */
-qclass PairZSocket [arg=QoreZSock* i; ns=Qore::ZMQ; vparent=ZSocket];
+qclass PairZSocket [arg=QoreZSock* sock; ns=Qore::ZMQ; vparent=ZSocket; dom=NETWORK];
 
 //! constructs a PUB zsocket
 /** @par Example

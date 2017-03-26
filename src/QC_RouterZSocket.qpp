@@ -26,10 +26,10 @@
 
 #include "QC_RouterZSocket.h"
 
-//! The RouterZSocket class provides the pub base class for ZeroMQ socket classes
+//! The RouterZSocket class implements a ZeroMQ ROUTER socket
 /**
  */
-qclass RouterZSocket [arg=QoreZSock* i; ns=Qore::ZMQ; vparent=ZSocket];
+qclass RouterZSocket [arg=QoreZSock* sock; ns=Qore::ZMQ; vparent=ZSocket; dom=NETWORK];
 
 //! constructs a PUB zsocket
 /** @par Example

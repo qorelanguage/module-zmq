@@ -29,7 +29,7 @@
 //! The ZSocket class provides the abstract base class for ZeroMQ socket classes
 /**
  */
-qclass ZSocket [arg=QoreZSock* zsock; ns=Qore::ZMQ];
+qclass ZSocket [arg=QoreZSock* zsock; ns=Qore::ZMQ; dom=NETWORK];
 
 //! Private constructor; use a child class instead
 /**
@@ -194,7 +194,7 @@ nothing ZSocket::attach(*string endpoints, bool serverish = False) {
 }
 
 //! Returns the socket type as a string
-/** @par Examples:
+/** @par Example:
     @code{.py}
 string type = zsock.type();
     @endcode
@@ -205,4 +205,41 @@ string ZSocket::type() [flags=CONSTANT] {
    const char* str = zsock_type_str(**zsock);
    assert(str);
    return new QoreStringNode(str);
+}
+
+//! Send a 'picture' message to the socket (or actor)
+/** @par Example:
+    @code{.py}
+zsock.send("i", i);
+    @endcode
+
+    @param picture a string that defines the type of each frame. This makes it easy to send a complex multiframe message in one call. The picture can contain any of these characters, each corresponding to one or two arguments:
+    - \c i = \c int (signed)
+    - \c 1 = \c uint8_t (i.e. a byte value)
+    - \c 2 = \c uint16_t (i.e. a 16 bit / 2-byte unsigned integer value)
+    - \c 4 = \c uint32_t (i.e. a 32 bit / 4-byte unsigned integer value)
+    - \c 8 = \c uint64_t (i.e. a 64 bit / 8-byte unsigned integer value)
+    - \c s = \c char*
+    - \c b = \c byte*, size_t (2 arguments)
+    - \c c = \c zchunk_t*
+    - \c f = \c zframe_t*
+    - \c h = \c zhashx_t*
+    - \c U = \c zuuid_t*
+    - \c p = \c void* (sends the pointer value, only meaningful over inproc)
+    - \c m = \c zmsg_t* (sends all frames in the zmsg)
+    - \c z = sends zero-sized frame (0 arguments)
+    - \c u = \c uint (deprecated)
+
+  Note that s, b, c, and f are encoded the same way and the choice is
+  offered as a convenience to the sender, which may or may not already
+  have data in a zchunk or zframe. Does
+    @param ... argument corresponding to the picture; if there are not enough arguments an exception is thrown
+
+    @throw ZSOCKET-SEND-ARG-ERROR there was an error processing the arguments for the send call
+    @throw ZSOCKET-SEND-ERROR an error occurred sending the data
+*/
+nothing ZSocket::send(string picture, ...) {
+   int rc = zsock_vsend(**zsock, picture->c_str(), nullptr);//zargs);
+   if (rc < 0)
+      zmq_error(xsink, "ZSOCKET-SEND-ERROR", "error in ZSocket::send()");
 }
