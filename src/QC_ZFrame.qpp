@@ -104,8 +104,10 @@ int ZFrame::size() [flags=CONSTANT] {
     @note
     - the input string is converted to UTF-8 encoding if necessary
     - Other properties may be defined based on the underlying security mechanism
+    - only available if the underlying library supports it; check @ref Qore::ZMQ::HAVE_ZFRAME_META "HAVE_ZFRAME_META" before calling this method
  */
 *string ZFrame::meta(string property) [flags=CONSTANT] {
+#ifdef HAVE_ZFRAME_META
    TempEncodingHelper prop(property, QCS_UTF8, xsink);
    if (*xsink)
       return QoreValue();
@@ -116,6 +118,9 @@ int ZFrame::size() [flags=CONSTANT] {
 
    size_t len = strlen(val);
    return new QoreStringNode((char*)val, len, len + 1, QCS_UTF8);
+#else
+   xsink->raiseException("X", "x");
+#endif
 }
 
 //! Returns frame data encoded as printable hex string, useful for ØMQ UUIDs

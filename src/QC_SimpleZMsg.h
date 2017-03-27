@@ -51,6 +51,10 @@ public:
    DLLLOCAL int addFrames(const QoreListNode* l, ExceptionSink* xsink);
    DLLLOCAL int addFrames(const QoreValueList* l, ExceptionSink* xsink);
 
+   DLLLOCAL zmsg_t** getPtr() {
+      return &msg;
+   }
+
 protected:
    DLLLOCAL QoreSimpleZMsg(zmsg_t* msg) : msg(msg) {
    }
@@ -66,5 +70,6 @@ private:
 };
 
 DLLLOCAL extern QoreClass* QC_SIMPLEZMSG;
+DLLLOCAL extern qore_classid_t CID_SIMPLEZMSG;
 
 #endif // _QORE_ZMQ_QC_SIMPLEZMSG_H

@@ -22,7 +22,7 @@
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-//#include "qore-zmq-module.h"
+#include "zmq-module.h"
 
 #include "QC_SimpleZMsg.h"
 #include "QC_ZFrame.h"
@@ -55,13 +55,47 @@ int QoreSimpleZMsg::addFrame(const QoreValue v, int i, int max, ExceptionSink* x
          if (*xsink)
             return -1;
          if (!frame) {
-            xsink->raiseException("ZMSG-ERROR", "don't know how to add object of class \"%s\" in position %d/%d", obj->getClassName(), i, max);
-            return -1;
+            TryPrivateDataRefHolder<QoreSimpleZMsg> zmsg(obj, CID_SIMPLEZMSG, xsink);
+            if (*xsink)
+               return -1;
+            if (!zmsg) {
+               xsink->raiseException("ZMSG-ERROR", "don't know how to add object of class \"%s\" in position %d/%d", obj->getClassName(), i, max);
+               return -1;
+            }
+            int rc = zmsg_addmsg(msg, zmsg->getPtr());
+            if (rc) {
+               zmq_error(xsink, "ZMSG-ERROR", "error in zmsg_addmsg()");
+               return -1;
+            }
          }
-         zmsg_append(msg, frame->getPtr());
+         else {
+            int rc = zmsg_append(msg, frame->getPtr());
+            if (rc) {
+               zmq_error(xsink, "ZMSG-ERROR", "error in zmsg_append()");
+               return -1;
+            }
+         }
          const_cast<QoreObject*>(obj)->doDelete(xsink);
          if (*xsink)
             return -1;
+         break;
+      }
+      case NT_STRING: {
+         const QoreStringNode* str = v.get<const QoreStringNode>();
+         int rc = zmsg_addmem(msg, str->c_str(), str->size());
+         if (rc) {
+            zmq_error(xsink, "ZMSG-ERROR", "error in zmsg_addmem()");
+            return -1;
+         }
+         break;
+      }
+      case NT_BINARY: {
+         const BinaryNode* b = v.get<const BinaryNode>();
+         int rc = zmsg_addmem(msg, b->getPtr(), b->size());
+         if (rc) {
+            zmq_error(xsink, "ZMSG-ERROR", "error in zmsg_addmem()");
+            return -1;
+         }
          break;
       }
       default:
@@ -78,11 +112,18 @@ int QoreSimpleZMsg::addFrame(const QoreValue v, int i, int max, ExceptionSink* x
  */
 qclass SimpleZMsg [arg=QoreSimpleZMsg* msg; ns=Qore::ZMQ];
 
-//! constructs a SimpleZMsg from the  @ref Qore::ZMQ::ZFrame "ZFrame" objects supplied
+//! constructs a SimpleZMsg from the @ref Qore::ZMQ::ZFrame "ZFrame" objects supplied
 /** @par Example
     @code
 SimpleZMsg msg(frame1, frame2);
     @endcode
+
+    @param ... zero or more values to add to the message as frames; values are processed as follows:
+    - @ref OMQ::ZMQ::ZFrame "ZFrame": the object is moved into the message, this call deletes the @ref OMQ::ZMQ::ZFrame "ZFrame" object while processing
+    - @ref OMQ::ZMQ::SimpleZMsg "SimpleZMsg": the object is moved into the message, this call deletes the @ref OMQ::ZMQ::SimpleZMsg "SimpleZMsg" object while processing
+    - \c string: copies the string data to the message
+    - \c binary: copies the binary data to the message
+
  */
 SimpleZMsg::constructor() {
    ReferenceHolder<QoreSimpleZMsg> msg(new QoreSimpleZMsg, xsink);

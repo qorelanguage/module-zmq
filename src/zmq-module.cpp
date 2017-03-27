@@ -78,6 +78,8 @@ static QoreStringNode* zmq_module_init() {
    zmqns.addSystemClass(initZFrameClass(zmqns));
    zmqns.addSystemClass(initSimpleZMsgClass(zmqns));
 
+   init_zmq_constants(zmqns);
+
    return 0;
 }
 

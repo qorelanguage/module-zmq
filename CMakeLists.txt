@@ -51,6 +51,7 @@ set(QPP_SRC
     src/QC_StreamZSocket.qpp
     src/QC_ZFrame.qpp
     src/QC_SimpleZMsg.qpp
+    src/qc_zmq.qpp
 )
 
 set(CPP_SRC
