@@ -19,9 +19,56 @@ class ZmqTest inherits QUnit::Test {
     }
 
     zSocketTest() {
-        ZSocket sock = new PushZSocket("@tcp://127.0.0.1:5560");
+        ZSocket sock = new PushZSocket("@tcp://127.0.0.1:!");
         assertEq("PUSH", sock.type());
-        #sock = new XSubZSocket("@tcp://127.0.0.1:5560");
-        #assertEq("XSUB", sock.type());
+        assertThrows("ZSOCKET-CONSTRUCTOR-ERROR", sub () { new PushZSocket("@tcp://127.0.0.1:xxx"); });
+
+        sock = new SubZSocket("@tcp://127.0.0.1:!", "xxx");
+        assertEq("SUB", sock.type());
+        assertThrows("ZSOCKET-CONSTRUCTOR-ERROR", sub () { new SubZSocket("@tcp://127.0.0.1:xxx", "xxx"); });
+
+        sock = new PubZSocket("@tcp://127.0.0.1:!");
+        assertEq("PUB", sock.type());
+        assertThrows("ZSOCKET-CONSTRUCTOR-ERROR", sub () { new PubZSocket("@tcp://127.0.0.1:xxx"); });
+
+        sock = new XSubZSocket("@tcp://127.0.0.1:!");
+        assertEq("XSUB", sock.type());
+        assertThrows("ZSOCKET-CONSTRUCTOR-ERROR", sub () { new XSubZSocket("@tcp://127.0.0.1:xxx"); });
+
+        sock = new XPubZSocket("@tcp://127.0.0.1:!");
+        assertEq("XPUB", sock.type());
+        assertThrows("ZSOCKET-CONSTRUCTOR-ERROR", sub () { new XPubZSocket("@tcp://127.0.0.1:xxx"); });
+
+        sock = new StreamZSocket("@tcp://127.0.0.1:!");
+        assertEq("STREAM", sock.type());
+        assertThrows("ZSOCKET-CONSTRUCTOR-ERROR", sub () { new StreamZSocket("@tcp://127.0.0.1:xxx"); });
+
+        sock = new DealerZSocket("@tcp://127.0.0.1:!");
+        assertEq("DEALER", sock.type());
+        assertThrows("ZSOCKET-CONSTRUCTOR-ERROR", sub () { new DealerZSocket("@tcp://127.0.0.1:xxx"); });
+
+        sock = new RouterZSocket("@tcp://127.0.0.1:!");
+        assertEq("ROUTER", sock.type());
+        assertThrows("ZSOCKET-CONSTRUCTOR-ERROR", sub () { new RouterZSocket("@tcp://127.0.0.1:xxx"); });
+
+        sock = new ReqZSocket("@tcp://127.0.0.1:!");
+        assertEq("REQ", sock.type());
+        assertThrows("ZSOCKET-CONSTRUCTOR-ERROR", sub () { new ReqZSocket("@tcp://127.0.0.1:xxx"); });
+
+        sock = new RepZSocket("@tcp://127.0.0.1:!");
+        assertEq("REP", sock.type());
+        assertThrows("ZSOCKET-CONSTRUCTOR-ERROR", sub () { new RepZSocket("@tcp://127.0.0.1:xxx"); });
+
+        sock = new PushZSocket("@tcp://127.0.0.1:!");
+        assertEq("PUSH", sock.type());
+        assertThrows("ZSOCKET-CONSTRUCTOR-ERROR", sub () { new PushZSocket("@tcp://127.0.0.1:xxx"); });
+
+        sock = new PullZSocket("@tcp://127.0.0.1:!");
+        assertEq("PULL", sock.type());
+        assertThrows("ZSOCKET-CONSTRUCTOR-ERROR", sub () { new PullZSocket("@tcp://127.0.0.1:xxx"); });
+
+        sock = new PairZSocket("@tcp://127.0.0.1:!");
+        assertEq("PAIR", sock.type());
+        assertThrows("ZSOCKET-CONSTRUCTOR-ERROR", sub () { new PairZSocket("@tcp://127.0.0.1:xxx"); });
     }
 }
