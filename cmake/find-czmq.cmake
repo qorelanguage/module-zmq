@@ -19,10 +19,12 @@ check_function_exists(zframe_meta HAVE_ZFRAME_META)
 
 # check signature of zmsg_encode()
 check_cxx_source_compiles("
+#include <zmq.h>
 #include <czmq.h>
 #include <zmsg.h>
+#include <zframe.h>
 int main() {
-    zframe_t f = zmsg_encode((zmsg_t*)0);
+    zframe_t* f = zmsg_encode((zmsg_t*)0);
 }
 " HAVE_ZMSG_ENCODE_TO_ZFRAME)
 
