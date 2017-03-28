@@ -36,6 +36,9 @@ public:
    DLLLOCAL QoreSimpleZMsg() : msg(zmsg_new()) {
    }
 
+   DLLLOCAL QoreSimpleZMsg(zmsg_t* msg) : msg(msg) {
+   }
+
    // copies the msg
    DLLLOCAL QoreSimpleZMsg(const QoreSimpleZMsg& old) : msg(zmsg_dup(old.msg)) {
    }
@@ -56,9 +59,6 @@ public:
    }
 
 protected:
-   DLLLOCAL QoreSimpleZMsg(zmsg_t* msg) : msg(msg) {
-   }
-
    DLLLOCAL virtual ~QoreSimpleZMsg() {
       zmsg_destroy(&msg);
    }

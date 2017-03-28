@@ -29,6 +29,8 @@
 
 #include <zmsg.h>
 
+#include <stdio.h>
+
 int QoreSimpleZMsg::addFrames(const QoreListNode* l, ExceptionSink* xsink) {
    ConstListIterator i(l);
    while (i.next()) {
@@ -113,7 +115,7 @@ int QoreSimpleZMsg::addFrame(const QoreValue v, int i, int max, ExceptionSink* x
 qclass SimpleZMsg [arg=QoreSimpleZMsg* msg; ns=Qore::ZMQ];
 
 //! constructs a SimpleZMsg from the @ref Qore::ZMQ::ZFrame "ZFrame" objects supplied
-/** @par Example
+/** @par Example:
     @code
 SimpleZMsg msg(frame1, frame2);
     @endcode
@@ -133,7 +135,7 @@ SimpleZMsg::constructor() {
 }
 
 //! constructs a SimpleZMsg from the list of @ref Qore::ZMQ::ZFrame "ZFrame" objects supplied
-/** @par Example
+/** @par Example:
     @code
 SimpleZMsg msg(l);
     @endcode
@@ -147,7 +149,7 @@ SimpleZMsg::constructor(list l) {
 }
 
 //! copies a SimpleZMsg object
-/** @par Example
+/** @par Example:
     @code
 SimpleZMsg msg_new = msg.copy();
     @endcode
@@ -156,8 +158,41 @@ SimpleZMsg::copy() {
    self->setPrivate(CID_SIMPLEZMSG, new QoreSimpleZMsg(*msg));
 }
 
+//! Serializes a multipart message to a single message frame
+/** @par Example:
+    @code
+ZFrame frm = msg.encode();
+    @endcode
+
+    Use this method to send structured messages across transports that do not support
+    multipart data. Allocates and returns a new frame containing the serialized message.
+
+    @see Qore::ZMQ::ZFrame::decode() "ZFrame::decode()"
+*/
+ZFrame SimpleZMsg::encode() [flags=CONSTANT] {
+#ifdef HAVE_ZMSG_ENCODE_TO_ZFRAME
+   return new QoreObject(QC_ZFRAME, getProgram(), new QoreZFrame(zmsg_encode(**msg)));
+#elif defined(HAVE_ZMSG_ENCODE_TO_BUFFER)
+   byte* p;
+   size_t len = zmsg_encode(**msg, &p);
+   return new QoreObject(QC_ZFRAME, getProgram(), new QoreZFrame(p, len));
+#else
+#error do not know how to use the zmsg_encode() function
+#endif
+}
+
+//! Returns the signal value, 0 or greater, if message is a signal, -1 if not
+/** @par Example:
+    @code
+int size = msg.signal();
+    @endcode
+ */
+int SimpleZMsg::signal() [flags=CONSTANT] {
+   return zmsg_signal(**msg);
+}
+
 //! Returns the number of frames in the message
-/** @par Example
+/** @par Example:
     @code
 int size = msg.size();
     @endcode
@@ -167,7 +202,7 @@ int SimpleZMsg::size() [flags=CONSTANT] {
 }
 
 //! Returns the byte size of all frames in the message
-/** @par Example
+/** @par Example:
     @code
 int size = msg.contentSize();
     @endcode
@@ -177,27 +212,51 @@ int SimpleZMsg::contentSize() [flags=CONSTANT] {
 }
 
 //! Returns @ref Qore::True "True" if two msgs have identical size and data
-/** @par Example
+/** @par Example:
     @code
 bool b = msg.more();
     @endcode
 
-    @param frm the msg to compare
+    @param msg2 the message to compare
 
     @return @ref Qore::True "True" if two msgs have identical size and data
 */
-bool SimpleZMsg::eq(SimpleZMsg[QoreSimpleZMsg] frm) [flags=CONSTANT] {
-   ReferenceHolder<QoreSimpleZMsg> holder(frm, xsink);
+bool SimpleZMsg::eq(SimpleZMsg[QoreSimpleZMsg] msg2) [flags=CONSTANT] {
+   ReferenceHolder<QoreSimpleZMsg> holder(msg2, xsink);
 
-   return zmsg_eq(**msg, **frm);
+   return zmsg_eq(**msg, **msg2);
 }
 
 //! Sends a message to the zsys log sink (may be stdout, or system facility)
-/** @par Example
+/** @par Example:
     @code
 msg.print();
     @endcode
 */
 nothing SimpleZMsg::print() {
    zmsg_print(**msg);
+}
+
+//! Saves the message contents to an open file
+/** @par Example:
+    @code
+msg.save(file);
+    @endcode
+
+    @param file the file to save the data to; must be open for writing
+
+    The message is saved as a series of frames, each with length and data.
+
+    @throw ZMSG-SAVE-ERROR if there is any error saving the data, this exception is thrown
+
+    @note The file is NOT guaranteed to be portable between operating systems, not
+    versions of CZMQ. The file format is at present undocumented and liable
+    to arbitrary change.
+*/
+nothing SimpleZMsg::save(Qore::File[File] file) [dom=FILESYSTEM] {
+   ReferenceHolder<File> holder(file, xsink);
+
+   int rc = zmsg_save(**msg, fdopen(file->getFD(), "w"));
+   if (rc)
+      zmq_error(xsink, "ZMSG-SAVE-ERROR", "error in zmsg_save()");
 }

@@ -40,6 +40,10 @@ public:
    DLLLOCAL QoreZFrame(const void* data, size_t size) : frame(zframe_new(data, size)) {
    }
 
+   //! creates a frame from a zframe_t ptr
+   DLLLOCAL QoreZFrame(zframe_t* frame) : frame(frame) {
+   }
+
    // copies the frame
    DLLLOCAL QoreZFrame(const QoreZFrame& old) : frame(zframe_dup(old.frame)) {
    }
@@ -57,9 +61,6 @@ public:
    }
 
 protected:
-   DLLLOCAL QoreZFrame(zframe_t* frame) : frame(frame) {
-   }
-
    DLLLOCAL virtual ~QoreZFrame() {
       zframe_destroy(&frame);
    }

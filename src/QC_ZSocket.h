@@ -34,10 +34,18 @@
 #define ZSOCK_NOCHECK 1
 #endif
 
+// default timeout value: 2 minutes
+#define ZSOCK_TIMEOUT_MS 120000
+
 class QoreZSock : public AbstractPrivateData {
+   friend class QoreZSockLockHelper;
 public:
    // creates the object
    DLLLOCAL QoreZSock(int type) : sock(zsock_new(type)) {
+      int v = ZSOCK_TIMEOUT_MS;
+      zmq_setsockopt(sock, ZMQ_SNDTIMEO, &v, sizeof v);
+      v = ZSOCK_TIMEOUT_MS;
+      zmq_setsockopt(sock, ZMQ_RCVTIMEO, &v, sizeof v);
    }
 
    DLLLOCAL zsock_t* operator*() {
@@ -48,7 +56,12 @@ public:
       return sock;
    }
 
+   // returns -1 for error (exception raised), 0 for OK
+   DLLLOCAL int poll(short events, int timeout_ms, const char* meth, ExceptionSink *xsink);
+
 protected:
+   QoreThreadLock lck;
+
    DLLLOCAL QoreZSock(zsock_t* sock) : sock(sock) {
    }
 
@@ -58,6 +71,15 @@ protected:
 
 private:
    zsock_t* sock = nullptr;
+};
+
+class QoreZSockLockHelper : public AutoLocker {
+public:
+   DLLLOCAL QoreZSockLockHelper(QoreZSock& s) : AutoLocker(s.lck) {
+   }
+
+   DLLLOCAL QoreZSockLockHelper(QoreZSock* s) : AutoLocker(s->lck) {
+   }
 };
 
 DLLLOCAL extern QoreClass* QC_ZSOCKET;
