@@ -31,7 +31,7 @@
 class QorePullZSock : public QoreZSock {
 public:
    // creates the object
-   DLLLOCAL QorePullZSock(const char* endpoint) : QoreZSock(zsock_new_pub(endpoint)) {
+   DLLLOCAL QorePullZSock(const char* endpoint, ExceptionSink* xsink) : QoreZSock(zsock_new_pull(endpoint), xsink) {
    }
 };
 

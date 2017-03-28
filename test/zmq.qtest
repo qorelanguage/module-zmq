@@ -1,0 +1,27 @@
+#!/usr/bin/env qore
+# -*- mode: qore; indent-tabs-mode: nil -*-
+
+%new-style
+%enable-all-warnings
+%require-types
+%strict-args
+
+%requires QUnit
+%requires zmq
+
+%exec-class ZmqTest
+
+class ZmqTest inherits QUnit::Test {
+
+    constructor() : QUnit::Test("ZmqTest", "1.0") {
+        addTestCase("zsocket", \zSocketTest());
+        set_return_value(main());
+    }
+
+    zSocketTest() {
+        ZSocket sock = new PushZSocket("@tcp://127.0.0.1:5560");
+        assertEq("PUSH", sock.type());
+        #sock = new XSubZSocket("@tcp://127.0.0.1:5560");
+        #assertEq("XSUB", sock.type());
+    }
+}

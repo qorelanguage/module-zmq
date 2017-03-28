@@ -40,5 +40,5 @@ XSubZSocket sock("endpoint");
     @param endpoint
  */
 XSubZSocket::constructor(string endpoint) {
-   self->setPrivate(CID_XSUBZSOCKET, new QoreXSubZSock(endpoint->c_str()));
+   self->setPrivate(CID_XSUBZSOCKET, new QoreXSubZSock(endpoint->c_str(), xsink));
 }

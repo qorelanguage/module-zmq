@@ -37,8 +37,10 @@ qclass PullZSocket [arg=QoreZSock* sock; ns=Qore::ZMQ; vparent=ZSocket; dom=NETW
 PullZSocket sock("endpoint");
     @endcode
 
-    @param endpoint
+    @param endpoint the endpoint for the socket; the default action is connect
+
+    @throw ZSOCKET-CONSTRUCTOR-ERROR this exception is thrown if there is any error creating the socket
  */
 PullZSocket::constructor(string endpoint) {
-   self->setPrivate(CID_PULLZSOCKET, new QorePullZSock(endpoint->c_str()));
+   self->setPrivate(CID_PULLZSOCKET, new QorePullZSock(endpoint->c_str(), xsink));
 }

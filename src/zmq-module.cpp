@@ -25,21 +25,24 @@ static QoreStringNode* zmq_module_init();
 static void zmq_module_ns_init(QoreNamespace* rns, QoreNamespace* qns);
 static void zmq_module_delete();
 
-QoreClass* initZSocketClass(QoreNamespace& ns);
-QoreClass* initPubZSocketClass(QoreNamespace& ns);
-QoreClass* initSubZSocketClass(QoreNamespace& ns);
-QoreClass* initReqZSocketClass(QoreNamespace& ns);
-QoreClass* initRepZSocketClass(QoreNamespace& ns);
-QoreClass* initDealerZSocketClass(QoreNamespace& ns);
-QoreClass* initRouterZSocketClass(QoreNamespace& ns);
-QoreClass* initPushZSocketClass(QoreNamespace& ns);
-QoreClass* initPullZSocketClass(QoreNamespace& ns);
-QoreClass* initXPubZSocketClass(QoreNamespace& ns);
-QoreClass* initXSubZSocketClass(QoreNamespace& ns);
-QoreClass* initPairZSocketClass(QoreNamespace& ns);
-QoreClass* initStreamZSocketClass(QoreNamespace& ns);
-QoreClass* initZFrameClass(QoreNamespace& ns);
-QoreClass* initSimpleZMsgClass(QoreNamespace& ns);
+DLLLOCAL void preinitZFrameClass();
+DLLLOCAL void preinitSimpleZMsgClass();
+
+DLLLOCAL QoreClass* initZSocketClass(QoreNamespace& ns);
+DLLLOCAL QoreClass* initPubZSocketClass(QoreNamespace& ns);
+DLLLOCAL QoreClass* initSubZSocketClass(QoreNamespace& ns);
+DLLLOCAL QoreClass* initReqZSocketClass(QoreNamespace& ns);
+DLLLOCAL QoreClass* initRepZSocketClass(QoreNamespace& ns);
+DLLLOCAL QoreClass* initDealerZSocketClass(QoreNamespace& ns);
+DLLLOCAL QoreClass* initRouterZSocketClass(QoreNamespace& ns);
+DLLLOCAL QoreClass* initPushZSocketClass(QoreNamespace& ns);
+DLLLOCAL QoreClass* initPullZSocketClass(QoreNamespace& ns);
+DLLLOCAL QoreClass* initXPubZSocketClass(QoreNamespace& ns);
+DLLLOCAL QoreClass* initXSubZSocketClass(QoreNamespace& ns);
+DLLLOCAL QoreClass* initPairZSocketClass(QoreNamespace& ns);
+DLLLOCAL QoreClass* initStreamZSocketClass(QoreNamespace& ns);
+DLLLOCAL QoreClass* initZFrameClass(QoreNamespace& ns);
+DLLLOCAL QoreClass* initSimpleZMsgClass(QoreNamespace& ns);
 
 // qore module symbols
 DLLEXPORT char qore_module_name[] = "zmq";
@@ -61,6 +64,12 @@ DLLLOCAL void init_zmq_constants(QoreNamespace& ns);
 QoreNamespace zmqns("ZMQ");
 
 static QoreStringNode* zmq_module_init() {
+   preinitZFrameClass();
+   preinitSimpleZMsgClass();
+
+   zmqns.addSystemClass(initZFrameClass(zmqns));
+   zmqns.addSystemClass(initSimpleZMsgClass(zmqns));
+
    zmqns.addSystemClass(initZSocketClass(zmqns));
    zmqns.addSystemClass(initPubZSocketClass(zmqns));
    zmqns.addSystemClass(initSubZSocketClass(zmqns));
@@ -74,9 +83,6 @@ static QoreStringNode* zmq_module_init() {
    zmqns.addSystemClass(initXSubZSocketClass(zmqns));
    zmqns.addSystemClass(initPairZSocketClass(zmqns));
    zmqns.addSystemClass(initStreamZSocketClass(zmqns));
-
-   zmqns.addSystemClass(initZFrameClass(zmqns));
-   zmqns.addSystemClass(initSimpleZMsgClass(zmqns));
 
    init_zmq_constants(zmqns);
 
@@ -107,5 +113,5 @@ void zmq_error(ExceptionSink* xsink, const char* err, const char* desc_fmt, ...)
    desc.concat(": ");
    desc.concat(zmq_strerror(errno));
 
-   xsink->raiseErrnoException(err, errno, desc.c_str());
+   xsink->raiseExceptionArg(err, new QoreBigIntNode(errno), desc.c_str());
 }

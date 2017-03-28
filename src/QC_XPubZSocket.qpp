@@ -37,8 +37,10 @@ qclass XPubZSocket [arg=QoreZSock* sock; ns=Qore::ZMQ; vparent=ZSocket; dom=NETW
 XPubZSocket sock("endpoint");
     @endcode
 
-    @param endpoint
+    @param endpoint the endpoint for the socket; the default action is connect
+
+    @throw ZSOCKET-CONSTRUCTOR-ERROR this exception is thrown if there is any error creating the socket
  */
 XPubZSocket::constructor(string endpoint) {
-   self->setPrivate(CID_XPUBZSOCKET, new QoreXPubZSock(endpoint->c_str()));
+   self->setPrivate(CID_XPUBZSOCKET, new QoreXPubZSock(endpoint->c_str(), xsink));
 }

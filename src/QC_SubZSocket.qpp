@@ -37,9 +37,11 @@ qclass SubZSocket [arg=QoreZSock* sock; ns=Qore::ZMQ; vparent=ZSocket; dom=NETWO
 SubZSocket sock("endpoint");
     @endcode
 
-    @param endpoint the endpoint
+    @param endpoint the endpoint for the socket; the default action is connect
     @param subscribe the subscription
+
+    @throw ZSOCKET-CONSTRUCTOR-ERROR this exception is thrown if there is any error creating the socket
  */
 SubZSocket::constructor(string endpoint, string subscribe) {
-   self->setPrivate(CID_SUBZSOCKET, new QoreSubZSock(endpoint->c_str(), subscribe->c_str()));
+   self->setPrivate(CID_SUBZSOCKET, new QoreSubZSock(endpoint->c_str(), subscribe->c_str(), xsink));
 }

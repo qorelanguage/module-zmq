@@ -37,8 +37,10 @@ qclass PushZSocket [arg=QoreZSock* sock; ns=Qore::ZMQ; vparent=ZSocket; dom=NETW
 PushZSocket sock("endpoint");
     @endcode
 
-    @param endpoint
+    @param endpoint the endpoint for the socket; the default action is connect
+
+    @throw ZSOCKET-CONSTRUCTOR-ERROR this exception is thrown if there is any error creating the socket
  */
 PushZSocket::constructor(string endpoint) {
-   self->setPrivate(CID_PUSHZSOCKET, new QorePushZSock(endpoint->c_str()));
+   self->setPrivate(CID_PUSHZSOCKET, new QorePushZSock(endpoint->c_str(), xsink));
 }

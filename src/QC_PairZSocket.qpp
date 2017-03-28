@@ -37,8 +37,10 @@ qclass PairZSocket [arg=QoreZSock* sock; ns=Qore::ZMQ; vparent=ZSocket; dom=NETW
 PairZSocket sock("endpoint");
     @endcode
 
-    @param endpoint
+    @param endpoint the endpoint for the socket; the default action is connect
+
+    @throw ZSOCKET-CONSTRUCTOR-ERROR this exception is thrown if there is any error creating the socket
  */
 PairZSocket::constructor(string endpoint) {
-   self->setPrivate(CID_PAIRZSOCKET, new QorePairZSock(endpoint->c_str()));
+   self->setPrivate(CID_PAIRZSOCKET, new QorePairZSock(endpoint->c_str(), xsink));
 }

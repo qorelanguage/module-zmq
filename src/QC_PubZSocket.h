@@ -31,7 +31,7 @@
 class QorePubZSock : public QoreZSock {
 public:
    // creates the object
-   DLLLOCAL QorePubZSock(const char* endpoint) : QoreZSock(zsock_new_pub(endpoint)) {
+   DLLLOCAL QorePubZSock(const char* endpoint, ExceptionSink* xsink) : QoreZSock(zsock_new_pub(endpoint), xsink) {
    }
 };
 

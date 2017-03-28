@@ -37,8 +37,10 @@ qclass RepZSocket [arg=QoreZSock* sock; ns=Qore::ZMQ; vparent=ZSocket; dom=NETWO
 RepZSocket sock("endpoint");
     @endcode
 
-    @param endpoint
+    @param endpoint the endpoint for the socket; the default action is connect
+
+    @throw ZSOCKET-CONSTRUCTOR-ERROR this exception is thrown if there is any error creating the socket
  */
 RepZSocket::constructor(string endpoint) {
-   self->setPrivate(CID_REPZSOCKET, new QoreRepZSock(endpoint->c_str()));
+   self->setPrivate(CID_REPZSOCKET, new QoreRepZSock(endpoint->c_str(), xsink));
 }

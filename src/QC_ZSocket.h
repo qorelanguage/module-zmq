@@ -26,7 +26,7 @@
 
 #define _QORE_ZMQ_QC_ZSOCKET_H
 
-#include <qore/Qore.h>
+#include "zmq-module.h"
 
 #include <czmq.h>
 
@@ -62,7 +62,9 @@ public:
 protected:
    QoreThreadLock lck;
 
-   DLLLOCAL QoreZSock(zsock_t* sock) : sock(sock) {
+   DLLLOCAL QoreZSock(zsock_t* sock, ExceptionSink* xsink) : sock(sock) {
+      if (!sock)
+         zmq_error(xsink, "ZSOCKET-CONSTRUCTOR-ERROR", "error creating socket");
    }
 
    DLLLOCAL virtual ~QoreZSock() {
