@@ -7,6 +7,7 @@
 %strict-args
 
 %requires QUnit
+%requires Util
 %requires zmq
 
 %exec-class ZmqTest
@@ -15,6 +16,7 @@ class ZmqTest inherits QUnit::Test {
 
     constructor() : QUnit::Test("ZmqTest", "1.0") {
         addTestCase("zsocket", \zSocketTest());
+        addTestCase("zmsg", \zMsgTest());
         set_return_value(main());
     }
 
@@ -110,5 +112,17 @@ class ZmqTest inherits QUnit::Test {
         assertEq("PAIR", sock.type());
         sock = new ZSocketPair();
         assertEq("PAIR", sock.type());
+    }
+
+    zMsgTest() {
+        SimpleZMsg msg("testing");
+        File f();
+        assertThrows("ZMSG-SAVE-ERROR", \msg.save(), f);
+        string fn = tmp_location() + DirSep + get_random_string(30);
+        on_exit unlink(fn);
+        f.open2(fn, O_CREAT|O_WRONLY|O_TRUNC);
+        assertEq(NOTHING, msg.save(f));
+        assertEq(True, is_readable(fn));
+        assertEq(True, hstat(fn).size > 0);
     }
 }

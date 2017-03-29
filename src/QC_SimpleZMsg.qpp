@@ -127,9 +127,9 @@ SimpleZMsg msg(frame1, frame2);
     - \c binary: copies the binary data to the message
 
  */
-SimpleZMsg::constructor() {
+SimpleZMsg::constructor(...) {
    ReferenceHolder<QoreSimpleZMsg> msg(new QoreSimpleZMsg, xsink);
-   if (msg->addFrames(args, xsink))
+   if (args && msg->addFrames(args, xsink))
       return;
    self->setPrivate(CID_SIMPLEZMSG, msg.release());
 }
@@ -240,7 +240,9 @@ nothing SimpleZMsg::print() {
 //! Saves the message contents to an open file
 /** @par Example:
     @code
-msg.save(file);
+File f();
+f.open(file_name, O_CREAT|O_WRONLY|O_TRUNC);
+msg.save(f);
     @endcode
 
     @param file the file to save the data to; must be open for writing
@@ -256,7 +258,18 @@ msg.save(file);
 nothing SimpleZMsg::save(Qore::File[File] file) [dom=FILESYSTEM] {
    ReferenceHolder<File> holder(file, xsink);
 
-   int rc = zmsg_save(**msg, fdopen(file->getFD(), "w"));
+   if (!file->isOpen()) {
+      xsink->raiseException("ZMSG-SAVE-ERROR", "File is not open");
+      return QoreValue();
+   }
+
+   FILE* f = fdopen(dup(file->getFD()), "w");
+   if (!f) {
+      xsink->raiseErrnoException("ZMSG-SAVE-ERROR", errno, "error writing to File");
+      return QoreValue();
+   }
+   ON_BLOCK_EXIT(fclose, f);
+   int rc = zmsg_save(**msg, f);
    if (rc)
       zmq_error(xsink, "ZMSG-SAVE-ERROR", "error in zmsg_save()");
 }
