@@ -42,3 +42,13 @@ ZSocketXSub sock("tcp://127.0.0.1:8001");
 ZSocketXSub::constructor(string endpoint) {
    self->setPrivate(CID_ZSOCKETXSUB, new QoreXSubZSock(endpoint->c_str(), xsink));
 }
+
+//! constructs an unconnected XSUB zsocket
+/** @par Example
+    @code
+ZSocketXSub sock();
+    @endcode
+ */
+ZSocketXSub::constructor() {
+   self->setPrivate(CID_ZSOCKETXSUB, new QoreXSubZSock(nullptr, xsink));
+}

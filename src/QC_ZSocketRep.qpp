@@ -44,3 +44,15 @@ ZSocketRep sock("tcp://127.0.0.1:8001");
 ZSocketRep::constructor(string endpoint) {
    self->setPrivate(CID_ZSOCKETREP, new QoreRepZSock(endpoint->c_str(), xsink));
 }
+
+//! constructs an unconnected REP zsocket
+/** @par Example
+    @code
+ZSocketRep sock();
+    @endcode
+
+    @throw ZSOCKET-CONSTRUCTOR-ERROR this exception is thrown if there is any error creating the socket
+ */
+ZSocketRep::constructor() {
+   self->setPrivate(CID_ZSOCKETREP, new QoreRepZSock(nullptr, xsink));
+}

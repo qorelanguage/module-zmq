@@ -45,3 +45,15 @@ ZSocketSub sock("tcp://127.0.0.1:8001");
 ZSocketSub::constructor(string endpoint, string subscribe) {
    self->setPrivate(CID_ZSOCKETSUB, new QoreSubZSock(endpoint->c_str(), subscribe->c_str(), xsink));
 }
+
+//! constructs an unconnected SUB zsocket
+/** @par Example
+    @code
+ZSocketSub sock();
+    @endcode
+
+    @throw ZSOCKET-CONSTRUCTOR-ERROR this exception is thrown if there is any error creating the socket
+ */
+ZSocketSub::constructor() {
+   self->setPrivate(CID_ZSOCKETSUB, new QoreSubZSock(nullptr, nullptr, xsink));
+}

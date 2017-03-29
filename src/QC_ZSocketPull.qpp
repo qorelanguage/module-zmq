@@ -44,3 +44,15 @@ ZSocketPull sock("tcp://127.0.0.1:8001");
 ZSocketPull::constructor(string endpoint) {
    self->setPrivate(CID_ZSOCKETPULL, new QorePullZSock(endpoint->c_str(), xsink));
 }
+
+//! constructs an unconnected PULL zsocket
+/** @par Example
+    @code
+ZSocketPull sock();
+    @endcode
+
+    @throw ZSOCKET-CONSTRUCTOR-ERROR this exception is thrown if there is any error creating the socket
+ */
+ZSocketPull::constructor() {
+   self->setPrivate(CID_ZSOCKETPULL, new QorePullZSock(nullptr, xsink));
+}

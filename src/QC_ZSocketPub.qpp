@@ -44,3 +44,15 @@ ZSocketPub sock("tcp://127.0.0.1:8001");
 ZSocketPub::constructor(string endpoint) {
    self->setPrivate(CID_ZSOCKETPUB, new QorePubZSock(endpoint->c_str(), xsink));
 }
+
+//! constructs an unconnected PUB zsocket
+/** @par Example
+    @code
+ZSocketPub sock();
+    @endcode
+
+    @throw ZSOCKET-CONSTRUCTOR-ERROR this exception is thrown if there is any error creating the socket
+ */
+ZSocketPub::constructor() {
+   self->setPrivate(CID_ZSOCKETPUB, new QorePubZSock(nullptr, xsink));
+}

@@ -44,3 +44,15 @@ ZSocketPush sock("tcp://127.0.0.1:8001");
 ZSocketPush::constructor(string endpoint) {
    self->setPrivate(CID_ZSOCKETPUSH, new QorePushZSock(endpoint->c_str(), xsink));
 }
+
+//! constructs an unconnected PUSH zsocket
+/** @par Example
+    @code
+ZSocketPush sock();
+    @endcode
+
+    @throw ZSOCKET-CONSTRUCTOR-ERROR this exception is thrown if there is any error creating the socket
+ */
+ZSocketPush::constructor() {
+   self->setPrivate(CID_ZSOCKETPUSH, new QorePushZSock(nullptr, xsink));
+}

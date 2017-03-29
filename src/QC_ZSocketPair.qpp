@@ -44,3 +44,15 @@ ZSocketPair sock("tcp://127.0.0.1:8001");
 ZSocketPair::constructor(string endpoint) {
    self->setPrivate(CID_ZSOCKETPAIR, new QorePairZSock(endpoint->c_str(), xsink));
 }
+
+//! constructs an unconnected PAIR zsocket
+/** @par Example
+    @code
+ZSocketPair sock();
+    @endcode
+
+    @throw ZSOCKET-CONSTRUCTOR-ERROR this exception is thrown if there is any error creating the socket
+ */
+ZSocketPair::constructor() {
+   self->setPrivate(CID_ZSOCKETPAIR, new QorePairZSock(nullptr, xsink));
+}

@@ -44,3 +44,15 @@ ZSocketStream sock("tcp://127.0.0.1:8001");
 ZSocketStream::constructor(string endpoint) {
    self->setPrivate(CID_ZSOCKETSTREAM, new QoreStreamZSock(endpoint->c_str(), xsink));
 }
+
+//! constructs an unconnected STREAM zsocket
+/** @par Example
+    @code
+ZSocketStream sock();
+    @endcode
+
+    @throw ZSOCKET-CONSTRUCTOR-ERROR this exception is thrown if there is any error creating the socket
+ */
+ZSocketStream::constructor() {
+   self->setPrivate(CID_ZSOCKETSTREAM, new QoreStreamZSock(nullptr, xsink));
+}

@@ -44,3 +44,15 @@ ZSocketXPub sock("endpoint");
 ZSocketXPub::constructor(string endpoint) {
    self->setPrivate(CID_ZSOCKETXPUB, new QoreXPubZSock(endpoint->c_str(), xsink));
 }
+
+//! constructs an unconnected XPUB zsocket
+/** @par Example
+    @code
+ZSocketXPub sock();
+    @endcode
+
+    @throw ZSOCKET-CONSTRUCTOR-ERROR this exception is thrown if there is any error creating the socket
+ */
+ZSocketXPub::constructor() {
+   self->setPrivate(CID_ZSOCKETXPUB, new QoreXPubZSock(nullptr, xsink));
+}

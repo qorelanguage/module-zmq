@@ -44,3 +44,15 @@ ZSocketRouter sock("tcp://127.0.0.1:8001");
 ZSocketRouter::constructor(string endpoint) {
    self->setPrivate(CID_ZSOCKETROUTER, new QoreRouterZSock(endpoint->c_str(), xsink));
 }
+
+//! constructs an unconnected ROUTER zsocket
+/** @par Example
+    @code
+ZSocketRouter sock();
+    @endcode
+
+    @throw ZSOCKET-CONSTRUCTOR-ERROR this exception is thrown if there is any error creating the socket
+ */
+ZSocketRouter::constructor() {
+   self->setPrivate(CID_ZSOCKETROUTER, new QoreRouterZSock(nullptr, xsink));
+}
