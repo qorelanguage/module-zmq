@@ -1,7 +1,7 @@
 /* -*- mode: c++; indent-tabs-mode: nil -*- */
-/** @file XPubZSocket.qpp defines the XPubZSocket class */
+/** @file ZSocketXPub.qpp defines the ZSocketXPub class */
 /*
-  QC_XPubZSocket.qpp
+  QC_ZSocketXPub.qpp
 
   Qore Programming Language
 
@@ -24,23 +24,23 @@
 
 //#include "qore-zmq-module.h"
 
-#include "QC_XPubZSocket.h"
+#include "QC_ZSocketXPub.h"
 
-//! The XPubZSocket class implements a ZeroMQ XPUB socket
+//! The ZSocketXPub class implements a ZeroMQ XPUB socket
 /**
  */
-qclass XPubZSocket [arg=QoreZSock* sock; ns=Qore::ZMQ; vparent=ZSocket; dom=NETWORK];
+qclass ZSocketXPub [arg=QoreZSock* sock; ns=Qore::ZMQ; vparent=ZSocket; dom=NETWORK];
 
-//! constructs a PUB zsocket
+//! constructs a XPUB zsocket
 /** @par Example
     @code
-XPubZSocket sock("endpoint");
+ZSocketXPub sock("endpoint");
     @endcode
 
-    @param endpoint the endpoint for the socket; the default action is connect
+    @param endpoint the @ref zmqendpoints "endpoint" for the socket; the default action is bind
 
     @throw ZSOCKET-CONSTRUCTOR-ERROR this exception is thrown if there is any error creating the socket
  */
-XPubZSocket::constructor(string endpoint) {
-   self->setPrivate(CID_XPUBZSOCKET, new QoreXPubZSock(endpoint->c_str(), xsink));
+ZSocketXPub::constructor(string endpoint) {
+   self->setPrivate(CID_ZSOCKETXPUB, new QoreXPubZSock(endpoint->c_str(), xsink));
 }

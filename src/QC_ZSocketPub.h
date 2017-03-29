@@ -1,7 +1,7 @@
 /* -*- mode: c++; indent-tabs-mode: nil -*- */
-/** @file PushZSocket.qpp defines the PushZSocket class */
+/** @file QC_ZSocketPub.h defines the c++ implementation of the ZSocketPub class */
 /*
-  QC_PushZSocket.qpp
+  QC_ZSocketPub.h
 
   Qore Programming Language
 
@@ -22,25 +22,17 @@
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-//#include "qore-zmq-module.h"
+#ifndef _QORE_ZMQ_QC_ZSOCKETPUB_H
 
-#include "QC_PushZSocket.h"
+#define _QORE_ZMQ_QC_ZSOCKETPUB_H
 
-//! The PushZSocket class implements a ZeroMQ PUSH socket
-/**
- */
-qclass PushZSocket [arg=QoreZSock* sock; ns=Qore::ZMQ; vparent=ZSocket; dom=NETWORK];
+#include "QC_ZSocket.h"
 
-//! constructs a PUB zsocket
-/** @par Example
-    @code
-PushZSocket sock("endpoint");
-    @endcode
+class QorePubZSock : public QoreZSock {
+public:
+   // creates the object
+   DLLLOCAL QorePubZSock(const char* endpoint, ExceptionSink* xsink) : QoreZSock(zsock_new_pub(endpoint), xsink) {
+   }
+};
 
-    @param endpoint the endpoint for the socket; the default action is connect
-
-    @throw ZSOCKET-CONSTRUCTOR-ERROR this exception is thrown if there is any error creating the socket
- */
-PushZSocket::constructor(string endpoint) {
-   self->setPrivate(CID_PUSHZSOCKET, new QorePushZSock(endpoint->c_str(), xsink));
-}
+#endif // _QORE_ZMQ_QC_ZSOCKETPUB_H

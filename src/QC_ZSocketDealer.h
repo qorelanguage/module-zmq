@@ -1,7 +1,7 @@
 /* -*- mode: c++; indent-tabs-mode: nil -*- */
-/** @file RepZSocket.qpp defines the RepZSocket class */
+/** @file QC_ZSocketDealer.h defines the c++ implementation of the ZSocketDealer class */
 /*
-  QC_RepZSocket.qpp
+  QC_ZSocketDealer.h
 
   Qore Programming Language
 
@@ -22,25 +22,17 @@
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-//#include "qore-zmq-module.h"
+#ifndef _QORE_ZMQ_QC_ZSOCKETPUB_H
 
-#include "QC_RepZSocket.h"
+#define _QORE_ZMQ_QC_ZSOCKETPUB_H
 
-//! The RepZSocket class implements a ZeroMQ REP socket
-/**
- */
-qclass RepZSocket [arg=QoreZSock* sock; ns=Qore::ZMQ; vparent=ZSocket; dom=NETWORK];
+#include "QC_ZSocket.h"
 
-//! constructs a PUB zsocket
-/** @par Example
-    @code
-RepZSocket sock("endpoint");
-    @endcode
+class QoreDealerZSock : public QoreZSock {
+public:
+   // creates the object
+   DLLLOCAL QoreDealerZSock(const char* endpoint, ExceptionSink* xsink) : QoreZSock(zsock_new_dealer(endpoint), xsink) {
+   }
+};
 
-    @param endpoint the endpoint for the socket; the default action is connect
-
-    @throw ZSOCKET-CONSTRUCTOR-ERROR this exception is thrown if there is any error creating the socket
- */
-RepZSocket::constructor(string endpoint) {
-   self->setPrivate(CID_REPZSOCKET, new QoreRepZSock(endpoint->c_str(), xsink));
-}
+#endif // _QORE_ZMQ_QC_ZSOCKETPUB_H

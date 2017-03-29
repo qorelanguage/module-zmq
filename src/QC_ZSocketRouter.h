@@ -1,7 +1,7 @@
 /* -*- mode: c++; indent-tabs-mode: nil -*- */
-/** @file QC_PullZSocket.h defines the c++ implementation of the PullZSocket class */
+/** @file QC_ZSocketRouter.h defines the c++ implementation of the ZSocketRouter class */
 /*
-  QC_PullZSocket.h
+  QC_ZSocketRouter.h
 
   Qore Programming Language
 
@@ -22,17 +22,17 @@
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-#ifndef _QORE_ZMQ_QC_PUBZSOCKET_H
+#ifndef _QORE_ZMQ_QC_ZSOCKETPUB_H
 
-#define _QORE_ZMQ_QC_PUBZSOCKET_H
+#define _QORE_ZMQ_QC_ZSOCKETPUB_H
 
 #include "QC_ZSocket.h"
 
-class QorePullZSock : public QoreZSock {
+class QoreRouterZSock : public QoreZSock {
 public:
    // creates the object
-   DLLLOCAL QorePullZSock(const char* endpoint, ExceptionSink* xsink) : QoreZSock(zsock_new_pull(endpoint), xsink) {
+   DLLLOCAL QoreRouterZSock(const char* endpoint, ExceptionSink* xsink) : QoreZSock(zsock_new_router(endpoint), xsink) {
    }
 };
 
-#endif // _QORE_ZMQ_QC_PUBZSOCKET_H
+#endif // _QORE_ZMQ_QC_ZSOCKETPUB_H

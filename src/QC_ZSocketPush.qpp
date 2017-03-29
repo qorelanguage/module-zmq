@@ -1,7 +1,7 @@
 /* -*- mode: c++; indent-tabs-mode: nil -*- */
-/** @file RouterZSocket.qpp defines the RouterZSocket class */
+/** @file ZSocketPush.qpp defines the ZSocketPush class */
 /*
-  QC_RouterZSocket.qpp
+  QC_ZSocketPush.qpp
 
   Qore Programming Language
 
@@ -24,23 +24,23 @@
 
 //#include "qore-zmq-module.h"
 
-#include "QC_RouterZSocket.h"
+#include "QC_ZSocketPush.h"
 
-//! The RouterZSocket class implements a ZeroMQ ROUTER socket
+//! The ZSocketPush class implements a ZeroMQ PUSH socket
 /**
  */
-qclass RouterZSocket [arg=QoreZSock* sock; ns=Qore::ZMQ; vparent=ZSocket; dom=NETWORK];
+qclass ZSocketPush [arg=QoreZSock* sock; ns=Qore::ZMQ; vparent=ZSocket; dom=NETWORK];
 
-//! constructs a PUB zsocket
+//! constructs a PUSH zsocket
 /** @par Example
     @code
-RouterZSocket sock("endpoint");
+ZSocketPush sock("tcp://127.0.0.1:8001");
     @endcode
 
-    @param endpoint the endpoint for the socket; the default action is connect
+    @param endpoint the @ref zmqendpoints "endpoint" for the socket; the default action is connect
 
     @throw ZSOCKET-CONSTRUCTOR-ERROR this exception is thrown if there is any error creating the socket
  */
-RouterZSocket::constructor(string endpoint) {
-   self->setPrivate(CID_ROUTERZSOCKET, new QoreRouterZSock(endpoint->c_str(), xsink));
+ZSocketPush::constructor(string endpoint) {
+   self->setPrivate(CID_ZSOCKETPUSH, new QorePushZSock(endpoint->c_str(), xsink));
 }

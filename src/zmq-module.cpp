@@ -29,18 +29,18 @@ DLLLOCAL void preinitZFrameClass();
 DLLLOCAL void preinitSimpleZMsgClass();
 
 DLLLOCAL QoreClass* initZSocketClass(QoreNamespace& ns);
-DLLLOCAL QoreClass* initPubZSocketClass(QoreNamespace& ns);
-DLLLOCAL QoreClass* initSubZSocketClass(QoreNamespace& ns);
-DLLLOCAL QoreClass* initReqZSocketClass(QoreNamespace& ns);
-DLLLOCAL QoreClass* initRepZSocketClass(QoreNamespace& ns);
-DLLLOCAL QoreClass* initDealerZSocketClass(QoreNamespace& ns);
-DLLLOCAL QoreClass* initRouterZSocketClass(QoreNamespace& ns);
-DLLLOCAL QoreClass* initPushZSocketClass(QoreNamespace& ns);
-DLLLOCAL QoreClass* initPullZSocketClass(QoreNamespace& ns);
-DLLLOCAL QoreClass* initXPubZSocketClass(QoreNamespace& ns);
-DLLLOCAL QoreClass* initXSubZSocketClass(QoreNamespace& ns);
-DLLLOCAL QoreClass* initPairZSocketClass(QoreNamespace& ns);
-DLLLOCAL QoreClass* initStreamZSocketClass(QoreNamespace& ns);
+DLLLOCAL QoreClass* initZSocketPubClass(QoreNamespace& ns);
+DLLLOCAL QoreClass* initZSocketSubClass(QoreNamespace& ns);
+DLLLOCAL QoreClass* initZSocketReqClass(QoreNamespace& ns);
+DLLLOCAL QoreClass* initZSocketRepClass(QoreNamespace& ns);
+DLLLOCAL QoreClass* initZSocketDealerClass(QoreNamespace& ns);
+DLLLOCAL QoreClass* initZSocketRouterClass(QoreNamespace& ns);
+DLLLOCAL QoreClass* initZSocketPushClass(QoreNamespace& ns);
+DLLLOCAL QoreClass* initZSocketPullClass(QoreNamespace& ns);
+DLLLOCAL QoreClass* initZSocketXPubClass(QoreNamespace& ns);
+DLLLOCAL QoreClass* initZSocketXSubClass(QoreNamespace& ns);
+DLLLOCAL QoreClass* initZSocketPairClass(QoreNamespace& ns);
+DLLLOCAL QoreClass* initZSocketStreamClass(QoreNamespace& ns);
 DLLLOCAL QoreClass* initZFrameClass(QoreNamespace& ns);
 DLLLOCAL QoreClass* initSimpleZMsgClass(QoreNamespace& ns);
 
@@ -71,18 +71,18 @@ static QoreStringNode* zmq_module_init() {
    zmqns.addSystemClass(initSimpleZMsgClass(zmqns));
 
    zmqns.addSystemClass(initZSocketClass(zmqns));
-   zmqns.addSystemClass(initPubZSocketClass(zmqns));
-   zmqns.addSystemClass(initSubZSocketClass(zmqns));
-   zmqns.addSystemClass(initReqZSocketClass(zmqns));
-   zmqns.addSystemClass(initRepZSocketClass(zmqns));
-   zmqns.addSystemClass(initDealerZSocketClass(zmqns));
-   zmqns.addSystemClass(initRouterZSocketClass(zmqns));
-   zmqns.addSystemClass(initPushZSocketClass(zmqns));
-   zmqns.addSystemClass(initPullZSocketClass(zmqns));
-   zmqns.addSystemClass(initXPubZSocketClass(zmqns));
-   zmqns.addSystemClass(initXSubZSocketClass(zmqns));
-   zmqns.addSystemClass(initPairZSocketClass(zmqns));
-   zmqns.addSystemClass(initStreamZSocketClass(zmqns));
+   zmqns.addSystemClass(initZSocketPubClass(zmqns));
+   zmqns.addSystemClass(initZSocketSubClass(zmqns));
+   zmqns.addSystemClass(initZSocketReqClass(zmqns));
+   zmqns.addSystemClass(initZSocketRepClass(zmqns));
+   zmqns.addSystemClass(initZSocketDealerClass(zmqns));
+   zmqns.addSystemClass(initZSocketRouterClass(zmqns));
+   zmqns.addSystemClass(initZSocketPushClass(zmqns));
+   zmqns.addSystemClass(initZSocketPullClass(zmqns));
+   zmqns.addSystemClass(initZSocketXPubClass(zmqns));
+   zmqns.addSystemClass(initZSocketXSubClass(zmqns));
+   zmqns.addSystemClass(initZSocketPairClass(zmqns));
+   zmqns.addSystemClass(initZSocketStreamClass(zmqns));
 
    init_zmq_constants(zmqns);
 

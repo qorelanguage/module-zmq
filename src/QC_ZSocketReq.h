@@ -1,7 +1,7 @@
 /* -*- mode: c++; indent-tabs-mode: nil -*- */
-/** @file PairZSocket.qpp defines the PairZSocket class */
+/** @file QC_ZSocketReq.h defines the c++ implementation of the ZSocketReq class */
 /*
-  QC_PairZSocket.qpp
+  QC_ZSocketReq.h
 
   Qore Programming Language
 
@@ -22,25 +22,17 @@
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-//#include "qore-zmq-module.h"
+#ifndef _QORE_ZMQ_QC_ZSOCKETPUB_H
 
-#include "QC_PairZSocket.h"
+#define _QORE_ZMQ_QC_ZSOCKETPUB_H
 
-//! The PairZSocket class implements a ZeroMQ PAIR socket
-/**
- */
-qclass PairZSocket [arg=QoreZSock* sock; ns=Qore::ZMQ; vparent=ZSocket; dom=NETWORK];
+#include "QC_ZSocket.h"
 
-//! constructs a PUB zsocket
-/** @par Example
-    @code
-PairZSocket sock("endpoint");
-    @endcode
+class QoreReqZSock : public QoreZSock {
+public:
+   // creates the object
+   DLLLOCAL QoreReqZSock(const char* endpoint, ExceptionSink* xsink) : QoreZSock(zsock_new_req(endpoint), xsink) {
+   }
+};
 
-    @param endpoint the endpoint for the socket; the default action is connect
-
-    @throw ZSOCKET-CONSTRUCTOR-ERROR this exception is thrown if there is any error creating the socket
- */
-PairZSocket::constructor(string endpoint) {
-   self->setPrivate(CID_PAIRZSOCKET, new QorePairZSock(endpoint->c_str(), xsink));
-}
+#endif // _QORE_ZMQ_QC_ZSOCKETPUB_H

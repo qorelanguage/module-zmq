@@ -37,18 +37,18 @@ endif ()
 
 set(QPP_SRC
     src/QC_ZSocket.qpp
-    src/QC_PubZSocket.qpp
-    src/QC_SubZSocket.qpp
-    src/QC_ReqZSocket.qpp
-    src/QC_RepZSocket.qpp
-    src/QC_DealerZSocket.qpp
-    src/QC_RouterZSocket.qpp
-    src/QC_PushZSocket.qpp
-    src/QC_PullZSocket.qpp
-    src/QC_XPubZSocket.qpp
-    src/QC_XSubZSocket.qpp
-    src/QC_PairZSocket.qpp
-    src/QC_StreamZSocket.qpp
+    src/QC_ZSocketPub.qpp
+    src/QC_ZSocketSub.qpp
+    src/QC_ZSocketReq.qpp
+    src/QC_ZSocketRep.qpp
+    src/QC_ZSocketDealer.qpp
+    src/QC_ZSocketRouter.qpp
+    src/QC_ZSocketPush.qpp
+    src/QC_ZSocketPull.qpp
+    src/QC_ZSocketXPub.qpp
+    src/QC_ZSocketXSub.qpp
+    src/QC_ZSocketPair.qpp
+    src/QC_ZSocketStream.qpp
     src/QC_ZFrame.qpp
     src/QC_SimpleZMsg.qpp
     src/qc_zmq.qpp

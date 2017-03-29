@@ -1,7 +1,7 @@
 /* -*- mode: c++; indent-tabs-mode: nil -*- */
-/** @file StreamZSocket.qpp defines the StreamZSocket class */
+/** @file QC_ZSocketPush.h defines the c++ implementation of the ZSocketPush class */
 /*
-  QC_StreamZSocket.qpp
+  QC_ZSocketPush.h
 
   Qore Programming Language
 
@@ -22,25 +22,17 @@
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-//#include "qore-zmq-module.h"
+#ifndef _QORE_ZMQ_QC_ZSOCKETPUB_H
 
-#include "QC_StreamZSocket.h"
+#define _QORE_ZMQ_QC_ZSOCKETPUB_H
 
-//! The StreamZSocket class implements a ZeroMQ STREAM socket
-/**
- */
-qclass StreamZSocket [arg=QoreZSock* sock; ns=Qore::ZMQ; vparent=ZSocket; dom=NETWORK];
+#include "QC_ZSocket.h"
 
-//! constructs a PUB zsocket
-/** @par Example
-    @code
-StreamZSocket sock("endpoint");
-    @endcode
+class QorePushZSock : public QoreZSock {
+public:
+   // creates the object
+   DLLLOCAL QorePushZSock(const char* endpoint, ExceptionSink* xsink) : QoreZSock(zsock_new_push(endpoint), xsink) {
+   }
+};
 
-    @param endpoint the endpoint for the socket; the default action is connect
-
-    @throw ZSOCKET-CONSTRUCTOR-ERROR this exception is thrown if there is any error creating the socket
- */
-StreamZSocket::constructor(string endpoint) {
-   self->setPrivate(CID_STREAMZSOCKET, new QoreStreamZSock(endpoint->c_str(), xsink));
-}
+#endif // _QORE_ZMQ_QC_ZSOCKETPUB_H

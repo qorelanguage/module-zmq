@@ -1,7 +1,7 @@
 /* -*- mode: c++; indent-tabs-mode: nil -*- */
-/** @file PubZSocket.qpp defines the PubZSocket class */
+/** @file ZSocketRep.qpp defines the ZSocketRep class */
 /*
-  QC_PubZSocket.qpp
+  QC_ZSocketRep.qpp
 
   Qore Programming Language
 
@@ -24,23 +24,23 @@
 
 //#include "qore-zmq-module.h"
 
-#include "QC_PubZSocket.h"
+#include "QC_ZSocketRep.h"
 
-//! The PubZSocket class implements a ZeroMQ PUB socket
+//! The ZSocketRep class implements a ZeroMQ REP socket
 /**
  */
-qclass PubZSocket [arg=QoreZSock* sock; ns=Qore::ZMQ; vparent=ZSocket; dom=NETWORK];
+qclass ZSocketRep [arg=QoreZSock* sock; ns=Qore::ZMQ; vparent=ZSocket; dom=NETWORK];
 
-//! constructs a PUB zsocket
+//! constructs a REP zsocket
 /** @par Example
     @code
-PubZSocket sock("endpoint");
+ZSocketRep sock("tcp://127.0.0.1:8001");
     @endcode
 
-    @param endpoint the endpoint for the socket; the default action is connect
+    @param endpoint the @ref zmqendpoints "endpoint" for the socket; the default action is bind
 
     @throw ZSOCKET-CONSTRUCTOR-ERROR this exception is thrown if there is any error creating the socket
  */
-PubZSocket::constructor(string endpoint) {
-   self->setPrivate(CID_PUBZSOCKET, new QorePubZSock(endpoint->c_str(), xsink));
+ZSocketRep::constructor(string endpoint) {
+   self->setPrivate(CID_ZSOCKETREP, new QoreRepZSock(endpoint->c_str(), xsink));
 }

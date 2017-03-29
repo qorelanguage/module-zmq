@@ -1,7 +1,7 @@
 /* -*- mode: c++; indent-tabs-mode: nil -*- */
-/** @file QC_PairZSocket.h defines the c++ implementation of the PairZSocket class */
+/** @file QC_ZSocketStream.h defines the c++ implementation of the ZSocketStream class */
 /*
-  QC_PairZSocket.h
+  QC_ZSocketStream.h
 
   Qore Programming Language
 
@@ -22,17 +22,17 @@
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-#ifndef _QORE_ZMQ_QC_PUBZSOCKET_H
+#ifndef _QORE_ZMQ_QC_ZSOCKETPUB_H
 
-#define _QORE_ZMQ_QC_PUBZSOCKET_H
+#define _QORE_ZMQ_QC_ZSOCKETPUB_H
 
 #include "QC_ZSocket.h"
 
-class QorePairZSock : public QoreZSock {
+class QoreStreamZSock : public QoreZSock {
 public:
    // creates the object
-   DLLLOCAL QorePairZSock(const char* endpoint, ExceptionSink* xsink) : QoreZSock(zsock_new_pair(endpoint), xsink) {
+   DLLLOCAL QoreStreamZSock(const char* endpoint, ExceptionSink* xsink) : QoreZSock(zsock_new_stream(endpoint), xsink) {
    }
 };
 
-#endif // _QORE_ZMQ_QC_PUBZSOCKET_H
+#endif // _QORE_ZMQ_QC_ZSOCKETPUB_H

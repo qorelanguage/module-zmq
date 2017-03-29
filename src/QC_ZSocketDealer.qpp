@@ -1,7 +1,7 @@
 /* -*- mode: c++; indent-tabs-mode: nil -*- */
-/** @file XSubZSocket.qpp defines the XSubZSocket class */
+/** @file ZSocketDealer.qpp defines the ZSocketDealer class */
 /*
-  QC_XSubZSocket.qpp
+  QC_ZSocketDealer.qpp
 
   Qore Programming Language
 
@@ -24,21 +24,23 @@
 
 //#include "qore-zmq-module.h"
 
-#include "QC_XSubZSocket.h"
+#include "QC_ZSocketDealer.h"
 
-//! The XSubZSocket class implements a ZeroMQ XSUB socket
+//! The ZSocketDealer class implements a ZeroMQ DEALER socket
 /**
  */
-qclass XSubZSocket [arg=QoreZSock* sock; ns=Qore::ZMQ; vparent=ZSocket; dom=NETWORK];
+qclass ZSocketDealer [arg=QoreZSock* sock; ns=Qore::ZMQ; vparent=ZSocket; dom=NETWORK];
 
-//! constructs a PUB zsocket
+//! constructs a DEALER zsocket
 /** @par Example
     @code
-XSubZSocket sock("endpoint");
+ZSocketDealer sock("tcp://127.0.0.1:8001");
     @endcode
 
-    @param endpoint
+    @param endpoint the @ref zmqendpoints "endpoint" for the socket; the default action is connect
+
+    @throw ZSOCKET-CONSTRUCTOR-ERROR this exception is thrown if there is any error creating the socket
  */
-XSubZSocket::constructor(string endpoint) {
-   self->setPrivate(CID_XSUBZSOCKET, new QoreXSubZSock(endpoint->c_str(), xsink));
+ZSocketDealer::constructor(string endpoint) {
+   self->setPrivate(CID_ZSOCKETDEALER, new QoreDealerZSock(endpoint->c_str(), xsink));
 }

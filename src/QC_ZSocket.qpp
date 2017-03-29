@@ -70,7 +70,7 @@ ZSocket::copy() {
    xsink->raiseException("ZSOCKET-COPY-ERROR", "copying ZSocket objects is not currently supported");
 }
 
-//! Bind the ZSocket to a formatted endpoint
+//! Bind the ZSocket to a formatted @ref zmqendpoints "endpoint"
 /** @par Examples:
     @code{.py}
 # bind to first free port from C000 up
@@ -85,18 +85,18 @@ zsock.bind("tcp://127.0.0.1:![-60000]");
 zsock.bind("tcp://127.0.0.1:![55000-55999]");
     @endcode
 
-    For tcp:// endpoints, supports ephemeral ports, if you specify the port number as "*".
+    For \c tcp:// endpoints, supports ephemeral ports, if you specify the port number as "*".
     By default zsock uses the IANA designated range from C000 (49152) to FFFF (65535).
 
     To override this range, follow the "*" with "[first-last]". Either or
     both first and last may be empty. To bind to a random port within the
     range, use "!" in place of "*".
 
-    @param format the format string for the endpoint
+    @param format the format string for the @ref zmqendpoints "endpoint"
     @param ... optional arguments for the format string
 
-    @return On success, returns the actual port number used, for tcp:// endpoints,
-    and 0 for other transports. On failure, a \c ZSOCKET-BIND-ERROR exception is thrown.
+    @return the actual port number used for \c "tcp://" endpoints,
+    0 for other transports. On failure, a \c ZSOCKET-BIND-ERROR exception is thrown.
     Note that when using ephemeral ports, a port may be reused by different services without
     clients being aware. Protocols that run on ephemeral ports should take
     this into account.
@@ -119,13 +119,13 @@ int ZSocket::bind(string format, ...) {
    return rc;
 }
 
-//! Returns the last bound endpoint, if any or @ref nothing if not
+//! Returns the last bound @ref zmqendpoints "endpoint", if any or @ref nothing if not
 /** @par Examples:
     @code{.py}
 *string endpoint = zsock.endpoint();
     @endcode
 
-    @return the last bound endpoint, if any or @ref nothing if not
+    @return the last bound @ref zmqendpoints "endpoint", if any or @ref nothing if not
  */
 *string ZSocket::endpoint() [flags=CONSTANT] {
    // ensure atomicity of the call
@@ -134,18 +134,18 @@ int ZSocket::bind(string format, ...) {
    return str ? QoreValue(new QoreStringNode(str)) : QoreValue();
 }
 
-//! Unbinds the socket from a formatted endpoint
+//! Unbinds the socket from a formatted @ref zmqendpoints "endpoint"
 /** @par Examples:
     @code{.py}
 zsock.unbind(str);
     @endcode
 
-    @param format the format string for the endpoint
+    @param format the format string for the @ref zmqendpoints "endpoint"
     @param ... optional arguments for the format string
 
-    Throws an exception if the endpoint was invalid or the function isn't supported on the current socket
+    Throws an exception if the @ref zmqendpoints "endpoint" was invalid or the function isn't supported on the current socket
 
-    @throw ZSOCKET-UNBIND-ERROR thrown if the endpoint was invalid or the function isn't supported on the current socket
+    @throw ZSOCKET-UNBIND-ERROR thrown if the @ref zmqendpoints "endpoint" was invalid or the function isn't supported on the current socket
 */
 nothing ZSocket::unbind(string format, ...) {
    SimpleRefHolder<QoreStringNode> str(q_sprintf(args, 0, 0, xsink));
@@ -159,18 +159,18 @@ nothing ZSocket::unbind(string format, ...) {
       zmq_error(xsink, "ZSOCKET-UNBIND-ERROR", "error in ZSocket::unbind(\"%s\")", str->c_str());
 }
 
-//! Connects the socket to a formatted endpoint
+//! Connects the socket to a formatted @ref zmqendpoints "endpoint"
 /** @par Examples:
     @code{.py}
 zsock.unbind(str);
     @endcode
 
-    @param format the format string for the endpoint
+    @param format the format string for the @ref zmqendpoints "endpoint"
     @param ... optional arguments for the format string
 
-    Throws an exception if an error occurs connecting to the endpoint
+    Throws an exception if an error occurs connecting to the @ref zmqendpoints "endpoint"
 
-    @throw ZSOCKET-CONNECT-ERROR thrown if an error occurs connecting to the endpoint
+    @throw ZSOCKET-CONNECT-ERROR thrown if an error occurs connecting to the @ref zmqendpoints "endpoint"
  */
 nothing ZSocket::connect(string format, ...) {
    SimpleRefHolder<QoreStringNode> str(q_sprintf(args, 0, 0, xsink));
@@ -184,18 +184,18 @@ nothing ZSocket::connect(string format, ...) {
       zmq_error(xsink, "ZSOCKET-CONNECT-ERROR", "error in ZSocket::connect(\"%s\")", str->c_str());
 }
 
-//! Disconnects the socket from a formatted endpoint
+//! Disconnects the socket from a formatted @ref zmqendpoints "endpoint"
 /** @par Examples:
     @code{.py}
 zsock.disconnect(str);
     @endcode
 
-    @param format the format string for the endpoint
+    @param format the format string for the @ref zmqendpoints "endpoint"
     @param ... optional arguments for the format string
 
-    Throws an exception if the endpoint was invalid or the function isn't supported on the current socket
+    Throws an exception if the @ref zmqendpoints "endpoint" was invalid or the function isn't supported on the current socket
 
-    @throw ZSOCKET-DISCONNECT-ERROR thrown if the endpoint was invalid or the function isn't supported on the current socket
+    @throw ZSOCKET-DISCONNECT-ERROR thrown if the @ref zmqendpoints "endpoint" was invalid or the function isn't supported on the current socket
  */
 nothing ZSocket::disconnect(string format, ...) {
    SimpleRefHolder<QoreStringNode> str(q_sprintf(args, 0, 0, xsink));
@@ -209,13 +209,13 @@ nothing ZSocket::disconnect(string format, ...) {
       zmq_error(xsink, "ZSOCKET-DISCONNECT-ERROR", "error in ZSocket::disconnect(\"%s\")", str->c_str());
 }
 
-//! Attaches the socket to zero or more endpoints
+//! Attaches the socket to zero or more @ref zmqendpoints "endpoints"
 /** @par Examples:
     @code{.py}
 zsock.attach(endpoints_str, True);
     @endcode
 
-    @param endpoints zero or more endpoints, separated by commas and prefixed by \c '@' (to bind the socket) or \c '>' (to connect the socket)
+    @param endpoints zero or more @ref zmqendpoints "endpoints", separated by commas and prefixed by \c '@' (to bind the socket) or \c '>' (to connect the socket)
     @param serverish determines if endpoints not prefixed with \c '@' or \c '>' are bound (\a serverish = @ref Qore::True "True") or connected (\a serverish = @ref Qore::False "False", the default)
 
     Throws an exception if there was a syntax error in the \a endpoints argument
@@ -423,25 +423,23 @@ zsock.send("i", i);
 
     @param picture a string that defines the type of each frame. This makes it easy to send a complex multiframe message in one call. The picture can contain any of these characters, each corresponding to one or two arguments:
     - \c i = \c int (signed)
-    - \c 1 = \c uint8_t (i.e. a byte value)
+    - \c 1 = \c uint8_t (i.e. an 8 bit / single byte value)
     - \c 2 = \c uint16_t (i.e. a 16 bit / 2-byte unsigned integer value)
     - \c 4 = \c uint32_t (i.e. a 32 bit / 4-byte unsigned integer value)
     - \c 8 = \c uint64_t (i.e. a 64 bit / 8-byte unsigned integer value)
-    - \c s = \c char*
-    - \c b = \c byte*, size_t (2 arguments)
+    - \c s = \c string
+    - \c b = \c binary
     - \c c = \c zchunk_t*
-    - \c f = \c zframe_t*
+    - \c f = @ref Qore::ZMQ::ZFrame "ZFrame"
     - \c h = \c zhashx_t*
     - \c U = \c zuuid_t*
-    - \c p = \c void* (sends the pointer value, only meaningful over inproc)
-    - \c m = \c zmsg_t* (sends all frames in the zmsg)
+    - \c m = @ref Qore::ZMQ::SimpleZMsg "SimpleZMsg" (sends all frames in the zmsg)
     - \c z = sends zero-sized frame (0 arguments)
-    - \c u = \c uint (deprecated)
-
-  Note that s, b, c, and f are encoded the same way and the choice is
-  offered as a convenience to the sender, which may or may not already
-  have data in a zchunk or zframe. Does
-    @param ... argument corresponding to the picture; if there are not enough arguments an exception is thrown
+    .
+    Note that s, b, c, and f are encoded the same way and the choice is
+    offered as a convenience to the sender, which may or may not already
+    have data in a zchunk or zframe. Does
+    @param ... arguments corresponding to \a picture; if there are not enough arguments an exception is thrown
 
     @throw ZSOCKET-SEND-ARG-ERROR there was an error processing the arguments for the send call
     @throw ZSOCKET-SEND-ERROR an error occurred sending the data

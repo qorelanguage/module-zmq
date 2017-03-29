@@ -10,18 +10,18 @@
     - @ref Qore::ZMQ::ZFrame "ZFrame"
     - @ref Qore::ZMQ::SimpleZMsg "SimpleZMsg"
     - @ref Qore::ZMQ::ZSocket "ZSocket"
-      - @ref Qore::ZMQ::PubZSocket "PubZSocket"
-      - @ref Qore::ZMQ::SubZSocket "SubZSocket"
-      - @ref Qore::ZMQ::ReqZSocket "ReqZSocket"
-      - @ref Qore::ZMQ::RepZSocket "RepZSocket"
-      - @ref Qore::ZMQ::DealerZSocket "DealerZSocket"
-      - @ref Qore::ZMQ::RouterZSocket "RouterZSocket"
-      - @ref Qore::ZMQ::PushZSocket "PushZSocket"
-      - @ref Qore::ZMQ::PullZSocket "PullZSocket"
-      - @ref Qore::ZMQ::XPubZSocket "XPubZSocket"
-      - @ref Qore::ZMQ::XSubZSocket "XSubZSocket"
-      - @ref Qore::ZMQ::PairZSocket "PairZSocket"
-      - @ref Qore::ZMQ::StreamZSocket "StreamZSocket"
+      - @ref Qore::ZMQ::ZSocketPub "ZSocketPub"
+      - @ref Qore::ZMQ::ZSocketXSub "ZSocketXSub"
+      - @ref Qore::ZMQ::ZSocketReq "ZSocketReq"
+      - @ref Qore::ZMQ::ZSocketRep "ZSocketRep"
+      - @ref Qore::ZMQ::ZSocketDealer "ZSocketDealer"
+      - @ref Qore::ZMQ::ZSocketRouter "ZSocketRouter"
+      - @ref Qore::ZMQ::ZSocketPush "ZSocketPush"
+      - @ref Qore::ZMQ::ZSocketPull "ZSocketPull"
+      - @ref Qore::ZMQ::ZSocketXPub "ZSocketXPub"
+      - @ref Qore::ZMQ::ZSocketXSub "ZSocketXSub"
+      - @ref Qore::ZMQ::ZSocketPair "ZSocketPair"
+      - @ref Qore::ZMQ::ZSocketStream "ZSocketStream"
 
     @section zmq_examples Examples
 
@@ -37,7 +37,34 @@
  %requires zmq
     @endcode
 
-    @section zmqerrors zmp Errors
+    @section zmqendpoints zmq Endpoints
+
+    Endpoints have the following format:
+    - <tt><i>[@@|>]transport</i>://<i>address</i></tt>
+
+    Endpoint prefixes have the following meaning:
+    - \c @@: bind the socket
+    - \c >: connect to the remote socket
+
+    Example transports:
+    - <tt>tcp://</tt>: for TCP socket connections
+    - <tt>inproc://</tt>: for in-process connections
+
+    @subsection zmqendpoints_tcp Binding TCP Endpoints
+
+    <tt>tcp://</tt> endpoints support ephemeral ports when binding if you specify the port number as "*".
+    By default zsock uses the IANA designated range from \c 0xC000 (\c49152) to \c 0xFFFF (\c 65535);
+    to override this range, follow the \c "*" with \c "[first-last]". Either or both first and last may be empty. To bind to a random port within therange, use "!" in place of "*".
+
+    <b>Examples</b>
+    |!Endpoint|!Description
+    |<tt>@@tcp://127.0.0.1:*</tt>|bind to first free port from \c 0xC000 up
+    |<tt>@@tcp://127.0.0.1:!</tt>|bind to random port from \x 0xC000 to \c 0xFFFF
+    |<tt>@@tcp://127.0.0.1:*[60000-]</tt>|bind to first free port from \c 60000 up
+    |<tt>@@tcp://127.0.0.1:![-60000]</tt>|bind to random port from \c 0xC000 to \c 60000
+    |<tt>@@tcp://127.0.0.1:![55000-55999]</tt>|bind to random port from \c 55000 to \c 55999
+
+    @section zmqerrors zmq Errors
 
     Generally exceptions are thrown if an error occurs in ZeroMQ calls.  In such cases, the \c arg key of the exception hash will contain the ZeroMQ \a errno value.
 

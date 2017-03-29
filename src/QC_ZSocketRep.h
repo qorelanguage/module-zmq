@@ -1,7 +1,7 @@
 /* -*- mode: c++; indent-tabs-mode: nil -*- */
-/** @file QC_DealerZSocket.h defines the c++ implementation of the DealerZSocket class */
+/** @file QC_ZSocketRep.h defines the c++ implementation of the ZSocketRep class */
 /*
-  QC_DealerZSocket.h
+  QC_ZSocketRep.h
 
   Qore Programming Language
 
@@ -22,17 +22,17 @@
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-#ifndef _QORE_ZMQ_QC_PUBZSOCKET_H
+#ifndef _QORE_ZMQ_QC_ZSOCKETPUB_H
 
-#define _QORE_ZMQ_QC_PUBZSOCKET_H
+#define _QORE_ZMQ_QC_ZSOCKETPUB_H
 
 #include "QC_ZSocket.h"
 
-class QoreDealerZSock : public QoreZSock {
+class QoreRepZSock : public QoreZSock {
 public:
    // creates the object
-   DLLLOCAL QoreDealerZSock(const char* endpoint, ExceptionSink* xsink) : QoreZSock(zsock_new_dealer(endpoint), xsink) {
+   DLLLOCAL QoreRepZSock(const char* endpoint, ExceptionSink* xsink) : QoreZSock(zsock_new_rep(endpoint), xsink) {
    }
 };
 
-#endif // _QORE_ZMQ_QC_PUBZSOCKET_H
+#endif // _QORE_ZMQ_QC_ZSOCKETPUB_H

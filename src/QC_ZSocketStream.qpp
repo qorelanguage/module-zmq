@@ -1,7 +1,7 @@
 /* -*- mode: c++; indent-tabs-mode: nil -*- */
-/** @file QC_RouterZSocket.h defines the c++ implementation of the RouterZSocket class */
+/** @file ZSocketStream.qpp defines the ZSocketStream class */
 /*
-  QC_RouterZSocket.h
+  QC_ZSocketStream.qpp
 
   Qore Programming Language
 
@@ -22,17 +22,25 @@
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-#ifndef _QORE_ZMQ_QC_PUBZSOCKET_H
+//#include "qore-zmq-module.h"
 
-#define _QORE_ZMQ_QC_PUBZSOCKET_H
+#include "QC_ZSocketStream.h"
 
-#include "QC_ZSocket.h"
+//! The ZSocketStream class implements a ZeroMQ STREAM socket
+/**
+ */
+qclass ZSocketStream [arg=QoreZSock* sock; ns=Qore::ZMQ; vparent=ZSocket; dom=NETWORK];
 
-class QoreRouterZSock : public QoreZSock {
-public:
-   // creates the object
-   DLLLOCAL QoreRouterZSock(const char* endpoint, ExceptionSink* xsink) : QoreZSock(zsock_new_router(endpoint), xsink) {
-   }
-};
+//! constructs a STREAM zsocket
+/** @par Example
+    @code
+ZSocketStream sock("tcp://127.0.0.1:8001");
+    @endcode
 
-#endif // _QORE_ZMQ_QC_PUBZSOCKET_H
+    @param endpoint the @ref zmqendpoints "endpoint" for the socket; the default action is connect
+
+    @throw ZSOCKET-CONSTRUCTOR-ERROR this exception is thrown if there is any error creating the socket
+ */
+ZSocketStream::constructor(string endpoint) {
+   self->setPrivate(CID_ZSOCKETSTREAM, new QoreStreamZSock(endpoint->c_str(), xsink));
+}

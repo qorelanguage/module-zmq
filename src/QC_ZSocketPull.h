@@ -1,7 +1,7 @@
 /* -*- mode: c++; indent-tabs-mode: nil -*- */
-/** @file PullZSocket.qpp defines the PullZSocket class */
+/** @file QC_ZSocketPull.h defines the c++ implementation of the ZSocketPull class */
 /*
-  QC_PullZSocket.qpp
+  QC_ZSocketPull.h
 
   Qore Programming Language
 
@@ -22,25 +22,17 @@
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-//#include "qore-zmq-module.h"
+#ifndef _QORE_ZMQ_QC_ZSOCKETPUB_H
 
-#include "QC_PullZSocket.h"
+#define _QORE_ZMQ_QC_ZSOCKETPUB_H
 
-//! The PullZSocket class implements a ZeroMQ PULL socket
-/**
- */
-qclass PullZSocket [arg=QoreZSock* sock; ns=Qore::ZMQ; vparent=ZSocket; dom=NETWORK];
+#include "QC_ZSocket.h"
 
-//! constructs a PUB zsocket
-/** @par Example
-    @code
-PullZSocket sock("endpoint");
-    @endcode
+class QorePullZSock : public QoreZSock {
+public:
+   // creates the object
+   DLLLOCAL QorePullZSock(const char* endpoint, ExceptionSink* xsink) : QoreZSock(zsock_new_pull(endpoint), xsink) {
+   }
+};
 
-    @param endpoint the endpoint for the socket; the default action is connect
-
-    @throw ZSOCKET-CONSTRUCTOR-ERROR this exception is thrown if there is any error creating the socket
- */
-PullZSocket::constructor(string endpoint) {
-   self->setPrivate(CID_PULLZSOCKET, new QorePullZSock(endpoint->c_str(), xsink));
-}
+#endif // _QORE_ZMQ_QC_ZSOCKETPUB_H
