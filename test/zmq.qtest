@@ -13,14 +13,18 @@
 %exec-class ZmqTest
 
 class ZmqTest inherits QUnit::Test {
+    public {
+        const HelloWorld = "Hello, World!";
+    }
 
     constructor() : QUnit::Test("ZmqTest", "1.0") {
-        addTestCase("zsocket", \zSocketTest());
+        addTestCase("zsocket smoke", \zSocketSmokeTest());
+        addTestCase("zsocket push/pull", \zSocketPushPullTest());
         addTestCase("zmsg", \zMsgTest());
         set_return_value(main());
     }
 
-    zSocketTest() {
+    zSocketSmokeTest() {
         ZSocket sock = new ZSocketSub("@tcp://127.0.0.1:!", "xxx");
         assertEq("SUB", sock.type());
         assertThrows("ZSOCKET-CONSTRUCTOR-ERROR", sub () { new ZSocketSub("@tcp://127.0.0.1:xxx", "xxx"); });
@@ -112,6 +116,22 @@ class ZmqTest inherits QUnit::Test {
         assertEq("PAIR", sock.type());
         sock = new ZSocketPair();
         assertEq("PAIR", sock.type());
+    }
+
+    zSocketPushPullTest() {
+        ZSocketPush writer("@tcp://127.0.0.1:!");
+        softint port = (writer.endpoint() =~ x/:([0-9]+)/)[0];
+
+        assertEq(NOTHING, writer.unbind("tcp://127.0.0.1:" + port));
+        port = writer.bind("tcp://127.0.0.1:!");
+        assertEq("tcp://127.0.0.1:" + port, writer.endpoint());
+
+        ZSocketPull reader(">" + writer.endpoint());
+        writer.send(HelloWorld);
+        SimpleZMsg msg = reader.recvMsg();
+        assertEq(1, msg.size());
+        assertEq(HelloWorld.size(), msg.contentSize());
+        printf("%N\n", msg);
     }
 
     zMsgTest() {

@@ -102,6 +102,8 @@ zsock.bind("tcp://127.0.0.1:![55000-55999]");
     this into account.
 
     @throw ZSOCKET-BIND-ERROR if an error occurs, this exception is thrown
+
+    @note do not use the endpoint prefix \c "@" with this method
  */
 int ZSocket::bind(string format, ...) {
    SimpleRefHolder<QoreStringNode> str(q_sprintf(args, 0, 0, xsink));
@@ -171,6 +173,8 @@ zsock.unbind(str);
     Throws an exception if an error occurs connecting to the @ref zmqendpoints "endpoint"
 
     @throw ZSOCKET-CONNECT-ERROR thrown if an error occurs connecting to the @ref zmqendpoints "endpoint"
+
+    @note do not use the endpoint prefix \c ">" with this method
  */
 nothing ZSocket::connect(string format, ...) {
    SimpleRefHolder<QoreStringNode> str(q_sprintf(args, 0, 0, xsink));
@@ -331,6 +335,7 @@ SimpleZMsg frm = zsock.recvMsg();
     @return the messsage received from the socket
 
     @throw ZSOCKET-RECVMSG-ERROR thrown if an error occurs during the call
+    @throw ZSOCKET-TIMEOUT thrown if a timeout error occurs
 */
 SimpleZMsg ZSocket::recvMsg() {
    zmsg_t* msg;
@@ -415,7 +420,41 @@ nothing ZSocket::setTimeout(timeout timeout_ms) {
       zmq_error(xsink, "ZSOCKET-SETTIMEOUT-ERROR", "error setting send timeout in ZSocket::setTimeout()");
 }
 
-//! Send a 'picture' message to the socket (or actor)
+//! Sends a string over the socket
+/** @par Example:
+    @code{.py}
+zsock.send(str);
+    @endcode
+
+    @param str the string to send as a frame over the socket
+
+    @throw ZSOCKET-SEND-ERROR an error occurred sending the data
+    @throw ZSOCKET-TIMEOUT thrown if a timeout error occurs
+ */
+nothing ZSocket::send(string str) {
+   int rc = zstr_send(**zsock, str->c_str());
+   if (rc)
+      zmq_error(xsink, "ZSOCKET-SEND-ERROR", "error sending string");
+}
+
+//! Sends a binary object over the socket
+/** @par Example:
+    @code{.py}
+zsock.send(bin);
+    @endcode
+
+    @param bin the binary object to send
+
+    @throw ZSOCKET-SEND-ERROR an error occurred sending the data
+    @throw ZSOCKET-TIMEOUT thrown if a timeout error occurs
+ */
+nothing ZSocket::send(binary bin) {
+   int rc = zsock_send(**zsock, "b", bin->getPtr(), (size_t)bin->size());
+   if (rc)
+      zmq_error(xsink, "ZSOCKET-SEND-ERROR", "error sending binary object");
+}
+
+//! Send a 'picture' message to the socket
 /** @par Example:
     @code{.py}
 zsock.send("i", i);
@@ -441,13 +480,14 @@ zsock.send("i", i);
     have data in a zchunk or zframe. Does
     @param ... arguments corresponding to \a picture; if there are not enough arguments an exception is thrown
 
-    @throw ZSOCKET-SEND-ARG-ERROR there was an error processing the arguments for the send call
-    @throw ZSOCKET-SEND-ERROR an error occurred sending the data
+    @throw ZSOCKET-SENDPICTURE-ARG-ERROR there was an error processing the arguments for the send call
+    @throw ZSOCKET-SENDPICTURE-ERROR an error occurred sending the data
+    @throw ZSOCKET-TIMEOUT thrown if a timeout error occurs
 */
-nothing ZSocket::send(string picture, ...) {
+nothing ZSocket::sendPicture(string picture, ...) {
    // ensure atomicity of the call
    QoreZSockLockHelper qzlh(*zsock);
    int rc = zsock_vsend(**zsock, picture->c_str(), nullptr);//zargs);
    if (rc < 0)
-      zmq_error(xsink, "ZSOCKET-SEND-ERROR", "error in ZSocket::send()");
+      zmq_error(xsink, "ZSOCKET-SENDPICTURE-ERROR", "error in ZSocket::send()");
 }
