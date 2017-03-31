@@ -25,7 +25,7 @@
 #include "zmq-module.h"
 
 #include "QC_ZSocket.h"
-#include "QC_SimpleZMsg.h"
+#include "QC_ZMsg.h"
 #include "QC_ZFrame.h"
 
 #include <zmsg.h>
@@ -260,8 +260,8 @@ zsock.send(msg);
 
     @throw ZSOCKET-SEND-ERROR thrown if an error occurs during the call
 */
-nothing ZSocket::send(Qore::ZMQ::SimpleZMsg[QoreSimpleZMsg] msg) {
-   ReferenceHolder<QoreSimpleZMsg> holder(msg, xsink);
+nothing ZSocket::send(Qore::ZMQ::ZMsg[QoreZMsg] msg) {
+   ReferenceHolder<QoreZMsg> holder(msg, xsink);
    {
       // ensure atomicity of the call
       QoreZSockLockHelper qzlh(*zsock);
@@ -329,7 +329,7 @@ ZFrame ZSocket::recvFrame() {
 //! Receives a message from the socket
 /** @par Example:
     @code{.py}
-SimpleZMsg frm = zsock.recvMsg();
+ZMsg frm = zsock.recvMsg();
     @endcode
 
     @return the messsage received from the socket
@@ -337,7 +337,7 @@ SimpleZMsg frm = zsock.recvMsg();
     @throw ZSOCKET-RECVMSG-ERROR thrown if an error occurs during the call
     @throw ZSOCKET-TIMEOUT thrown if a timeout error occurs
 */
-SimpleZMsg ZSocket::recvMsg() {
+ZMsg ZSocket::recvMsg() {
    zmsg_t* msg;
    {
       // ensure atomicity of the call
@@ -348,7 +348,7 @@ SimpleZMsg ZSocket::recvMsg() {
       zmq_error(xsink, "ZSOCKET-RECVMSG-ERROR", "error in ZSocket::recvMsg()");
       return QoreValue();
    }
-   return new QoreObject(QC_SIMPLEZMSG, getProgram(), new QoreSimpleZMsg(msg));
+   return new QoreObject(QC_ZMSG, getProgram(), new QoreZMsg(msg));
 }
 
 //! Sets the send timeout in milliseconds
@@ -472,7 +472,7 @@ zsock.send("i", i);
     - \c f = @ref Qore::ZMQ::ZFrame "ZFrame"
     - \c h = \c zhashx_t*
     - \c U = \c zuuid_t*
-    - \c m = @ref Qore::ZMQ::SimpleZMsg "SimpleZMsg" (sends all frames in the zmsg)
+    - \c m = @ref Qore::ZMQ::ZMsg "ZMsg" (sends all frames in the zmsg)
     - \c z = sends zero-sized frame (0 arguments)
     .
     Note that s, b, c, and f are encoded the same way and the choice is

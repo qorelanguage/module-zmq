@@ -1,7 +1,7 @@
 /* -*- mode: c++; indent-tabs-mode: nil -*- */
-/** @file SimpleZMsg.qpp defines the SimpleZMsg class */
+/** @file ZMsg.qpp defines the ZMsg class */
 /*
-  QC_SimpleZMsg.qpp
+  QC_ZMsg.qpp
 
   Qore Programming Language
 
@@ -24,14 +24,14 @@
 
 #include "zmq-module.h"
 
-#include "QC_SimpleZMsg.h"
+#include "QC_ZMsg.h"
 #include "QC_ZFrame.h"
 
 #include <zmsg.h>
 
 #include <stdio.h>
 
-int QoreSimpleZMsg::addFrames(const QoreListNode* l, ExceptionSink* xsink) {
+int QoreZMsg::addFrames(const QoreListNode* l, ExceptionSink* xsink) {
    ConstListIterator i(l);
    while (i.next()) {
       if (addFrame(i.getValue(), i.index(), i.max(), xsink))
@@ -40,7 +40,7 @@ int QoreSimpleZMsg::addFrames(const QoreListNode* l, ExceptionSink* xsink) {
    return 0;
 }
 
-int QoreSimpleZMsg::addFrames(const QoreValueList* l, ExceptionSink* xsink) {
+int QoreZMsg::addFrames(const QoreValueList* l, ExceptionSink* xsink) {
    ConstValueListIterator i(l);
    while (i.next()) {
       if (addFrame(i.getValue(), i.index(), i.max(), xsink))
@@ -49,7 +49,7 @@ int QoreSimpleZMsg::addFrames(const QoreValueList* l, ExceptionSink* xsink) {
    return 0;
 }
 
-int QoreSimpleZMsg::addFrame(const QoreValue v, int i, int max, ExceptionSink* xsink) {
+int QoreZMsg::addFrame(const QoreValue v, int i, int max, ExceptionSink* xsink) {
    switch (v.getType()) {
       case NT_OBJECT: {
          const QoreObject* obj = v.get<const QoreObject>();
@@ -57,7 +57,7 @@ int QoreSimpleZMsg::addFrame(const QoreValue v, int i, int max, ExceptionSink* x
          if (*xsink)
             return -1;
          if (!frame) {
-            TryPrivateDataRefHolder<QoreSimpleZMsg> zmsg(obj, CID_SIMPLEZMSG, xsink);
+            TryPrivateDataRefHolder<QoreZMsg> zmsg(obj, CID_ZMSG, xsink);
             if (*xsink)
                return -1;
             if (!zmsg) {
@@ -107,55 +107,67 @@ int QoreSimpleZMsg::addFrame(const QoreValue v, int i, int max, ExceptionSink* x
    return 0;
 }
 
-//! The SimpleZMsg class implements a ZeroMQ message
-/** This class does not support modifications after the constructor in order to remain lock-free
-
-    @see the @ref Qore::ZMQ::ZMsg "ZMsg"
+//! The ZMsg class implements a ZeroMQ message
+/** @note
+    - In general, the ZMsg class is not designed to be accessed from multiple threads; it was created without locking for
+      fast and efficient use when used from a single thread.  For methods that would be unsafe to use in another thread, any use of
+      such methods in threads other than the thread where the constructor was called will cause a
+      \c ZMSG-THREAD-ERROR to be thrown.
  */
-qclass SimpleZMsg [arg=QoreSimpleZMsg* msg; ns=Qore::ZMQ];
+qclass ZMsg [arg=QoreZMsg* msg; ns=Qore::ZMQ];
 
-//! constructs a SimpleZMsg from the @ref Qore::ZMQ::ZFrame "ZFrame" objects supplied
+//! constructs a ZMsg from the @ref Qore::ZMQ::ZFrame "ZFrame" objects supplied
 /** @par Example:
     @code
-SimpleZMsg msg(frame1, frame2);
+ZMsg msg(frame1, frame2);
     @endcode
 
     @param ... zero or more values to add to the message as frames; values are processed as follows:
     - @ref OMQ::ZMQ::ZFrame "ZFrame": the object is moved into the message, this call deletes the @ref OMQ::ZMQ::ZFrame "ZFrame" object while processing
-    - @ref OMQ::ZMQ::SimpleZMsg "SimpleZMsg": the object is moved into the message, this call deletes the @ref OMQ::ZMQ::SimpleZMsg "SimpleZMsg" object while processing
+    - @ref OMQ::ZMQ::ZMsg "ZMsg": the object is moved into the message, this call deletes the @ref OMQ::ZMQ::ZMsg "ZMsg" object while processing
     - \c string: copies the string data to the message
     - \c binary: copies the binary data to the message
 
+    @throw ZMSG-ERROR unsupported data type passed as an argument
  */
-SimpleZMsg::constructor(...) {
-   ReferenceHolder<QoreSimpleZMsg> msg(new QoreSimpleZMsg, xsink);
+ZMsg::constructor(...) {
+   ReferenceHolder<QoreZMsg> msg(new QoreZMsg, xsink);
    if (args && msg->addFrames(args, xsink))
       return;
-   self->setPrivate(CID_SIMPLEZMSG, msg.release());
+   self->setPrivate(CID_ZMSG, msg.release());
 }
 
-//! constructs a SimpleZMsg from the list of @ref Qore::ZMQ::ZFrame "ZFrame" objects supplied
+//! constructs a ZMsg from the list of @ref Qore::ZMQ::ZFrame "ZFrame" objects supplied
 /** @par Example:
     @code
-SimpleZMsg msg(l);
+ZMsg msg(l);
     @endcode
 
+    @param l zero or more values to add to the message as frames; values are processed as follows:
+    - @ref OMQ::ZMQ::ZFrame "ZFrame": the object is moved into the message, this call deletes the @ref OMQ::ZMQ::ZFrame "ZFrame" object while processing
+    - @ref OMQ::ZMQ::ZMsg "ZMsg": the object is moved into the message, this call deletes the @ref OMQ::ZMQ::ZMsg "ZMsg" object while processing
+    - \c string: copies the string data to the message
+    - \c binary: copies the binary data to the message
+
+    @throw ZMSG-ERROR unsupported data type passed as an argument
  */
-SimpleZMsg::constructor(list l) {
-   ReferenceHolder<QoreSimpleZMsg> msg(new QoreSimpleZMsg, xsink);
+ZMsg::constructor(list l) {
+   ReferenceHolder<QoreZMsg> msg(new QoreZMsg, xsink);
    if (msg->addFrames(l, xsink))
       return;
-   self->setPrivate(CID_SIMPLEZMSG, msg.release());
+   self->setPrivate(CID_ZMSG, msg.release());
 }
 
-//! copies a SimpleZMsg object
+//! copies a ZMsg object
 /** @par Example:
     @code
-SimpleZMsg msg_new = msg.copy();
+ZMsg msg_new = msg.copy();
     @endcode
  */
-SimpleZMsg::copy() {
-   self->setPrivate(CID_SIMPLEZMSG, new QoreSimpleZMsg(*msg));
+ZMsg::copy() {
+   if (check(xsink))
+      return;
+   self->setPrivate(CID_ZMSG, new QoreZMsg(*msg));
 }
 
 //! Serializes a multipart message to a single message frame
@@ -169,7 +181,9 @@ ZFrame frm = msg.encode();
 
     @see Qore::ZMQ::ZFrame::decode() "ZFrame::decode()"
 */
-ZFrame SimpleZMsg::encode() [flags=CONSTANT] {
+ZFrame ZMsg::encode() [flags=CONSTANT] {
+   if (check(xsink))
+      return QoreValue();
 #ifdef HAVE_ZMSG_ENCODE_TO_ZFRAME
    return new QoreObject(QC_ZFRAME, getProgram(), new QoreZFrame(zmsg_encode(**msg)));
 #elif defined(HAVE_ZMSG_ENCODE_TO_BUFFER)
@@ -187,7 +201,9 @@ ZFrame SimpleZMsg::encode() [flags=CONSTANT] {
 int size = msg.signal();
     @endcode
  */
-int SimpleZMsg::signal() [flags=CONSTANT] {
+int ZMsg::signal() [flags=CONSTANT] {
+   if (check(xsink))
+      return QoreValue();
    return zmsg_signal(**msg);
 }
 
@@ -197,7 +213,9 @@ int SimpleZMsg::signal() [flags=CONSTANT] {
 int size = msg.size();
     @endcode
  */
-int SimpleZMsg::size() [flags=CONSTANT] {
+int ZMsg::size() [flags=CONSTANT] {
+   if (check(xsink))
+      return QoreValue();
    return zmsg_size(**msg);
 }
 
@@ -207,7 +225,9 @@ int SimpleZMsg::size() [flags=CONSTANT] {
 int size = msg.contentSize();
     @endcode
  */
-int SimpleZMsg::contentSize() [flags=CONSTANT] {
+int ZMsg::contentSize() [flags=CONSTANT] {
+   if (check(xsink))
+      return QoreValue();
    return zmsg_content_size(**msg);
 }
 
@@ -221,8 +241,11 @@ bool b = msg.more();
 
     @return @ref Qore::True "True" if two msgs have identical size and data
 */
-bool SimpleZMsg::eq(SimpleZMsg[QoreSimpleZMsg] msg2) [flags=CONSTANT] {
-   ReferenceHolder<QoreSimpleZMsg> holder(msg2, xsink);
+bool ZMsg::eq(ZMsg[QoreZMsg] msg2) [flags=CONSTANT] {
+   if (check(xsink))
+      return QoreValue();
+
+   ReferenceHolder<QoreZMsg> holder(msg2, xsink);
 
    return zmsg_eq(**msg, **msg2);
 }
@@ -233,7 +256,10 @@ bool SimpleZMsg::eq(SimpleZMsg[QoreSimpleZMsg] msg2) [flags=CONSTANT] {
 msg.print();
     @endcode
 */
-nothing SimpleZMsg::print() {
+nothing ZMsg::print() {
+   if (check(xsink))
+      return QoreValue();
+
    zmsg_print(**msg);
 }
 
@@ -255,7 +281,10 @@ msg.save(f);
     versions of CZMQ. The file format is at present undocumented and liable
     to arbitrary change.
 */
-nothing SimpleZMsg::save(Qore::File[File] file) [dom=FILESYSTEM] {
+nothing ZMsg::save(Qore::File[File] file) [dom=FILESYSTEM] {
+   if (check(xsink))
+      return QoreValue();
+
    ReferenceHolder<File> holder(file, xsink);
 
    if (!file->isOpen()) {

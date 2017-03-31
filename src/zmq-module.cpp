@@ -26,7 +26,7 @@ static void zmq_module_ns_init(QoreNamespace* rns, QoreNamespace* qns);
 static void zmq_module_delete();
 
 DLLLOCAL void preinitZFrameClass();
-DLLLOCAL void preinitSimpleZMsgClass();
+DLLLOCAL void preinitZMsgClass();
 
 DLLLOCAL QoreClass* initZSocketClass(QoreNamespace& ns);
 DLLLOCAL QoreClass* initZSocketPubClass(QoreNamespace& ns);
@@ -42,7 +42,7 @@ DLLLOCAL QoreClass* initZSocketXSubClass(QoreNamespace& ns);
 DLLLOCAL QoreClass* initZSocketPairClass(QoreNamespace& ns);
 DLLLOCAL QoreClass* initZSocketStreamClass(QoreNamespace& ns);
 DLLLOCAL QoreClass* initZFrameClass(QoreNamespace& ns);
-DLLLOCAL QoreClass* initSimpleZMsgClass(QoreNamespace& ns);
+DLLLOCAL QoreClass* initZMsgClass(QoreNamespace& ns);
 
 // qore module symbols
 DLLEXPORT char qore_module_name[] = "zmq";
@@ -65,10 +65,10 @@ QoreNamespace zmqns("ZMQ");
 
 static QoreStringNode* zmq_module_init() {
    preinitZFrameClass();
-   preinitSimpleZMsgClass();
+   preinitZMsgClass();
 
    zmqns.addSystemClass(initZFrameClass(zmqns));
-   zmqns.addSystemClass(initSimpleZMsgClass(zmqns));
+   zmqns.addSystemClass(initZMsgClass(zmqns));
 
    zmqns.addSystemClass(initZSocketClass(zmqns));
    zmqns.addSystemClass(initZSocketPubClass(zmqns));

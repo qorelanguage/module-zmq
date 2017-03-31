@@ -128,14 +128,14 @@ class ZmqTest inherits QUnit::Test {
 
         ZSocketPull reader(">" + writer.endpoint());
         writer.send(HelloWorld);
-        SimpleZMsg msg = reader.recvMsg();
+        ZMsg msg = reader.recvMsg();
         assertEq(1, msg.size());
         assertEq(HelloWorld.size(), msg.contentSize());
         printf("%N\n", msg);
     }
 
     zMsgTest() {
-        SimpleZMsg msg("testing");
+        ZMsg msg("testing");
         File f();
         assertThrows("ZMSG-SAVE-ERROR", \msg.save(), f);
         string fn = tmp_location() + DirSep + get_random_string(30);

@@ -25,7 +25,7 @@
 #include "zmq-module.h"
 
 #include "QC_ZFrame.h"
-#include "QC_SimpleZMsg.h"
+#include "QC_ZMsg.h"
 
 #include <zframe.h>
 #include <zmsg.h>
@@ -103,7 +103,7 @@ int ZFrame::size() [flags=CONSTANT] {
    return zframe_size(**frame);
 }
 
-//! Decodes a serialized message frame created by @ref Qore::ZMQ::SimpleZMsg::encode() "SimpleZMsg::encode()" and returns a new message object
+//! Decodes a serialized message frame created by @ref Qore::ZMQ::ZMsg::encode() "ZMsg::encode()" and returns a new message object
 /** @par Example:
     @code
 ZMsg msg = frame.decode();
@@ -111,9 +111,9 @@ ZMsg msg = frame.decode();
 
     @throw ZFRAME-DECODE-ERROR this exception is thrown if an error occurs decoding the frame
 
-    @see Qore::ZMQ::SimpleZMsg::encode() "SimpleZMsg::encode()"
+    @see Qore::ZMQ::ZMsg::encode() "ZMsg::encode()"
 */
-SimpleZMsg ZFrame::decode() [flags=CONSTANT] {
+ZMsg ZFrame::decode() [flags=CONSTANT] {
    zmsg_t* msg;
 #ifdef HAVE_ZMSG_ENCODE_TO_ZFRAME
    msg = zmsg_decode(**frame);
@@ -127,7 +127,7 @@ SimpleZMsg ZFrame::decode() [flags=CONSTANT] {
       return QoreValue();
    }
 
-   return new QoreObject(QC_SIMPLEZMSG, getProgram(), new QoreSimpleZMsg(msg));
+   return new QoreObject(QC_ZMSG, getProgram(), new QoreZMsg(msg));
 }
 
 //! Returns meta data property for the frame
