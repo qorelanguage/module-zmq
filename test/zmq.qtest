@@ -131,6 +131,9 @@ class ZmqTest inherits QUnit::Test {
         ZMsg msg = reader.recvMsg();
         assertEq(1, msg.size());
         assertEq(HelloWorld.size(), msg.contentSize());
+        assertEq(HelloWorld, msg.popStr());
+        assertEq(NOTHING, msg.popMsg());
+        #map printf("%s = %y\n", $1, msg.meta($1)), ("Socket-Type", "Identity", "Resource", "Peer-Address",);
         printf("%N\n", msg);
     }
 

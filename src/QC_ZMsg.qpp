@@ -163,6 +163,8 @@ ZMsg::constructor(list l) {
     @code
 ZMsg msg_new = msg.copy();
     @endcode
+
+    @throw ZMSG-THREAD-ERROR this exception is thrown when the object is used in a thread other than the one that created it
  */
 ZMsg::copy() {
    if (msg->check(xsink))
@@ -177,9 +179,11 @@ ZFrame frm = msg.encode();
     @endcode
 
     Use this method to send structured messages across transports that do not support
-    multipart data. Allocates and returns a new frame containing the serialized message.
+    multipart data. Creates a new @ref Qore::ZMQ::ZFrame "ZFrame" object containing the serialized message.
 
-    @see Qore::ZMQ::ZFrame::decode() "ZFrame::decode()"
+    @throw ZMSG-THREAD-ERROR this exception is thrown when the object is used in a thread other than the one that created it
+
+    @see @ref Qore::ZMQ::ZFrame::decode() "ZFrame::decode()"
 */
 ZFrame ZMsg::encode() [flags=CONSTANT] {
    if (msg->check(xsink))
@@ -195,11 +199,57 @@ ZFrame ZMsg::encode() [flags=CONSTANT] {
 #endif
 }
 
+//! Removes and returns the first submessage from message, if any
+/** @par Example:
+    @code
+*ZFrame msg = msg.popMsg();
+    @endcode
+
+    @return the first submessage from message, if any; if no submessage is present, @ref nothing is returned
+
+    @throw ZMSG-THREAD-ERROR this exception is thrown when the object is used in a thread other than the one that created it
+ */
+*ZMsg ZMsg::popMsg() {
+   if (msg->check(xsink))
+      return QoreValue();
+   zmsg_t* nmsg = zmsg_popmsg(**msg);
+   if (!nmsg)
+      return QoreValue();
+
+   return new QoreObject(QC_ZMSG, getProgram(), new QoreZMsg(nmsg));
+}
+
+//! Pops the first frame off the front of message and returns it as fresh string
+/** @par Example:
+    @code
+*string str = msg.popStr();
+    @endcode
+
+    @param encoding the character encoding tag for the string return value; if not present, the @ref default_encoding "default character encoding" is assumed.
+
+    @return a string corresponding to the first frame which is removed from the message; if no frame is present @ref nothing is returned
+
+    @throw ZMSG-THREAD-ERROR this exception is thrown when the object is used in a thread other than the one that created it
+*/
+*string ZMsg::popStr(*string encoding) {
+   if (msg->check(xsink))
+      return QoreValue();
+   char* str = zmsg_popstr(**msg);
+   if (!str)
+      return QoreValue();
+
+   const QoreEncoding* qe = encoding ? QEM.findCreate(encoding) : QCS_DEFAULT;
+   size_t len = strlen(str);
+   return new QoreStringNode(str, len, len + 1, qe);
+}
+
 //! Returns the signal value, 0 or greater, if message is a signal, -1 if not
 /** @par Example:
     @code
 int size = msg.signal();
     @endcode
+
+    @throw ZMSG-THREAD-ERROR this exception is thrown when the object is used in a thread other than the one that created it
  */
 int ZMsg::signal() [flags=CONSTANT] {
    if (msg->check(xsink))
@@ -212,6 +262,8 @@ int ZMsg::signal() [flags=CONSTANT] {
     @code
 int size = msg.size();
     @endcode
+
+    @throw ZMSG-THREAD-ERROR this exception is thrown when the object is used in a thread other than the one that created it
  */
 int ZMsg::size() [flags=CONSTANT] {
    if (msg->check(xsink))
@@ -224,6 +276,8 @@ int ZMsg::size() [flags=CONSTANT] {
     @code
 int size = msg.contentSize();
     @endcode
+
+    @throw ZMSG-THREAD-ERROR this exception is thrown when the object is used in a thread other than the one that created it
  */
 int ZMsg::contentSize() [flags=CONSTANT] {
    if (msg->check(xsink))
@@ -240,6 +294,8 @@ bool b = msg.more();
     @param msg2 the message to compare
 
     @return @ref Qore::True "True" if two msgs have identical size and data
+
+    @throw ZMSG-THREAD-ERROR this exception is thrown when the object is used in a thread other than the one that created it
 */
 bool ZMsg::eq(ZMsg[QoreZMsg] msg2) [flags=CONSTANT] {
    if (msg->check(xsink))
@@ -255,6 +311,8 @@ bool ZMsg::eq(ZMsg[QoreZMsg] msg2) [flags=CONSTANT] {
     @code
 msg.print();
     @endcode
+
+    @throw ZMSG-THREAD-ERROR this exception is thrown when the object is used in a thread other than the one that created it
 */
 nothing ZMsg::print() {
    if (msg->check(xsink))
@@ -275,6 +333,7 @@ msg.save(f);
 
     The message is saved as a series of frames, each with length and data.
 
+    @throw ZMSG-THREAD-ERROR this exception is thrown when the object is used in a thread other than the one that created it
     @throw ZMSG-SAVE-ERROR if there is any error saving the data, this exception is thrown
 
     @note The file is NOT guaranteed to be portable between operating systems, not

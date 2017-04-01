@@ -144,6 +144,8 @@ ZMsg ZFrame::decode() [flags=CONSTANT] {
 
     @return a string in UTF-8 encoding giving the property value or @ref nothing if no such property is set for the frame
 
+    @throw MISSING-FEATURE-ERROR thrown if the underlying czmq library is missing the \c zframe_meta() function; check @ref Qore::ZMQ::HAVE_ZFRAME_META "HAVE_ZFRAME_META" before calling this method
+
     @note
     - the input string is converted to UTF-8 encoding if necessary
     - Other properties may be defined based on the underlying security mechanism
@@ -155,14 +157,13 @@ ZMsg ZFrame::decode() [flags=CONSTANT] {
    if (*xsink)
       return QoreValue();
 
+   // note that the zcmq documentation is incorrect; a non-null return value must not
+   // be free()d; it is implemented with zmq_msg_gets() which returns a string that
+   // belongs to the zmq_msg_t object
    const char* val = zframe_meta(**frame, prop->c_str());
-   if (!val)
-      return QoreValue();
-
-   size_t len = strlen(val);
-   return new QoreStringNode((char*)val, len, len + 1, QCS_UTF8);
+   return val ? QoreValue(new QoreStringNode(val, QCS_UTF8)) : QoreValue();
 #else
-   xsink->raiseException("X", "x");
+   xsink->raiseException("MISSING-FEATURE-ERROR", "the underlying czmq library is missing a function required to implement this method; check HAVE_ZFRAME_META before calling");
 #endif
 }
 
