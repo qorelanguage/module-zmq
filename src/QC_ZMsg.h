@@ -58,13 +58,6 @@ public:
       return &msg;
    }
 
-protected:
-   DLLLOCAL virtual ~QoreZMsg() {
-      zmsg_destroy(&msg);
-   }
-
-   DLLLOCAL int addFrame(const QoreValue v, int i, int max, ExceptionSink* xsink);
-
    DLLLOCAL int check(ExceptionSink* xsink) const {
       if (tid != gettid()) {
          xsink->raiseException("ZMSG-THREAD-ERROR", "this object was created in TID %d; it is an error to access it from any other thread (accessed from TID %d)", tid, gettid());
@@ -72,6 +65,13 @@ protected:
       }
       return 0;
    }
+
+protected:
+   DLLLOCAL virtual ~QoreZMsg() {
+      zmsg_destroy(&msg);
+   }
+
+   DLLLOCAL int addFrame(const QoreValue v, int i, int max, ExceptionSink* xsink);
 
 private:
    zmsg_t* msg = nullptr;

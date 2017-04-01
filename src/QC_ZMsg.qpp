@@ -165,7 +165,7 @@ ZMsg msg_new = msg.copy();
     @endcode
  */
 ZMsg::copy() {
-   if (check(xsink))
+   if (msg->check(xsink))
       return;
    self->setPrivate(CID_ZMSG, new QoreZMsg(*msg));
 }
@@ -182,7 +182,7 @@ ZFrame frm = msg.encode();
     @see Qore::ZMQ::ZFrame::decode() "ZFrame::decode()"
 */
 ZFrame ZMsg::encode() [flags=CONSTANT] {
-   if (check(xsink))
+   if (msg->check(xsink))
       return QoreValue();
 #ifdef HAVE_ZMSG_ENCODE_TO_ZFRAME
    return new QoreObject(QC_ZFRAME, getProgram(), new QoreZFrame(zmsg_encode(**msg)));
@@ -202,7 +202,7 @@ int size = msg.signal();
     @endcode
  */
 int ZMsg::signal() [flags=CONSTANT] {
-   if (check(xsink))
+   if (msg->check(xsink))
       return QoreValue();
    return zmsg_signal(**msg);
 }
@@ -214,7 +214,7 @@ int size = msg.size();
     @endcode
  */
 int ZMsg::size() [flags=CONSTANT] {
-   if (check(xsink))
+   if (msg->check(xsink))
       return QoreValue();
    return zmsg_size(**msg);
 }
@@ -226,7 +226,7 @@ int size = msg.contentSize();
     @endcode
  */
 int ZMsg::contentSize() [flags=CONSTANT] {
-   if (check(xsink))
+   if (msg->check(xsink))
       return QoreValue();
    return zmsg_content_size(**msg);
 }
@@ -242,7 +242,7 @@ bool b = msg.more();
     @return @ref Qore::True "True" if two msgs have identical size and data
 */
 bool ZMsg::eq(ZMsg[QoreZMsg] msg2) [flags=CONSTANT] {
-   if (check(xsink))
+   if (msg->check(xsink))
       return QoreValue();
 
    ReferenceHolder<QoreZMsg> holder(msg2, xsink);
@@ -257,7 +257,7 @@ msg.print();
     @endcode
 */
 nothing ZMsg::print() {
-   if (check(xsink))
+   if (msg->check(xsink))
       return QoreValue();
 
    zmsg_print(**msg);
@@ -282,7 +282,7 @@ msg.save(f);
     to arbitrary change.
 */
 nothing ZMsg::save(Qore::File[File] file) [dom=FILESYSTEM] {
-   if (check(xsink))
+   if (msg->check(xsink))
       return QoreValue();
 
    ReferenceHolder<File> holder(file, xsink);
