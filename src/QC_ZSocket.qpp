@@ -276,30 +276,30 @@ nothing ZSocket::send(Qore::ZMQ::ZMsg[QoreZMsg] msg) {
 //! Sends the given frame over the socket; the frame is consumed by this call unless @ref Qore::ZMQ::ZFRAME_REUSE is used in the \a flags argument
 /** @par Example:
     @code{.py}
-zsock.send(frm);
+zsock.send(frame);
     @endcode
 
-    @param frm the frame to send; if \a does not contain @ref Qore::ZMQ::ZFRAME_REUSE, the argument object will be deleted by this call; if the frame is empty then no data is sent
+    @param frame the frame to send; if \a does not contain @ref Qore::ZMQ::ZFRAME_REUSE, the argument object will be deleted by this call; if the frame is empty then no data is sent
     @param flags a bitwise-or combination of zero or more of @ref zframe_flags; to send a frame in non-blocking mode, use the @ref Qore::ZMQ::ZFRAME_DONTWAIT flag
 
     @throw ZSOCKET-SEND-ERROR thrown if an error occurs during the call
     @throw ZSOCKET-SEND-WAIT-ERROR if the @ref Qore::ZMQ::ZFRAME_DONTWAIT flag is used and the message cannot be queued on the socket, this exception is thrown
 */
-nothing ZSocket::send(Qore::ZMQ::ZFrame[QoreZFrame] frm, int flags = 0) {
-   ReferenceHolder<QoreZFrame> holder(frm, xsink);
+nothing ZSocket::send(Qore::ZMQ::ZFrame[QoreZFrame] frame, int flags = 0) {
+   ReferenceHolder<QoreZFrame> holder(frame, xsink);
    // ensure atomicity of the call
    QoreZSockLockHelper qzlh(*zsock);
    {
-      int rc = zframe_send(frm->getPtr(), **zsock, flags);
+      int rc = zframe_send(frame->getPtr(), **zsock, flags);
       if (rc < 0) {
          if (flags & ZFRAME_DONTWAIT && errno == EAGAIN)
-            zmq_error(xsink, "ZSOCKET-SEND-WAIT-ERROR", "error in ZSocket::send(%s)", obj_frm->getClassName());
+            zmq_error(xsink, "ZSOCKET-SEND-WAIT-ERROR", "error in ZSocket::send(%s)", obj_frame->getClassName());
          else
-            zmq_error(xsink, "ZSOCKET-SEND-ERROR", "error in ZSocket::send(%s)", obj_frm->getClassName());
+            zmq_error(xsink, "ZSOCKET-SEND-ERROR", "error in ZSocket::send(%s)", obj_frame->getClassName());
       }
    }
-   if (!(flags & ZFRAME_REUSE) && !frm->getPtr())
-      const_cast<QoreObject*>(obj_frm)->doDelete(xsink);
+   if (!(flags & ZFRAME_REUSE) && !frame->getPtr())
+      const_cast<QoreObject*>(obj_frame)->doDelete(xsink);
 }
 
 //! Receives a frame from the socket

@@ -15,6 +15,7 @@
 class ZmqTest inherits QUnit::Test {
     public {
         const HelloWorld = "Hello, World!";
+        const Testing = "testing, 1, 2, 3";
     }
 
     constructor() : QUnit::Test("ZmqTest", "1.0") {
@@ -131,14 +132,40 @@ class ZmqTest inherits QUnit::Test {
         ZMsg msg = reader.recvMsg();
         assertEq(1, msg.size());
         assertEq(HelloWorld.size(), msg.contentSize());
+        assertEq("PUSH", msg.meta("Socket-Type"));
+        assertEq(NOTHING, msg.meta("Identity"));
+        assertEq(NOTHING, msg.meta("Resource"));
+        assertEq("127.0.0.1", msg.meta("Peer-Address"));
+        assertEq(NOTHING, msg.meta("User-Id"));
         assertEq(HelloWorld, msg.popStr());
         assertEq(NOTHING, msg.popMsg());
-        #map printf("%s = %y\n", $1, msg.meta($1)), ("Socket-Type", "Identity", "Resource", "Peer-Address",);
-        printf("%N\n", msg);
+
+        # check that calling ZMsg::popMsg() when there is no submessage deletes all other content
+        writer.send(HelloWorld);
+        msg = reader.recvMsg();
+        assertEq(1, msg.size());
+        assertEq(HelloWorld.size(), msg.contentSize());
+        assertEq(NOTHING, msg.popMsg());
+        assertEq(0, msg.size());
+        assertEq(0, msg.contentSize());
+        assertEq(NOTHING, msg.popStr());
+
+        writer.send(HelloWorld);
+        msg = reader.recvMsg();
+        assertEq(1, msg.size());
+        assertEq(HelloWorld.size(), msg.contentSize());
+        ZFrame frame = msg.popFrame();
+        assertEq(0, msg.size());
+        assertEq(0, msg.contentSize());
+        assertEq("PUSH", frame.meta("Socket-Type"));
+        assertEq(NOTHING, frame.meta("Identity"));
+        assertEq(NOTHING, frame.meta("Resource"));
+        assertEq("127.0.0.1", frame.meta("Peer-Address"));
+        assertEq(NOTHING, frame.meta("User-Id"));
     }
 
     zMsgTest() {
-        ZMsg msg("testing");
+        ZMsg msg(Testing);
         File f();
         assertThrows("ZMSG-SAVE-ERROR", \msg.save(), f);
         string fn = tmp_location() + DirSep + get_random_string(30);
@@ -147,5 +174,27 @@ class ZmqTest inherits QUnit::Test {
         assertEq(NOTHING, msg.save(f));
         assertEq(True, is_readable(fn));
         assertEq(True, hstat(fn).size > 0);
+
+        msg.add(new ZMsg(HelloWorld));
+        # calling ZMsg::popMsg() when the frame is not a message consumes the first frame
+        assertEq(NOTHING, msg.popMsg());
+        assertEq(1, msg.size());
+        assertEq(HelloWorld.size() + 1, msg.contentSize());
+        ZMsg nmsg = msg.popMsg();
+        assertEq(HelloWorld, nmsg.popStr());
+        assertEq(0, nmsg.size());
+        assertEq(0, nmsg.contentSize());
+        assertEq(0, msg.size());
+        assertEq(0, msg.contentSize());
+
+        msg.add(Testing);
+        msg.add(new ZMsg(HelloWorld));
+        assertEq(2, msg.size());
+        assertEq(HelloWorld.size() + Testing.size() + 1, msg.contentSize());
+        ZFrame frame = msg.popFrame();
+        assertEq(1, msg.size());
+        assertEq(HelloWorld.size() + 1, msg.contentSize());
+        assertEq(True, frame.streq(Testing));
+        assertEq(False, frame.streq(HelloWorld));
     }
 }

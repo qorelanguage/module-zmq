@@ -136,7 +136,7 @@ ZMsg ZFrame::decode() [flags=CONSTANT] {
 *string str = frame.meta("Socket-Type");
     @endcode
 
-    @param property a meta-data property for the frame; the following properties are available:
+    @param property a meta-data property for the first frame in the message; the string is converted to UTF-8 encoding if necessary; the following properties are available:
     - \c "Socket-Type":
     - \c "Identity":
     - \c "Resource":

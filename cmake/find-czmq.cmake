@@ -16,6 +16,9 @@ set(CZMQ_LIBRARIES ${CZMQ_LIBRARY})
 set(CMAKE_REQUIRED_INCLUDES ${CZMQ_INCLUDE_DIRS})
 set(CMAKE_REQUIRED_LIBRARIES ${CZMQ_LIBRARY})
 check_function_exists(zframe_meta HAVE_ZFRAME_META)
+if(HAVE_ZFRAME_META)
+  add_definitions(-DHAVE_ZFRAME_META)
+endif(HAVE_ZFRAME_META)
 
 # check signature of zmsg_encode()
 check_cxx_source_compiles("
