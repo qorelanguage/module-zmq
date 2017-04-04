@@ -32,7 +32,7 @@
 #include <zframe.h>
 
 int QoreZSock::poll(short events, int timeout_ms, const char* meth, ExceptionSink *xsink) {
-   zmq_pollitem_t p = { sock, 0, events, 0 };
+   zmq_pollitem_t p = { zsock_resolve(sock), 0, events, 0 };
    int rc;
    while (true) {
       rc = zmq_poll(&p, 1, timeout_ms);
@@ -43,7 +43,7 @@ int QoreZSock::poll(short events, int timeout_ms, const char* meth, ExceptionSin
    if (rc > 0)
       return 0;
    if (!rc)
-      xsink->raiseException("ZSOCKET-TIMEOUT", "timeout waiting for %d ms in %s() for data on the socket", timeout_ms, meth);
+      xsink->raiseException("ZSOCKET-TIMEOUT", "timeout waiting %d ms in %s() for data%s on the socket", timeout_ms, meth, events & ZMQ_POLLOUT ? " to be sent" : "");
    else
       zmq_error(xsink, "ZSOCKET-TIMEOUT", "error in zmq_poll() in %s()", meth);
    return -1;
@@ -273,6 +273,40 @@ nothing ZSocket::send(Qore::ZMQ::ZMsg[QoreZMsg] msg) {
       const_cast<QoreObject*>(obj_msg)->doDelete(xsink);
 }
 
+//! Waits for data to read on the socket; if data does not arrive before the timeout expires, a \c ZSOCKET-TIMEOUT exception is thrown
+/** @par Example:
+    @code{.py}
+zsock.waitRead(10s);
+    @endcode
+
+    @param timeout_ms the timeout in milliseconds
+
+    @throw ZSOCKET-TIMEOUT this exception is thrown if data does not arrive before the timeout expires
+*/
+nothing ZSocket::waitRead(timeout timeout_ms) {
+   // ensure atomicity of the call
+   QoreZSockLockHelper qzlh(*zsock);
+
+   zsock->poll(ZMQ_POLLIN, timeout_ms, "ZSocket::waitRead", xsink);
+}
+
+//! Waits for data to be written on the socket; if data is not sent before the timeout expires, a \c ZSOCKET-TIMEOUT exception is thrown
+/** @par Example:
+    @code{.py}
+zsock.waitWrite(10s);
+    @endcode
+
+    @param timeout_ms the timeout in milliseconds
+
+    @throw ZSOCKET-TIMEOUT this exception is thrown if the data is not sent before the timeout expires
+*/
+nothing ZSocket::waitWrite(timeout timeout_ms) {
+   // ensure atomicity of the call
+   QoreZSockLockHelper qzlh(*zsock);
+
+   zsock->poll(ZMQ_POLLOUT, timeout_ms, "ZSocket::waitWrite", xsink);
+}
+
 //! Sends the given frame over the socket; the frame is consumed by this call unless @ref Qore::ZMQ::ZFRAME_REUSE is used in the \a flags argument
 /** @par Example:
     @code{.py}
@@ -366,10 +400,18 @@ zsock.setSendTimeout(30s);
     - @ref ZSocket::setTimeout()
  */
 nothing ZSocket::setSendTimeout(timeout timeout_ms) {
+   // ensure atomicity of the call
+   QoreZSockLockHelper qzlh(*zsock);
+
    int v = timeout_ms;
-   int rc = zmq_setsockopt(**zsock, ZMQ_SNDTIMEO, &v, sizeof v);
-   if (rc)
-      zmq_error(xsink, "ZSOCKET-SETSENDTIMEOUT-ERROR", "error in ZSocket::setSendTimeout()");
+   while (true) {
+      int rc = zmq_setsockopt(zsock_resolve(**zsock), ZMQ_SNDTIMEO, &v, sizeof v);
+      if (rc) {
+         if (errno == EINTR)
+            continue;
+         zmq_error(xsink, "ZSOCKET-SETSENDTIMEOUT-ERROR", "error in ZSocket::setSendTimeout()");
+      }
+   }
 }
 
 //! Sets the receive timeout in milliseconds
@@ -387,10 +429,18 @@ zsock.setRecvTimeout(30s);
     - @ref ZSocket::setTimeout()
  */
 nothing ZSocket::setRecvTimeout(timeout timeout_ms) {
+   // ensure atomicity of the call
+   QoreZSockLockHelper qzlh(*zsock);
+
    int v = timeout_ms;
-   int rc = zmq_setsockopt(**zsock, ZMQ_RCVTIMEO, &v, sizeof v);
-   if (rc)
-      zmq_error(xsink, "ZSOCKET-SETRECVTIMEOUT-ERROR", "error in ZSocket::setRecvTimeout()");
+   while (true) {
+      int rc = zmq_setsockopt(zsock_resolve(**zsock), ZMQ_RCVTIMEO, &v, sizeof v);
+      if (rc) {
+         if (errno == EINTR)
+            continue;
+         zmq_error(xsink, "ZSOCKET-SETRECVTIMEOUT-ERROR", "error in ZSocket::setRecvTimeout()");
+      }
+   }
 }
 
 //! Sets the send and receive timeout in milliseconds
@@ -408,16 +458,85 @@ zsock.setTimeout(30s);
     - @ref ZSocket::setSendTimeout()
  */
 nothing ZSocket::setTimeout(timeout timeout_ms) {
+   // ensure atomicity of the call
+   QoreZSockLockHelper qzlh(*zsock);
+
    int v = timeout_ms;
-   int rc = zmq_setsockopt(**zsock, ZMQ_RCVTIMEO, &v, sizeof v);
-   if (rc) {
-      zmq_error(xsink, "ZSOCKET-SETTIMEOUT-ERROR", "error setting receive timeout in ZSocket::setTimeout()");
-      return QoreValue();
+   while (true) {
+      int rc = zmq_setsockopt(zsock_resolve(**zsock), ZMQ_RCVTIMEO, &v, sizeof v);
+      if (rc) {
+         if (errno == EINTR)
+            continue;
+         zmq_error(xsink, "ZSOCKET-SETTIMEOUT-ERROR", "error setting receive timeout in ZSocket::setTimeout()");
+         return QoreValue();
+      }
    }
    v = timeout_ms;
-   rc = zmq_setsockopt(**zsock, ZMQ_SNDTIMEO, &v, sizeof v);
-   if (rc)
-      zmq_error(xsink, "ZSOCKET-SETTIMEOUT-ERROR", "error setting send timeout in ZSocket::setTimeout()");
+   while (true) {
+      int rc = zmq_setsockopt(zsock_resolve(**zsock), ZMQ_SNDTIMEO, &v, sizeof v);
+      if (rc) {
+         if (errno == EINTR)
+            continue;
+         zmq_error(xsink, "ZSOCKET-SETTIMEOUT-ERROR", "error setting send timeout in ZSocket::setTimeout()");
+      }
+   }
+}
+
+//! Sets the socket identity string
+/** @par Example:
+    @code{.py}
+zsock.setIdentity(str);
+    @endcode
+
+    @param id the identity string to set on the socket; the string will be converted to UTF-8 encoding if necessary
+
+    @throw ENCODING-CONVERSION-ERROR this exception could be thrown if an encoding error is encountered when converting the given string to UTF-8
+    @throw ZSOCKET-SETIDENTITY-ERROR if an error occurs setting the identity option on the socket
+
+    @note it is recommended to use an identity option with the following socket types:
+    - @ref Qore::ZMQ::ZSocketReq "ZSocketReq": \c REQ
+    - @ref Qore::ZMQ::ZSocketRep "ZSocketRep": \c REP
+    - @ref Qore::ZMQ::ZSocketDealer "ZSocketDealer": \c DEALER
+    - @ref Qore::ZMQ::ZSocketRouter "ZSocketRouter": \c ROUTER
+ */
+nothing ZSocket::setIdentity(string id) {
+   TempEncodingHelper id_utf8(id, QCS_UTF8, xsink);
+   if (!id_utf8)
+      return QoreValue();
+
+   // ensure atomicity of the call
+   QoreZSockLockHelper qzlh(*zsock);
+
+   // NOTE: cannot use zsock_setidentity() here as it will assert for all sockets except REQ, REP, DEALER, and ROUTER
+   while (true) {
+      int rc = zmq_setsockopt(zsock_resolve(**zsock), ZMQ_IDENTITY, id_utf8->c_str(), id_utf8->size());
+      if (rc) {
+         if (errno == EINTR)
+            continue;
+         zmq_error(xsink, "ZSOCKET-SETIDENTITY-ERROR", "error setting identity \"%s\"", id_utf8->c_str());
+      }
+      break;
+   }
+}
+
+//! retrieves the socket identity string
+/** @par Example:
+    @code{.py}
+*string id = zsock.getIdentity();
+    @endcode
+
+    @return the socket identity string or @ref nothing if no value is set
+*/
+*string ZSocket::getIdentity() [flags=CONSTANT] {
+   // ensure atomicity of the call
+   QoreZSockLockHelper qzlh(*zsock);
+
+   char* str = zsock_identity(**zsock);
+   if (!str)
+      return QoreValue();
+
+   size_t len = strlen(str);
+   return new QoreStringNode(str, len, len + 1, QCS_UTF8);
 }
 
 //! Sends a string over the socket

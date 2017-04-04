@@ -46,6 +46,10 @@ public:
       zmq_setsockopt(sock, ZMQ_SNDTIMEO, &v, sizeof v);
       v = ZSOCK_TIMEOUT_MS;
       zmq_setsockopt(sock, ZMQ_RCVTIMEO, &v, sizeof v);
+#ifdef ZMQ_CONNECT_TIMEOUT
+      v = ZSOCK_TIMEOUT_MS;
+      zmq_setsockopt(sock, ZMQ_CONNECT_TIMEOUT, &v, sizeof v);
+#endif
    }
 
    DLLLOCAL zsock_t* operator*() {

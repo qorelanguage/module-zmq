@@ -29,7 +29,7 @@
 //! The ZSocketSub class implements a ZeroMQ SUB socket
 /**
  */
-qclass ZSocketSub [arg=QoreZSock* sock; ns=Qore::ZMQ; vparent=ZSocket; dom=NETWORK];
+qclass ZSocketSub [arg=QoreZSock* zsock; ns=Qore::ZMQ; vparent=ZSocket; dom=NETWORK];
 
 //! constructs a SUB zsocket
 /** @par Example
@@ -53,7 +53,86 @@ ZSocketSub sock();
     @endcode
 
     @throw ZSOCKET-CONSTRUCTOR-ERROR this exception is thrown if there is any error creating the socket
+
+    @note Newly created ZSocketSub objects filter out all incoming messages, therefore you should call subscribe() to establish an initial message filter
  */
 ZSocketSub::constructor() {
    self->setPrivate(CID_ZSOCKETSUB, new QoreSubZSock(nullptr, nullptr, xsink));
+}
+
+//! Adds a subscription to the socket
+/** @par Example:
+    @code{.py}
+zsock.subscribe(str);
+    @endcode
+
+    @param subs the socket subscription string to set; the string will be converted to UTF-8 encoding if necessary; the subscription string will be cleared if @ref nothing is passed
+
+    This call adds a new message filter on the socket.  Newly created ZSocketSub objects filter out all incoming messages,
+    therefore you should call thie method to establish an initial message filter.
+
+    An empty string (or @ref nothing) means to subscribe to all incoming messages.  A non-empty string subscribes
+    to all messages beginning with the specified prefix.  Multiple filters may be attached to a single ZSocketSub object,
+    in which case a message will be accepted if it matches at least one filter.
+
+    @throw ENCODING-CONVERSION-ERROR this exception could be thrown if an encoding error is encountered when converting the given string to UTF-8
+    @throw ZSOCKET-SUBSCRIBE-ERROR if an error occurs setting the subscription option on the socket
+
+    @see unsubscribe()
+ */
+nothing ZSocketSub::subscribe(*string subs) {
+   TempEncodingHelper subs_utf8;
+
+   if (subs && subs_utf8.set(subs, QCS_UTF8, xsink))
+       return QoreValue();
+
+   // ensure atomicity of the call
+   QoreZSockLockHelper qzlh(*zsock);
+
+   while (true) {
+      int rc = zmq_setsockopt(zsock_resolve(**zsock), ZMQ_SUBSCRIBE, subs ? subs_utf8->c_str() : nullptr, subs ? subs_utf8->size() : 0);
+      if (rc) {
+         if (errno == EINTR)
+            continue;
+         zmq_error(xsink, "ZSOCKET-SUBSCRIBE-ERROR", "error adding subscription \"%s\"", subs_utf8->c_str());
+      }
+      break;
+   }
+}
+
+//! Removes a subscription from the socket
+/** @par Example:
+    @code{.py}
+zsock.unsubscribe(str);
+    @endcode
+
+    @param subs the socket subscription string to remove; the string will be converted to UTF-8 encoding if necessary; the subscription string will be cleared if @ref nothing is passed
+
+    This call removes an existing subscription from the socket.  The subscription string specified must match an
+    existing filter previously established.  If the socket has several instances of the same filter attached,
+    this call will remove only one instance, leaving the rest in place and functional.
+
+    @throw ENCODING-CONVERSION-ERROR this exception could be thrown if an encoding error is encountered when converting the given string to UTF-8
+    @throw ZSOCKET-UNSUBSCRIBE-ERROR if an error occurs setting the subscription option on the socket
+
+    @see unsubscribe()
+ */
+nothing ZSocketSub::unsubscribe(*string subs) {
+   TempEncodingHelper subs_utf8;
+
+   if (subs && subs_utf8.set(subs, QCS_UTF8, xsink))
+       return QoreValue();
+
+   // ensure atomicity of the call
+   QoreZSockLockHelper qzlh(*zsock);
+
+   while (true) {
+      int rc = zmq_setsockopt(zsock_resolve(**zsock), ZMQ_UNSUBSCRIBE, subs ? subs_utf8->c_str() : nullptr, subs ? subs_utf8->size() : 0);
+      if (rc) {
+         if (errno == EINTR)
+            continue;
+         zmq_error(xsink, "ZSOCKET-UNSUBSCRIBE-ERROR", "error removing subscription \"%s\"", subs_utf8->c_str());
+      }
+      break;
+   }
 }

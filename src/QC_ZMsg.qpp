@@ -116,15 +116,15 @@ int QoreZMsg::addFrame(const QoreValue v, int i, int max, ExceptionSink* xsink) 
  */
 qclass ZMsg [arg=QoreZMsg* msg; ns=Qore::ZMQ];
 
-//! constructs a ZMsg from the @ref Qore::ZMQ::ZFrame "ZFrame" object(s) supplied
+//! constructs a ZMsg from the arguments supplied
 /** @par Example:
     @code
 ZMsg msg(frame1, frame2);
     @endcode
 
     @param ... zero or more values to add to the message as frames; values are processed as follows:
-    - @ref OMQ::ZMQ::ZFrame "ZFrame": the object is moved into the message, this call deletes the @ref OMQ::ZMQ::ZFrame "ZFrame" object while processing
-    - @ref OMQ::ZMQ::ZMsg "ZMsg": the object is moved into the message, this call deletes the @ref OMQ::ZMQ::ZMsg "ZMsg" object while processing
+    - @ref Qore::ZMQ::ZFrame "ZFrame": the object is moved into the message, this call deletes the @ref Qore::ZMQ::ZFrame "ZFrame" object while processing
+    - @ref Qore::ZMQ::ZMsg "ZMsg": the object is moved into the message, this call deletes the @ref Qore::ZMQ::ZMsg "ZMsg" object while processing
     - \c string: copies the string data to the message
     - \c binary: copies the binary data to the message
 
@@ -137,15 +137,15 @@ ZMsg::constructor(...) {
    self->setPrivate(CID_ZMSG, msg.release());
 }
 
-//! constructs a ZMsg from the list of @ref Qore::ZMQ::ZFrame "ZFrame" objects supplied
+//! constructs a ZMsg from the list of arguments supplied
 /** @par Example:
     @code
 ZMsg msg(l);
     @endcode
 
     @param l zero or more values to add to the message as frames; values are processed as follows:
-    - @ref OMQ::ZMQ::ZFrame "ZFrame": the object is moved into the message, this call deletes the @ref OMQ::ZMQ::ZFrame "ZFrame" object while processing
-    - @ref OMQ::ZMQ::ZMsg "ZMsg": the object is moved into the message, this call deletes the @ref OMQ::ZMQ::ZMsg "ZMsg" object while processing
+    - @ref Qore::ZMQ::ZFrame "ZFrame": the object is moved into the message, this call deletes the @ref Qore::ZMQ::ZFrame "ZFrame" object while processing
+    - @ref Qore::ZMQ::ZMsg "ZMsg": the object is moved into the message, this call deletes the @ref Qore::ZMQ::ZMsg "ZMsg" object while processing
     - \c string: copies the string data to the message
     - \c binary: copies the binary data to the message
 
