@@ -36,6 +36,7 @@ else ()
 endif ()
 
 set(QPP_SRC
+    src/QC_ZContext.qpp
     src/QC_ZSocket.qpp
     src/QC_ZSocketPub.qpp
     src/QC_ZSocketSub.qpp
@@ -56,6 +57,7 @@ set(QPP_SRC
 
 set(CPP_SRC
     src/zmq-module.cpp
+    src/QoreZSock.cpp
 )
 
 qore_wrap_qpp_value(QPP_SOURCES ${QPP_SRC})

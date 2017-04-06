@@ -52,17 +52,12 @@
 
     @subsection zmqendpoints_tcp Binding TCP Endpoints
 
-    <tt>tcp://</tt> endpoints support ephemeral ports when binding if you specify the port number as "*".
-    By default zsock uses the IANA designated range from \c 0xC000 (\c49152) to \c 0xFFFF (\c 65535);
-    to override this range, follow the \c "*" with \c "[first-last]". Either or both first and last may be empty. To bind to a random port within therange, use "!" in place of "*".
+    <tt>tcp://</tt> endpoints support ephemeral ports when binding if you specify the port number as \c "*" or \c 0.
 
     <b>Examples</b>
     |!Endpoint|!Description
-    |<tt>@@tcp://127.0.0.1:*</tt>|bind to first free port from \c 0xC000 up
-    |<tt>@@tcp://127.0.0.1:!</tt>|bind to random port from \x 0xC000 to \c 0xFFFF
-    |<tt>@@tcp://127.0.0.1:*[60000-]</tt>|bind to first free port from \c 60000 up
-    |<tt>@@tcp://127.0.0.1:![-60000]</tt>|bind to random port from \c 0xC000 to \c 60000
-    |<tt>@@tcp://127.0.0.1:![55000-55999]</tt>|bind to random port from \c 55000 to \c 55999
+    |<tt>@@tcp://127.0.0.1:0</tt>|bind to random port
+    |<tt>@@tcp://127.0.0.1:!</tt>|bind to random port
 
     @section zmqerrors zmq Errors
 

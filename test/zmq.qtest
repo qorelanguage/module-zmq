@@ -17,142 +17,159 @@ class ZmqTest inherits QUnit::Test {
         const HelloWorld = "Hello, World!";
         const Testing = "testing, 1, 2, 3";
         const Subscription = "TEST";
+
+        const MAXINT32 = (pow(2, 31) - 1).toInt();
+    }
+
+    private:internal {
+        ZContext zctx();
     }
 
     constructor() : QUnit::Test("ZmqTest", "1.0") {
+        addTestCase("zcontext", \zContextTest());
         addTestCase("zsocket smoke", \zSocketSmokeTest());
         addTestCase("zsocket push/pull", \zSocketPushPullTest());
         addTestCase("zsocket req/rep", \zSocketReqRepTest());
         addTestCase("zsocket pub/sub", \zSocketPubSubTest());
         addTestCase("zmsg", \zMsgTest());
+
         set_return_value(main());
     }
 
+    zContextTest() {
+        # check default context options
+        assertEq(1, zctx.getOption(ZMQ_BLOCKY));
+        assertEq(0, zctx.getOption(ZMQ_IPV6));
+        assertEq(1023, zctx.getOption(ZMQ_MAX_SOCKETS));
+        assertEq(1, zctx.getOption(ZMQ_IO_THREADS));
+        assertEq(MAXINT32, zctx.getOption(ZMQ_MAX_MSGSZ));
+    }
+
     zSocketSmokeTest() {
-        ZSocket sock = new ZSocketSub("@tcp://127.0.0.1:!", "xxx");
+        ZSocket sock = new ZSocketSub(zctx, "@tcp://127.0.0.1:*", "xxx");
         assertEq("SUB", sock.type());
-        assertThrows("ZSOCKET-CONSTRUCTOR-ERROR", sub () { new ZSocketSub("@tcp://127.0.0.1:xxx", "xxx"); });
+        assertThrows("ZSOCKET-BIND-ERROR", sub () { new ZSocketSub(zctx, "@tcp://127.0.0.1:xxx", "xxx"); });
 
-        sock = new ZSocketPub("@tcp://127.0.0.1:!");
+        sock = new ZSocketPub(zctx, "@tcp://127.0.0.1:*");
         assertEq("PUB", sock.type());
-        assertThrows("ZSOCKET-CONSTRUCTOR-ERROR", sub () { new ZSocketPub("@tcp://127.0.0.1:xxx"); });
-        sock = new ZSocketPub("");
+        assertThrows("ZSOCKET-BIND-ERROR", sub () { new ZSocketPub(zctx, "@tcp://127.0.0.1:xxx"); });
+        sock = new ZSocketPub(zctx, "");
         assertEq("PUB", sock.type());
-        sock = new ZSocketPub();
+        sock = new ZSocketPub(zctx);
         assertEq("PUB", sock.type());
         sock.setIdentity("IdTest");
         assertEq("IdTest", sock.getIdentity());
 
-        sock = new ZSocketXSub("@tcp://127.0.0.1:!");
+        sock = new ZSocketXSub(zctx, "@tcp://127.0.0.1:*");
         assertEq("XSUB", sock.type());
-        assertThrows("ZSOCKET-CONSTRUCTOR-ERROR", sub () { new ZSocketXSub("@tcp://127.0.0.1:xxx"); });
-        sock = new ZSocketXSub("");
+        assertThrows("ZSOCKET-BIND-ERROR", sub () { new ZSocketXSub(zctx, "@tcp://127.0.0.1:xxx"); });
+        sock = new ZSocketXSub(zctx, "");
         assertEq("XSUB", sock.type());
-        sock = new ZSocketXSub();
+        sock = new ZSocketXSub(zctx);
         assertEq("XSUB", sock.type());
         sock.setIdentity("IdTest");
         assertEq("IdTest", sock.getIdentity());
 
-        sock = new ZSocketXPub("@tcp://127.0.0.1:!");
+        sock = new ZSocketXPub(zctx, "@tcp://127.0.0.1:*");
         assertEq("XPUB", sock.type());
-        assertThrows("ZSOCKET-CONSTRUCTOR-ERROR", sub () { new ZSocketXPub("@tcp://127.0.0.1:xxx"); });
-        sock = new ZSocketXPub("");
+        assertThrows("ZSOCKET-BIND-ERROR", sub () { new ZSocketXPub(zctx, "@tcp://127.0.0.1:xxx"); });
+        sock = new ZSocketXPub(zctx, "");
         assertEq("XPUB", sock.type());
-        sock = new ZSocketXPub();
+        sock = new ZSocketXPub(zctx);
         assertEq("XPUB", sock.type());
         sock.setIdentity("IdTest");
         assertEq("IdTest", sock.getIdentity());
 
-        sock = new ZSocketStream("@tcp://127.0.0.1:!");
+        sock = new ZSocketStream(zctx, "@tcp://127.0.0.1:*");
         assertEq("STREAM", sock.type());
-        assertThrows("ZSOCKET-CONSTRUCTOR-ERROR", sub () { new ZSocketStream("@tcp://127.0.0.1:xxx"); });
-        sock = new ZSocketStream("");
+        assertThrows("ZSOCKET-BIND-ERROR", sub () { new ZSocketStream(zctx, "@tcp://127.0.0.1:xxx"); });
+        sock = new ZSocketStream(zctx, "");
         assertEq("STREAM", sock.type());
-        sock = new ZSocketStream();
+        sock = new ZSocketStream(zctx);
         assertEq("STREAM", sock.type());
         sock.setIdentity("IdTest");
         assertEq("IdTest", sock.getIdentity());
 
-        sock = new ZSocketDealer("@tcp://127.0.0.1:!");
+        sock = new ZSocketDealer(zctx, "@tcp://127.0.0.1:*");
         assertEq("DEALER", sock.type());
-        assertThrows("ZSOCKET-CONSTRUCTOR-ERROR", sub () { new ZSocketDealer("@tcp://127.0.0.1:xxx"); });
-        sock = new ZSocketDealer("");
+        assertThrows("ZSOCKET-BIND-ERROR", sub () { new ZSocketDealer(zctx, "@tcp://127.0.0.1:xxx"); });
+        sock = new ZSocketDealer(zctx, "");
         assertEq("DEALER", sock.type());
-        sock = new ZSocketDealer();
+        sock = new ZSocketDealer(zctx);
         assertEq("DEALER", sock.type());
         sock.setIdentity("IdTest");
         assertEq("IdTest", sock.getIdentity());
 
-        sock = new ZSocketRouter("@tcp://127.0.0.1:!");
+        sock = new ZSocketRouter(zctx, "@tcp://127.0.0.1:*");
         assertEq("ROUTER", sock.type());
-        assertThrows("ZSOCKET-CONSTRUCTOR-ERROR", sub () { new ZSocketRouter("@tcp://127.0.0.1:xxx"); });
-        sock = new ZSocketRouter("");
+        assertThrows("ZSOCKET-BIND-ERROR", sub () { new ZSocketRouter(zctx, "@tcp://127.0.0.1:xxx"); });
+        sock = new ZSocketRouter(zctx, "");
         assertEq("ROUTER", sock.type());
-        sock = new ZSocketRouter();
+        sock = new ZSocketRouter(zctx);
         assertEq("ROUTER", sock.type());
         sock.setIdentity("IdTest");
         assertEq("IdTest", sock.getIdentity());
 
-        sock = new ZSocketReq("@tcp://127.0.0.1:!");
+        sock = new ZSocketReq(zctx, "@tcp://127.0.0.1:*");
         assertEq("REQ", sock.type());
-        assertThrows("ZSOCKET-CONSTRUCTOR-ERROR", sub () { new ZSocketReq("@tcp://127.0.0.1:xxx"); });
-        sock = new ZSocketReq("");
+        assertThrows("ZSOCKET-BIND-ERROR", sub () { new ZSocketReq(zctx, "@tcp://127.0.0.1:xxx"); });
+        sock = new ZSocketReq(zctx, "");
         assertEq("REQ", sock.type());
-        sock = new ZSocketReq();
+        sock = new ZSocketReq(zctx);
         assertEq("REQ", sock.type());
         sock.setIdentity("IdTest");
         assertEq("IdTest", sock.getIdentity());
 
-        sock = new ZSocketRep("@tcp://127.0.0.1:!");
+        sock = new ZSocketRep(zctx, "@tcp://127.0.0.1:*");
         assertEq("REP", sock.type());
-        assertThrows("ZSOCKET-CONSTRUCTOR-ERROR", sub () { new ZSocketRep("@tcp://127.0.0.1:xxx"); });
-        sock = new ZSocketRep("");
+        assertThrows("ZSOCKET-BIND-ERROR", sub () { new ZSocketRep(zctx, "@tcp://127.0.0.1:xxx"); });
+        sock = new ZSocketRep(zctx, "");
         assertEq("REP", sock.type());
-        sock = new ZSocketRep();
+        sock = new ZSocketRep(zctx);
         assertEq("REP", sock.type());
         sock.setIdentity("IdTest");
         assertEq("IdTest", sock.getIdentity());
 
-        sock = new ZSocketPush("@tcp://127.0.0.1:!");
+        sock = new ZSocketPush(zctx, "@tcp://127.0.0.1:*");
         assertEq("PUSH", sock.type());
-        assertThrows("ZSOCKET-CONSTRUCTOR-ERROR", sub () { new ZSocketPush("@tcp://127.0.0.1:xxx"); });
-        sock = new ZSocketPush("");
+        assertThrows("ZSOCKET-BIND-ERROR", sub () { new ZSocketPush(zctx, "@tcp://127.0.0.1:xxx"); });
+        sock = new ZSocketPush(zctx, "");
         assertEq("PUSH", sock.type());
-        sock = new ZSocketPush();
+        sock = new ZSocketPush(zctx);
         assertEq("PUSH", sock.type());
         sock.setIdentity("IdTest");
         assertEq("IdTest", sock.getIdentity());
 
-        sock = new ZSocketPull("@tcp://127.0.0.1:!");
+        sock = new ZSocketPull(zctx, "@tcp://127.0.0.1:*");
         assertEq("PULL", sock.type());
-        assertThrows("ZSOCKET-CONSTRUCTOR-ERROR", sub () { new ZSocketPull("@tcp://127.0.0.1:xxx"); });
-        sock = new ZSocketPull("");
+        assertThrows("ZSOCKET-BIND-ERROR", sub () { new ZSocketPull(zctx, "@tcp://127.0.0.1:xxx"); });
+        sock = new ZSocketPull(zctx, "");
         assertEq("PULL", sock.type());
-        sock = new ZSocketPull();
+        sock = new ZSocketPull(zctx);
         assertEq("PULL", sock.type());
         sock.setIdentity("IdTest");
         assertEq("IdTest", sock.getIdentity());
 
-        sock = new ZSocketPair("@tcp://127.0.0.1:!");
+        sock = new ZSocketPair(zctx, "@tcp://127.0.0.1:*");
         assertEq("PAIR", sock.type());
-        assertThrows("ZSOCKET-CONSTRUCTOR-ERROR", sub () { new ZSocketPair("@tcp://127.0.0.1:xxx"); });
-        sock = new ZSocketPair("");
+        assertThrows("ZSOCKET-BIND-ERROR", sub () { new ZSocketPair(zctx, "@tcp://127.0.0.1:xxx"); });
+        sock = new ZSocketPair(zctx, "");
         assertEq("PAIR", sock.type());
-        sock = new ZSocketPair();
+        sock = new ZSocketPair(zctx);
         assertEq("PAIR", sock.type());
         sock.setIdentity("IdTest");
         assertEq("IdTest", sock.getIdentity());
     }
 
     zSocketPushPullTest() {
-        ZSocketPush writer("@tcp://127.0.0.1:!");
+        ZSocketPush writer(zctx, "@tcp://127.0.0.1:*");
         softint port = (writer.endpoint() =~ x/:([0-9]+)/)[0];
 
         assertEq(NOTHING, writer.unbind("tcp://127.0.0.1:" + port));
-        port = writer.bind("tcp://127.0.0.1:!");
+        port = writer.bind("tcp://127.0.0.1:*");
         assertEq("tcp://127.0.0.1:" + port, writer.endpoint());
 
-        ZSocketPull reader(">" + writer.endpoint());
+        ZSocketPull reader(zctx, ">" + writer.endpoint());
         writer.send(HelloWorld);
         ZMsg msg = reader.recvMsg();
         assertEq(1, msg.size());
@@ -190,14 +207,14 @@ class ZmqTest inherits QUnit::Test {
     }
 
     zSocketReqRepTest() {
-        ZSocketRep reader("@tcp://127.0.0.1:!");
+        ZSocketRep reader(zctx, "@tcp://127.0.0.1:*");
         softint port = (reader.endpoint() =~ x/:([0-9]+)/)[0];
 
         assertEq(NOTHING, reader.unbind("tcp://127.0.0.1:" + port));
-        port = reader.bind("tcp://127.0.0.1:!");
+        port = reader.bind("tcp://127.0.0.1:*");
         assertEq("tcp://127.0.0.1:" + port, reader.endpoint());
 
-        ZSocketReq writer(">" + reader.endpoint());
+        ZSocketReq writer(zctx, ">" + reader.endpoint());
         writer.setIdentity("ReqWriter");
         assertEq("ReqWriter", writer.getIdentity());
         writer.send(HelloWorld);
@@ -232,16 +249,15 @@ class ZmqTest inherits QUnit::Test {
     }
 
     zSocketPubSubTest() {
-        ZSocketPub writer("@tcp://127.0.0.1:!");
+        ZSocketPub writer(zctx, "@tcp://127.0.0.1:*");
         softint port = (writer.endpoint() =~ x/:([0-9]+)/)[0];
 
         assertEq(NOTHING, writer.unbind("tcp://127.0.0.1:" + port));
-        port = writer.bind("tcp://127.0.0.1:!");
-        ZSocketSub reader(">" + writer.endpoint(), Subscription);
+        port = writer.bind("tcp://127.0.0.1:0");
+        ZSocketSub reader(zctx, ">" + writer.endpoint(), Subscription);
         assertEq("tcp://127.0.0.1:" + port, writer.endpoint());
         writer.send(new ZMsg("XXX", HelloWorld));
         assertThrows("ZSOCKET-TIMEOUT", \reader.waitRead(), 500ms);
-        reader.subscribe(Subscription);
         writer.send(new ZMsg(Subscription, HelloWorld));
         ZMsg msg = reader.recvMsg();
         assertEq(2, msg.size());

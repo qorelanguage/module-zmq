@@ -29,35 +29,41 @@
 //! The ZSocketSub class implements a ZeroMQ SUB socket
 /**
  */
-qclass ZSocketSub [arg=QoreZSock* zsock; ns=Qore::ZMQ; vparent=ZSocket; dom=NETWORK];
+qclass ZSocketSub [arg=QoreSubZSock* zsock; ns=Qore::ZMQ; vparent=ZSocket; dom=NETWORK];
 
 //! constructs a SUB zsocket
 /** @par Example
     @code
-ZSocketSub sock("tcp://127.0.0.1:8001");
+ZSocketSub sock(ctx, "tcp://127.0.0.1:8001");
     @endcode
 
+    @param ctx the context for the socket
     @param endpoint the @ref zmqendpoints "endpoint" for the socket; the default action is connect
-    @param subscribe the subscription
+    @param subscribe the subscription to set; set before the socket is connected
 
     @throw ZSOCKET-CONSTRUCTOR-ERROR this exception is thrown if there is any error creating the socket
+    @throw ZSOCKET-CONNECT-ERROR this exception is thrown if there is any error connecting the socket
  */
-ZSocketSub::constructor(string endpoint, string subscribe) {
-   self->setPrivate(CID_ZSOCKETSUB, new QoreSubZSock(endpoint->c_str(), subscribe->c_str(), xsink));
+ZSocketSub::constructor(Qore::ZMQ::ZContext[QoreZContext] ctx, string endpoint, string subscribe) {
+   ReferenceHolder<QoreZContext> ctx_holder(ctx, xsink);
+   self->setPrivate(CID_ZSOCKETSUB, new QoreSubZSock(*ctx, endpoint->c_str(), subscribe, xsink));
 }
 
 //! constructs an unconnected SUB zsocket
 /** @par Example
     @code
-ZSocketSub sock();
+ZSocketSub sock(ctx);
     @endcode
+
+    @param ctx the context for the socket
 
     @throw ZSOCKET-CONSTRUCTOR-ERROR this exception is thrown if there is any error creating the socket
 
     @note Newly created ZSocketSub objects filter out all incoming messages, therefore you should call subscribe() to establish an initial message filter
  */
-ZSocketSub::constructor() {
-   self->setPrivate(CID_ZSOCKETSUB, new QoreSubZSock(nullptr, nullptr, xsink));
+ZSocketSub::constructor(Qore::ZMQ::ZContext[QoreZContext] ctx) {
+   ReferenceHolder<QoreZContext> ctx_holder(ctx, xsink);
+   self->setPrivate(CID_ZSOCKETSUB, new QoreSubZSock(*ctx, nullptr, nullptr, xsink));
 }
 
 //! Adds a subscription to the socket
@@ -89,15 +95,7 @@ nothing ZSocketSub::subscribe(*string subs) {
    // ensure atomicity of the call
    QoreZSockLockHelper qzlh(*zsock);
 
-   while (true) {
-      int rc = zmq_setsockopt(zsock_resolve(**zsock), ZMQ_SUBSCRIBE, subs ? subs_utf8->c_str() : nullptr, subs ? subs_utf8->size() : 0);
-      if (rc) {
-         if (errno == EINTR)
-            continue;
-         zmq_error(xsink, "ZSOCKET-SUBSCRIBE-ERROR", "error adding subscription \"%s\"", subs_utf8->c_str());
-      }
-      break;
-   }
+   zsock->subscribeIntern(xsink, *subs_utf8);
 }
 
 //! Removes a subscription from the socket
@@ -127,7 +125,7 @@ nothing ZSocketSub::unsubscribe(*string subs) {
    QoreZSockLockHelper qzlh(*zsock);
 
    while (true) {
-      int rc = zmq_setsockopt(zsock_resolve(**zsock), ZMQ_UNSUBSCRIBE, subs ? subs_utf8->c_str() : nullptr, subs ? subs_utf8->size() : 0);
+      int rc = zmq_setsockopt(**zsock, ZMQ_UNSUBSCRIBE, subs ? subs_utf8->c_str() : nullptr, subs ? subs_utf8->size() : 0);
       if (rc) {
          if (errno == EINTR)
             continue;

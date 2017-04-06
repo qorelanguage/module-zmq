@@ -22,17 +22,25 @@
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-#ifndef _QORE_ZMQ_QC_ZSOCKETPUB_H
+#ifndef _QORE_ZMQ_QC_ZSOCKETXSUB_H
 
-#define _QORE_ZMQ_QC_ZSOCKETPUB_H
+#define _QORE_ZMQ_QC_ZSOCKETXSUB_H
 
 #include "QC_ZSocket.h"
 
-class QoreXSubZSock : public QoreZSock {
+class QoreXSubZSock : public QoreZSockConnect {
 public:
    // creates the object
-   DLLLOCAL QoreXSubZSock(const char* endpoint, ExceptionSink* xsink) : QoreZSock(zsock_new_xsub(endpoint), xsink) {
+   DLLLOCAL QoreXSubZSock(QoreZContext& ctx, const char* endpoint, ExceptionSink* xsink) : QoreZSockConnect(ctx, ZMQ_SUB, endpoint, xsink) {
+   }
+
+   DLLLOCAL virtual int getType() const {
+      return ZMQ_XSUB;
+   }
+
+   DLLLOCAL virtual const char* getTypeName() const {
+      return "XSUB";
    }
 };
 
-#endif // _QORE_ZMQ_QC_ZSOCKETPUB_H
+#endif // _QORE_ZMQ_QC_ZSOCKETXSUB_H

@@ -28,10 +28,18 @@
 
 #include "QC_ZSocket.h"
 
-class QorePubZSock : public QoreZSock {
+class QorePubZSock : public QoreZSockBind {
 public:
    // creates the object
-   DLLLOCAL QorePubZSock(const char* endpoint, ExceptionSink* xsink) : QoreZSock(zsock_new_pub(endpoint), xsink) {
+   DLLLOCAL QorePubZSock(QoreZContext& ctx, const char* endpoint, ExceptionSink* xsink) : QoreZSockBind(ctx, ZMQ_PUB, endpoint, xsink) {
+   }
+
+   DLLLOCAL virtual int getType() const {
+      return ZMQ_PUB;
+   }
+
+   DLLLOCAL virtual const char* getTypeName() const {
+      return "PUB";
    }
 };
 

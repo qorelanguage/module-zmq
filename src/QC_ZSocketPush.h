@@ -22,17 +22,25 @@
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-#ifndef _QORE_ZMQ_QC_ZSOCKETPUB_H
+#ifndef _QORE_ZMQ_QC_ZSOCKETPUSH_H
 
-#define _QORE_ZMQ_QC_ZSOCKETPUB_H
+#define _QORE_ZMQ_QC_ZSOCKETPUSH_H
 
 #include "QC_ZSocket.h"
 
-class QorePushZSock : public QoreZSock {
+class QorePushZSock : public QoreZSockConnect {
 public:
    // creates the object
-   DLLLOCAL QorePushZSock(const char* endpoint, ExceptionSink* xsink) : QoreZSock(zsock_new_push(endpoint), xsink) {
+   DLLLOCAL QorePushZSock(QoreZContext& ctx, const char* endpoint, ExceptionSink* xsink) : QoreZSockConnect(ctx, ZMQ_PUSH, endpoint, xsink) {
+   }
+
+   DLLLOCAL virtual int getType() const {
+      return ZMQ_PUSH;
+   }
+
+   DLLLOCAL virtual const char* getTypeName() const {
+      return "PUSH";
    }
 };
 
-#endif // _QORE_ZMQ_QC_ZSOCKETPUB_H
+#endif // _QORE_ZMQ_QC_ZSOCKETPUSH_H

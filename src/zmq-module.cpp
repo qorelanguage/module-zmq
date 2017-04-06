@@ -28,6 +28,7 @@ static void zmq_module_delete();
 DLLLOCAL void preinitZFrameClass();
 DLLLOCAL void preinitZMsgClass();
 
+DLLLOCAL QoreClass* initZContextClass(QoreNamespace& ns);
 DLLLOCAL QoreClass* initZSocketClass(QoreNamespace& ns);
 DLLLOCAL QoreClass* initZSocketPubClass(QoreNamespace& ns);
 DLLLOCAL QoreClass* initZSocketSubClass(QoreNamespace& ns);
@@ -64,6 +65,8 @@ DLLLOCAL void init_zmq_constants(QoreNamespace& ns);
 QoreNamespace zmqns("ZMQ");
 
 static QoreStringNode* zmq_module_init() {
+   zmqns.addSystemClass(initZContextClass(zmqns));
+
    preinitZFrameClass();
    preinitZMsgClass();
 

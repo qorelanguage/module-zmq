@@ -1,7 +1,7 @@
 /* -*- mode: c++; indent-tabs-mode: nil -*- */
-/** @file QC_ZSocketReq.h defines the c++ implementation of the ZSocketReq class */
+/** @file QC_ZContext.h defines the c++ implementation of the ZContext class */
 /*
-  QC_ZSocketReq.h
+  QC_ZContext.h
 
   Qore Programming Language
 
@@ -22,25 +22,42 @@
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-#ifndef _QORE_ZMQ_QC_ZSOCKETREQ_H
+#ifndef _QORE_ZMQ_QC_ZCONTEXT_H
 
-#define _QORE_ZMQ_QC_ZSOCKETREQ_H
+#define _QORE_ZMQ_QC_ZCONTEXT_H
 
-#include "QC_ZSocket.h"
+#include "zmq-module.h"
 
-class QoreReqZSock : public QoreZSockConnect {
+class QoreZContext : public AbstractPrivateData {
 public:
    // creates the object
-   DLLLOCAL QoreReqZSock(QoreZContext& ctx, const char* endpoint, ExceptionSink* xsink) : QoreZSockConnect(ctx, ZMQ_REQ, endpoint, xsink) {
+   DLLLOCAL QoreZContext() : ctx(zmq_ctx_new()) {
    }
 
-   DLLLOCAL virtual int getType() const {
-      return ZMQ_REQ;
+   DLLLOCAL void* operator*() {
+      return ctx;
    }
 
-   DLLLOCAL virtual const char* getTypeName() const {
-      return "REQ";
+   DLLLOCAL const void* operator*() const {
+      return ctx;
    }
+
+protected:
+   DLLLOCAL virtual ~QoreZContext() {
+      while (true) {
+         int rc = zmq_ctx_term(ctx);
+         if (rc && errno == EINTR)
+            continue;
+         break;
+      }
+      zmq_ctx_destroy(ctx);
+   }
+
+private:
+   void* ctx;
 };
 
-#endif // _QORE_ZMQ_QC_ZSOCKETREQ_H
+DLLLOCAL extern QoreClass* QC_ZCONTEXT;
+DLLLOCAL extern qore_classid_t CID_ZCONTEXT;
+
+#endif // _QORE_ZMQ_QC_ZCONTEXT_H

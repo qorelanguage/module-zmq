@@ -34,25 +34,31 @@ qclass ZSocketPull [arg=QoreZSock* sock; ns=Qore::ZMQ; vparent=ZSocket; dom=NETW
 //! constructs a PULL zsocket
 /** @par Example
     @code
-ZSocketPull sock("tcp://127.0.0.1:8001");
+ZSocketPull sock(ctx, "tcp://127.0.0.1:8001");
     @endcode
 
+    @param ctx the context for the socket
     @param endpoint the @ref zmqendpoints "endpoint" for the socket; the default action is bind
 
     @throw ZSOCKET-CONSTRUCTOR-ERROR this exception is thrown if there is any error creating the socket
+    @throw ZSOCKET-BIND-ERROR this exception is thrown if there is any error connecting the socket
  */
-ZSocketPull::constructor(string endpoint) {
-   self->setPrivate(CID_ZSOCKETPULL, new QorePullZSock(endpoint->c_str(), xsink));
+ZSocketPull::constructor(Qore::ZMQ::ZContext[QoreZContext] ctx, string endpoint) {
+   ReferenceHolder<QoreZContext> ctx_holder(ctx, xsink);
+   self->setPrivate(CID_ZSOCKETPULL, new QorePullZSock(*ctx, endpoint->c_str(), xsink));
 }
 
 //! constructs an unconnected PULL zsocket
 /** @par Example
     @code
-ZSocketPull sock();
+ZSocketPull sock(ctx);
     @endcode
+
+    @param ctx the context for the socket
 
     @throw ZSOCKET-CONSTRUCTOR-ERROR this exception is thrown if there is any error creating the socket
  */
-ZSocketPull::constructor() {
-   self->setPrivate(CID_ZSOCKETPULL, new QorePullZSock(nullptr, xsink));
+ZSocketPull::constructor(Qore::ZMQ::ZContext[QoreZContext] ctx) {
+   ReferenceHolder<QoreZContext> ctx_holder(ctx, xsink);
+   self->setPrivate(CID_ZSOCKETPULL, new QorePullZSock(*ctx, nullptr, xsink));
 }

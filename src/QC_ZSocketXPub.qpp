@@ -34,25 +34,31 @@ qclass ZSocketXPub [arg=QoreZSock* sock; ns=Qore::ZMQ; vparent=ZSocket; dom=NETW
 //! constructs a XPUB zsocket
 /** @par Example
     @code
-ZSocketXPub sock("endpoint");
+ZSocketXPub sock(ctx, "endpoint");
     @endcode
 
+    @param ctx the context for the socket
     @param endpoint the @ref zmqendpoints "endpoint" for the socket; the default action is bind
 
     @throw ZSOCKET-CONSTRUCTOR-ERROR this exception is thrown if there is any error creating the socket
+    @throw ZSOCKET-BIND-ERROR this exception is thrown if there is any error connecting the socket
  */
-ZSocketXPub::constructor(string endpoint) {
-   self->setPrivate(CID_ZSOCKETXPUB, new QoreXPubZSock(endpoint->c_str(), xsink));
+ZSocketXPub::constructor(Qore::ZMQ::ZContext[QoreZContext] ctx, string endpoint) {
+   ReferenceHolder<QoreZContext> ctx_holder(ctx, xsink);
+   self->setPrivate(CID_ZSOCKETXPUB, new QoreXPubZSock(*ctx, endpoint->c_str(), xsink));
 }
 
 //! constructs an unconnected XPUB zsocket
 /** @par Example
     @code
-ZSocketXPub sock();
+ZSocketXPub sock(ctx);
     @endcode
+
+    @param ctx the context for the socket
 
     @throw ZSOCKET-CONSTRUCTOR-ERROR this exception is thrown if there is any error creating the socket
  */
-ZSocketXPub::constructor() {
-   self->setPrivate(CID_ZSOCKETXPUB, new QoreXPubZSock(nullptr, xsink));
+ZSocketXPub::constructor(Qore::ZMQ::ZContext[QoreZContext] ctx) {
+   ReferenceHolder<QoreZContext> ctx_holder(ctx, xsink);
+   self->setPrivate(CID_ZSOCKETXPUB, new QoreXPubZSock(*ctx, nullptr, xsink));
 }

@@ -22,17 +22,25 @@
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-#ifndef _QORE_ZMQ_QC_ZSOCKETPUB_H
+#ifndef _QORE_ZMQ_QC_ZSOCKETSTREAM_H
 
-#define _QORE_ZMQ_QC_ZSOCKETPUB_H
+#define _QORE_ZMQ_QC_ZSOCKETSTREAM_H
 
 #include "QC_ZSocket.h"
 
-class QoreStreamZSock : public QoreZSock {
+class QoreStreamZSock : public QoreZSockConnect {
 public:
    // creates the object
-   DLLLOCAL QoreStreamZSock(const char* endpoint, ExceptionSink* xsink) : QoreZSock(zsock_new_stream(endpoint), xsink) {
+   DLLLOCAL QoreStreamZSock(QoreZContext& ctx, const char* endpoint, ExceptionSink* xsink) : QoreZSockConnect(ctx, ZMQ_STREAM, endpoint, xsink) {
+   }
+
+   DLLLOCAL virtual int getType() const {
+      return ZMQ_STREAM;
+   }
+
+   DLLLOCAL virtual const char* getTypeName() const {
+      return "STREAM";
    }
 };
 
-#endif // _QORE_ZMQ_QC_ZSOCKETPUB_H
+#endif // _QORE_ZMQ_QC_ZSOCKETSTREAM_H
