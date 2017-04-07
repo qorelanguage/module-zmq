@@ -26,6 +26,7 @@ class ZmqTest inherits QUnit::Test {
     }
 
     constructor() : QUnit::Test("ZmqTest", "1.0") {
+        addTestCase("basic", \basicTest());
         addTestCase("zcontext", \zContextTest());
         addTestCase("zsocket smoke", \zSocketSmokeTest());
         addTestCase("zsocket push/pull", \zSocketPushPullTest());
@@ -34,6 +35,15 @@ class ZmqTest inherits QUnit::Test {
         addTestCase("zmsg", \zMsgTest());
 
         set_return_value(main());
+    }
+
+    basicTest() {
+        hash h = zmq_version();
+        assertEq(Type::Int, h.major);
+        assertEq(Type::Int, h.minor);
+        assertEq(Type::Int, h.patch);
+        assertEq(Type::String, h.version);
+        assertEq(h.version, sprintf("%d.%d.%d", h.major, h.minor, h.patch));
     }
 
     zContextTest() {

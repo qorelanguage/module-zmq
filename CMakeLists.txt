@@ -53,6 +53,7 @@ set(QPP_SRC
     src/QC_ZFrame.qpp
     src/QC_ZMsg.qpp
     src/qc_zmq.qpp
+    src/ql_zmq.qpp
 )
 
 set(CPP_SRC
