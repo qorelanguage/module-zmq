@@ -34,12 +34,12 @@ qclass ZSocketSub [arg=QoreSubZSock* zsock; ns=Qore::ZMQ; vparent=ZSocket; dom=N
 //! constructs a SUB zsocket
 /** @par Example
     @code
-ZSocketSub sock(ctx, "tcp://127.0.0.1:8001");
+ZSocketSub sock(ctx, "tcp://127.0.0.1:8001", str);
     @endcode
 
     @param ctx the context for the socket
     @param endpoint the @ref zmqendpoints "endpoint" for the socket; the default action is connect
-    @param subscribe the subscription to set; set before the socket is connected
+    @param subscribe the subscription to set; set immediately after the socket is connected
 
     @throw ZSOCKET-CONSTRUCTOR-ERROR this exception is thrown if there is any error creating the socket
     @throw ZSOCKET-CONNECT-ERROR this exception is thrown if there is any error connecting the socket
