@@ -45,8 +45,8 @@ ZSocketSub sock(ctx, "tcp://127.0.0.1:8001", str);
     @throw ZSOCKET-CONNECT-ERROR this exception is thrown if there is any error connecting the socket
  */
 ZSocketSub::constructor(Qore::ZMQ::ZContext[QoreZContext] ctx, string endpoint, string subscribe) {
-   ReferenceHolder<QoreZContext> ctx_holder(ctx, xsink);
-   self->setPrivate(CID_ZSOCKETSUB, new QoreSubZSock(*ctx, endpoint->c_str(), subscribe, xsink));
+    ReferenceHolder<QoreZContext> ctx_holder(ctx, xsink);
+    self->setPrivate(CID_ZSOCKETSUB, new QoreSubZSock(*ctx, endpoint->c_str(), subscribe, xsink));
 }
 
 //! constructs an unconnected SUB zsocket
@@ -62,8 +62,8 @@ ZSocketSub sock(ctx);
     @note Newly created ZSocketSub objects filter out all incoming messages, therefore you should call subscribe() to establish an initial message filter
  */
 ZSocketSub::constructor(Qore::ZMQ::ZContext[QoreZContext] ctx) {
-   ReferenceHolder<QoreZContext> ctx_holder(ctx, xsink);
-   self->setPrivate(CID_ZSOCKETSUB, new QoreSubZSock(*ctx, nullptr, nullptr, xsink));
+    ReferenceHolder<QoreZContext> ctx_holder(ctx, xsink);
+    self->setPrivate(CID_ZSOCKETSUB, new QoreSubZSock(*ctx, nullptr, nullptr, xsink));
 }
 
 //! Adds a subscription to the socket
@@ -83,19 +83,21 @@ zsock.subscribe(str);
 
     @throw ENCODING-CONVERSION-ERROR this exception could be thrown if an encoding error is encountered when converting the given string to UTF-8
     @throw ZSOCKET-SUBSCRIBE-ERROR if an error occurs setting the subscription option on the socket
+    @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
 
     @see unsubscribe()
  */
 nothing ZSocketSub::subscribe(*string subs) {
-   TempEncodingHelper subs_utf8;
+    // enforce access from the correct thread
+    if (zsock->check(xsink))
+        return QoreValue();
 
-   if (subs && subs_utf8.set(subs, QCS_UTF8, xsink))
-       return QoreValue();
+    TempEncodingHelper subs_utf8;
 
-   // ensure atomicity of the call
-   QoreZSockLockHelper qzlh(*zsock);
+    if (subs && subs_utf8.set(subs, QCS_UTF8, xsink))
+        return QoreValue();
 
-   zsock->subscribeIntern(xsink, *subs_utf8);
+    zsock->subscribeIntern(xsink, *subs_utf8);
 }
 
 //! Removes a subscription from the socket
@@ -112,25 +114,27 @@ zsock.unsubscribe(str);
 
     @throw ENCODING-CONVERSION-ERROR this exception could be thrown if an encoding error is encountered when converting the given string to UTF-8
     @throw ZSOCKET-UNSUBSCRIBE-ERROR if an error occurs setting the subscription option on the socket
+    @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
 
     @see unsubscribe()
  */
 nothing ZSocketSub::unsubscribe(*string subs) {
-   TempEncodingHelper subs_utf8;
+    // enforce access from the correct thread
+    if (zsock->check(xsink))
+        return QoreValue();
 
-   if (subs && subs_utf8.set(subs, QCS_UTF8, xsink))
-       return QoreValue();
+    TempEncodingHelper subs_utf8;
 
-   // ensure atomicity of the call
-   QoreZSockLockHelper qzlh(*zsock);
+    if (subs && subs_utf8.set(subs, QCS_UTF8, xsink))
+        return QoreValue();
 
-   while (true) {
-      int rc = zmq_setsockopt(**zsock, ZMQ_UNSUBSCRIBE, subs ? subs_utf8->c_str() : nullptr, subs ? subs_utf8->size() : 0);
-      if (rc) {
-         if (errno == EINTR)
-            continue;
-         zmq_error(xsink, "ZSOCKET-UNSUBSCRIBE-ERROR", "error removing subscription \"%s\"", subs_utf8->c_str());
-      }
-      break;
-   }
+    while (true) {
+        int rc = zmq_setsockopt(**zsock, ZMQ_UNSUBSCRIBE, subs ? subs_utf8->c_str() : nullptr, subs ? subs_utf8->size() : 0);
+        if (rc) {
+            if (errno == EINTR)
+                continue;
+            zmq_error(xsink, "ZSOCKET-UNSUBSCRIBE-ERROR", "error removing subscription \"%s\"", subs_utf8->c_str());
+        }
+        break;
+    }
 }

@@ -239,6 +239,52 @@ bool ZFrame::streq(string str) [flags=CONSTANT] {
    return (bool)zframe_streq(**frame, str->c_str());
 }
 
+//! Reads a signed 16-bit integer from the given offset in the frame
+/** @par Example:
+    @code
+int i = frame.readi2(0);
+    @endcode
+
+    @param offset the byte offset in the frame
+
+    @return a signed 16-bit integer at the given position in the frame
+
+    @throw ZFRAME-READ-ERROR this exception is thrown when an invalid offset argument is used
+*/
+int ZFrame::readi2(int offset) {
+    size_t size = zframe_size(**frame);
+    if (offset < 0 || (offset > (size - 2))) {
+        xsink->raiseException("ZFRAME-READ-ERROR", "cannot read 2 bytes from byte offset" QLLD "; frame size: " QLLD, offset, size);
+        return QoreValue();
+    }
+
+    const char* p = (const char*)zframe_data(**frame);
+    return *((int16_t*)(p + offset));
+}
+
+//! Reads a signed 32-bit integer from the given offset in the frame
+/** @par Example:
+    @code
+int i = frame.readi4(0);
+    @endcode
+
+    @param offset the byte offset in the frame
+
+    @return a signed 32-bit integer at the given position in the frame
+
+    @throw ZFRAME-READ-ERROR this exception is thrown when an invalid offset argument is used
+*/
+int ZFrame::readi4(int offset) {
+    size_t size = zframe_size(**frame);
+    if (offset < 0 || (offset > (size - 4))) {
+        xsink->raiseException("ZMSG-READ-ERROR", "cannot read 4 bytes from byte offset" QLLD "; frame size: " QLLD, offset, size);
+        return QoreValue();
+    }
+
+    const char* p = (const char*)zframe_data(**frame);
+    return *((int32_t*)(p + offset));
+}
+
 //! Sends a message to the zsys log sink (may be stdout, or system facility)
 /** @par Example
     @code

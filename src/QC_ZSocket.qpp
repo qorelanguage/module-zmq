@@ -30,10 +30,85 @@
 
 #include <zmsg.h>
 #include <zframe.h>
+#include <zmq.h>
+
+/** @defgroup zsocket_events ZSocket Events
+    These constants define event codes for @ref Qore::ZMQ::ZSocket::monitor() "ZSocket::monitor()"
+    and are meant to be combined with binary or to create a socket event mask.
+*/
+//@{
+//! mask for all events
+const ZMQ_EVENT_ALL = 0xFFFF;
+
+//! connected event
+const ZMQ_EVENT_CONNECTED = 0x0001;
+
+//! delayed event
+const ZMQ_EVENT_CONNECT_DELAYED = 0x0002;
+
+//! retried event
+const ZMQ_EVENT_CONNECT_RETRIED = 0x0004;
+
+//! listening event
+const ZMQ_EVENT_LISTENING = 0x0008;
+
+//! bind failed event
+const ZMQ_EVENT_BIND_FAILED = 0x0010;
+
+//! accepted event
+const ZMQ_EVENT_ACCEPTED = 0x0020;
+
+//! accept failed event
+const ZMQ_EVENT_ACCEPT_FAILED = 0x0040;
+
+//! closed event
+const ZMQ_EVENT_CLOSED = 0x0080;
+
+//! close failed event
+const ZMQ_EVENT_CLOSE_FAILED = 0x0100;
+
+//! disconnected event
+const ZMQ_EVENT_DISCONNECTED = 0x0200;
+
+//! monitor stopped event
+const ZMQ_EVENT_MONITOR_STOPPED = 0x0400;
+
+//! ZeroMQ event map mapping event codes to strings
+const ZmqEventCodeMap = (
+    "1": "ZMQ_EVENT_CONNECTED",
+    "2": "ZMQ_EVENT_CONNECT_DELAYED",
+    "4": "ZMQ_EVENT_CONNECT_RETRIED",
+    "8": "ZMQ_EVENT_LISTENING",
+    "16": "ZMQ_EVENT_BIND_FAILED",
+    "32": "ZMQ_EVENT_ACCEPTED",
+    "64": "ZMQ_EVENT_ACCEPT_FAILED",
+    "128": "ZMQ_EVENT_CLOSED",
+    "256": "ZMQ_EVENT_CLOSE_FAILED",
+    "512": "ZMQ_EVENT_DISCONNECTED",
+    "1024": "ZMQ_EVENT_MONITOR_STOPPED",
+);
+
+//! ZeroMQ event map mapping strings to event codes
+const ZmqEventStringMap = (
+    "ZMQ_EVENT_CONNECTED": 0x0001,
+    "ZMQ_EVENT_CONNECT_DELAYED": 0x0002,
+    "ZMQ_EVENT_CONNECT_RETRIED": 0x0004,
+    "ZMQ_EVENT_LISTENING": 0x0008,
+    "ZMQ_EVENT_BIND_FAILED": 0x0010,
+    "ZMQ_EVENT_ACCEPTED": 0x0020,
+    "ZMQ_EVENT_ACCEPT_FAILED": 0x0040,
+    "ZMQ_EVENT_CLOSED": 0x0080,
+    "ZMQ_EVENT_CLOSE_FAILED": 0x0100,
+    "ZMQ_EVENT_DISCONNECTED": 0x0200,
+    "ZMQ_EVENT_MONITOR_STOPPED": 0x0400,
+);
+//@}
 
 //! The ZSocket class provides the abstract base class for ZeroMQ socket classes
-/** This class is subject to a mutual-exclusion lock to ensure that it can be
-    safely used in a multi-threaded context.
+/** @note
+    - The ZSocket class is not designed to be accessed from multiple threads; it was created without
+      locking for fast and efficient use when used from a single thread.  For methods that would be
+      unsafe to use in another thread, any use of such methods in threads other than the thread where the constructor was called will cause a \c ZSOCKET-THREAD-ERROR to be thrown.
  */
 qclass ZSocket [arg=QoreZSock* zsock; ns=Qore::ZMQ; dom=NETWORK];
 
@@ -41,15 +116,44 @@ qclass ZSocket [arg=QoreZSock* zsock; ns=Qore::ZMQ; dom=NETWORK];
 /**
  */
 abstract private:internal ZSocket::constructor() {
-   // this method can never be called
-   assert(false);
+    // this method can never be called
+    assert(false);
 }
 
 //! Throws an exception; copying ZSocket objects is not currently supported
 /** @throw ZSOCKET-COPY-ERROR copying ZSocket objects is not currently supported
 */
 ZSocket::copy() {
-   xsink->raiseException("ZSOCKET-COPY-ERROR", "copying ZSocket objects is not currently supported");
+    xsink->raiseException("ZSOCKET-COPY-ERROR", "copying ZSocket objects is not currently supported");
+}
+
+//! Creates a bound \c PAIR socket on the given endpoint which will send the specified events to a single client
+/** @par Examples:
+    @code{.py}
+zsock.monitor(ZMQ_EVENT_ALL, "inproc://monitor-socket-1");
+    @endcode
+
+    @param events an event code mask combined with binary or; see @ref zsocket_events for possible values
+    @param format the format string for the @ref zmqendpoints "endpoint"
+    @param ... optional arguments for the format string
+
+    @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
+
+    @note This method supports only connection-oriented transports; that is: TCP, IPC, and TIPC.
+*/
+nothing ZSocket::monitor(int events, string format, ...) {
+    // enforce access from the correct thread
+    if (zsock->check(xsink))
+        return QoreValue();
+
+    SimpleRefHolder<QoreStringNode> str(q_sprintf(args, 0, 1, xsink));
+    if (*xsink)
+        return QoreValue();
+
+    // zmq_socket_monitor() returns 0 = OK, -1 = error
+    int rc = zmq_socket_monitor(**zsock, str->c_str(), events);
+    if (rc < 0)
+        zmq_error(xsink, "ZSOCKET-MONITOR-ERROR", "error in ZSocket::monitor(" QLLD ", \"%s\")", events, str->c_str());
 }
 
 //! Bind the ZSocket to a formatted @ref zmqendpoints "endpoint"
@@ -74,18 +178,20 @@ port = zsock.bind("tcp://127.0.0.1:0");
     this into account.
 
     @throw ZSOCKET-BIND-ERROR if an error occurs, this exception is thrown
+    @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
 
     @note do not use the endpoint prefix \c "@" with this method
  */
 int ZSocket::bind(string format, ...) {
-   SimpleRefHolder<QoreStringNode> str(q_sprintf(args, 0, 0, xsink));
-   if (*xsink)
-      return QoreValue();
+    // enforce access from the correct thread
+    if (zsock->check(xsink))
+        return QoreValue();
 
-   // ensure atomicity of the call
-   QoreZSockLockHelper qzlh(*zsock);
+    SimpleRefHolder<QoreStringNode> str(q_sprintf(args, 0, 0, xsink));
+    if (*xsink)
+        return QoreValue();
 
-   return zsock->bind(xsink, str->c_str());
+    return zsock->bind(xsink, str->c_str());
 }
 
 //! Returns the last bound @ref zmqendpoints "endpoint", if any or @ref nothing if not
@@ -95,21 +201,24 @@ int ZSocket::bind(string format, ...) {
     @endcode
 
     @return the last bound @ref zmqendpoints "endpoint", if any or @ref nothing if not
- */
+
+    @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
+*/
 *string ZSocket::endpoint() [flags=CONSTANT] {
-   // ensure atomicity of the call
-   QoreZSockLockHelper qzlh(*zsock);
+    // enforce access from the correct thread
+    if (zsock->check(xsink))
+        return QoreValue();
 
-   // get endpoint
-   SimpleRefHolder<QoreStringNode> rv(new QoreStringNode);
-   rv->reserve(1024);
+    // get endpoint
+    SimpleRefHolder<QoreStringNode> rv(new QoreStringNode);
+    rv->reserve(1024);
 
-   size_t size = 1024;
-   int rc = zmq_getsockopt(**zsock, ZMQ_LAST_ENDPOINT, (void*)rv->c_str(), &size);
-   if (rc)
-      return QoreValue();
-   rv->terminate(strlen(rv->c_str()));
-   return rv.release();
+    size_t size = 1024;
+    int rc = zmq_getsockopt(**zsock, ZMQ_LAST_ENDPOINT, (void*)rv->c_str(), &size);
+    if (rc)
+        return QoreValue();
+    rv->terminate(strlen(rv->c_str()));
+    return rv.release();
 }
 
 //! Unbinds the socket from a formatted @ref zmqendpoints "endpoint"
@@ -124,18 +233,21 @@ zsock.unbind(str);
     Throws an exception if the @ref zmqendpoints "endpoint" was invalid or the function isn't supported on the current socket
 
     @throw ZSOCKET-UNBIND-ERROR thrown if the @ref zmqendpoints "endpoint" was invalid or the function isn't supported on the current socket
+    @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
+
 */
 nothing ZSocket::unbind(string format, ...) {
-   SimpleRefHolder<QoreStringNode> str(q_sprintf(args, 0, 0, xsink));
-   if (*xsink)
-      return QoreValue();
+    // enforce access from the correct thread
+    if (zsock->check(xsink))
+        return QoreValue();
 
-   // ensure atomicity of the call
-   QoreZSockLockHelper qzlh(*zsock);
+    SimpleRefHolder<QoreStringNode> str(q_sprintf(args, 0, 0, xsink));
+    if (*xsink)
+        return QoreValue();
 
-   int rc = zmq_unbind(**zsock, str->c_str());
-   if (rc < 0)
-      zmq_error(xsink, "ZSOCKET-UNBIND-ERROR", "error in ZSocket::unbind(\"%s\")", str->c_str());
+    int rc = zmq_unbind(**zsock, str->c_str());
+    if (rc < 0)
+        zmq_error(xsink, "ZSOCKET-UNBIND-ERROR", "error in ZSocket::unbind(\"%s\")", str->c_str());
 }
 
 //! Connects the socket to a formatted @ref zmqendpoints "endpoint"
@@ -150,17 +262,20 @@ zsock.unbind(str);
     Throws an exception if an error occurs connecting to the @ref zmqendpoints "endpoint"
 
     @throw ZSOCKET-CONNECT-ERROR thrown if an error occurs connecting to the @ref zmqendpoints "endpoint"
+    @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
 
     @note do not use the endpoint prefix \c ">" with this method
  */
 nothing ZSocket::connect(string format, ...) {
-   SimpleRefHolder<QoreStringNode> str(q_sprintf(args, 0, 0, xsink));
-   if (*xsink)
-      return QoreValue();
+    // enforce access from the correct thread
+    if (zsock->check(xsink))
+        return QoreValue();
 
-   // ensure atomicity of the call
-   QoreZSockLockHelper qzlh(*zsock);
-   zsock->connect(xsink, str->c_str());
+    SimpleRefHolder<QoreStringNode> str(q_sprintf(args, 0, 0, xsink));
+    if (*xsink)
+        return QoreValue();
+
+    zsock->connect(xsink, str->c_str());
 }
 
 //! Disconnects the socket from a formatted @ref zmqendpoints "endpoint"
@@ -175,17 +290,21 @@ zsock.disconnect(str);
     Throws an exception if the @ref zmqendpoints "endpoint" was invalid or the function isn't supported on the current socket
 
     @throw ZSOCKET-DISCONNECT-ERROR thrown if the @ref zmqendpoints "endpoint" was invalid or the function isn't supported on the current socket
- */
+    @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
+*/
 nothing ZSocket::disconnect(string format, ...) {
-   SimpleRefHolder<QoreStringNode> str(q_sprintf(args, 0, 0, xsink));
-   if (*xsink)
-      return QoreValue();
+    // enforce access from the correct thread
+    if (zsock->check(xsink))
+        return QoreValue();
 
-   // ensure atomicity of the call
-   QoreZSockLockHelper qzlh(*zsock);
-   int rc = zmq_disconnect(**zsock, str->c_str());
-   if (rc < 0)
-      zmq_error(xsink, "ZSOCKET-DISCONNECT-ERROR", "error in ZSocket::disconnect(\"%s\")", str->c_str());
+
+    SimpleRefHolder<QoreStringNode> str(q_sprintf(args, 0, 0, xsink));
+    if (*xsink)
+        return QoreValue();
+
+    int rc = zmq_disconnect(**zsock, str->c_str());
+    if (rc < 0)
+        zmq_error(xsink, "ZSOCKET-DISCONNECT-ERROR", "error in ZSocket::disconnect(\"%s\")", str->c_str());
 }
 
 //! Attaches the socket to zero or more @ref zmqendpoints "endpoints"
@@ -201,11 +320,14 @@ zsock.attach(endpoints_str, True);
 
     @throw ZSOCKET-CONNECT-ERROR thrown if there is a connect error
     @throw ZSOCKET-BIND-ERROR thrown if there is a bind error
+    @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
 */
 nothing ZSocket::attach(*string endpoints, bool do_bind = False) {
-   // ensure atomicity of the call
-   QoreZSockLockHelper qzlh(*zsock);
-   zsock->attach(xsink, endpoints ? endpoints->c_str() : nullptr, do_bind);
+    // enforce access from the correct thread
+    if (zsock->check(xsink))
+        return QoreValue();
+
+    zsock->attach(xsink, endpoints ? endpoints->c_str() : nullptr, do_bind);
 }
 
 //! Returns the socket type as a string
@@ -217,7 +339,7 @@ string type = zsock.type();
     @return the socket type as a string
  */
 string ZSocket::type() [flags=CONSTANT] {
-   return new QoreStringNode(zsock->getTypeName());
+    return new QoreStringNode(zsock->getTypeName());
 }
 
 //! Sends the given message over the socket; the message is consumed by this call
@@ -229,18 +351,21 @@ zsock.send(msg);
     @param msg the message to send; the argument object will be deleted as it is consumed by this call; if the message is empty then no data is sent, but the object is destroyed in any case
 
     @throw ZSOCKET-SEND-ERROR thrown if an error occurs during the call
+    @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
 */
 nothing ZSocket::send(Qore::ZMQ::ZMsg[QoreZMsg] msg) {
-   ReferenceHolder<QoreZMsg> holder(msg, xsink);
-   {
-      // ensure atomicity of the call
-      QoreZSockLockHelper qzlh(*zsock);
-      int rc = zmsg_send(msg->getPtr(), **zsock);
-      if (rc < 0)
-         zmq_error(xsink, "ZSOCKET-SEND-ERROR", "error in ZSocket::send(%s)", obj_msg->getClassName());
-   }
-   if (!msg->getPtr())
-      const_cast<QoreObject*>(obj_msg)->doDelete(xsink);
+    ReferenceHolder<QoreZMsg> holder(msg, xsink);
+    {
+        // enforce access from the correct thread
+        if (zsock->check(xsink))
+            return QoreValue();
+
+        int rc = zmsg_send(msg->getPtr(), **zsock);
+        if (rc < 0)
+            zmq_error(xsink, "ZSOCKET-SEND-ERROR", "error in ZSocket::send(%s)", obj_msg->getClassName());
+    }
+    if (!msg->getPtr())
+        const_cast<QoreObject*>(obj_msg)->doDelete(xsink);
 }
 
 //! Waits for data to read on the socket; if data does not arrive before the timeout expires, a \c ZSOCKET-TIMEOUT exception is thrown
@@ -252,12 +377,14 @@ zsock.waitRead(10s);
     @param timeout_ms the timeout in milliseconds
 
     @throw ZSOCKET-TIMEOUT this exception is thrown if data does not arrive before the timeout expires
+    @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
 */
 nothing ZSocket::waitRead(timeout timeout_ms) {
-   // ensure atomicity of the call
-   QoreZSockLockHelper qzlh(*zsock);
+    // enforce access from the correct thread
+    if (zsock->check(xsink))
+        return QoreValue();
 
-   zsock->poll(ZMQ_POLLIN, timeout_ms, "ZSocket::waitRead", xsink);
+    zsock->poll(ZMQ_POLLIN, timeout_ms, "ZSocket::waitRead", xsink);
 }
 
 //! Waits for data to be written on the socket; if data is not sent before the timeout expires, a \c ZSOCKET-TIMEOUT exception is thrown
@@ -269,12 +396,14 @@ zsock.waitWrite(10s);
     @param timeout_ms the timeout in milliseconds
 
     @throw ZSOCKET-TIMEOUT this exception is thrown if the data is not sent before the timeout expires
+    @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
 */
 nothing ZSocket::waitWrite(timeout timeout_ms) {
-   // ensure atomicity of the call
-   QoreZSockLockHelper qzlh(*zsock);
+    // enforce access from the correct thread
+    if (zsock->check(xsink))
+        return QoreValue();
 
-   zsock->poll(ZMQ_POLLOUT, timeout_ms, "ZSocket::waitWrite", xsink);
+    zsock->poll(ZMQ_POLLOUT, timeout_ms, "ZSocket::waitWrite", xsink);
 }
 
 //! Sends the given frame over the socket; the frame is consumed by this call unless @ref Qore::ZMQ::ZFRAME_REUSE is used in the \a flags argument
@@ -288,22 +417,24 @@ zsock.send(frame);
 
     @throw ZSOCKET-SEND-ERROR thrown if an error occurs during the call
     @throw ZSOCKET-SEND-WAIT-ERROR if the @ref Qore::ZMQ::ZFRAME_DONTWAIT flag is used and the message cannot be queued on the socket, this exception is thrown
+    @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
 */
 nothing ZSocket::send(Qore::ZMQ::ZFrame[QoreZFrame] frame, int flags = 0) {
-   ReferenceHolder<QoreZFrame> holder(frame, xsink);
-   // ensure atomicity of the call
-   QoreZSockLockHelper qzlh(*zsock);
-   {
-      int rc = zframe_send(frame->getPtr(), **zsock, flags);
-      if (rc < 0) {
-         if (flags & ZFRAME_DONTWAIT && errno == EAGAIN)
-            zmq_error(xsink, "ZSOCKET-SEND-WAIT-ERROR", "error in ZSocket::send(%s)", obj_frame->getClassName());
-         else
-            zmq_error(xsink, "ZSOCKET-SEND-ERROR", "error in ZSocket::send(%s)", obj_frame->getClassName());
-      }
-   }
-   if (!(flags & ZFRAME_REUSE) && !frame->getPtr())
-      const_cast<QoreObject*>(obj_frame)->doDelete(xsink);
+    ReferenceHolder<QoreZFrame> holder(frame, xsink);
+    // enforce access from the correct thread
+    if (zsock->check(xsink))
+        return QoreValue();
+    {
+        int rc = zframe_send(frame->getPtr(), **zsock, flags);
+        if (rc < 0) {
+            if (flags & ZFRAME_DONTWAIT && errno == EAGAIN)
+                zmq_error(xsink, "ZSOCKET-SEND-WAIT-ERROR", "error in ZSocket::send(%s)", obj_frame->getClassName());
+            else
+                zmq_error(xsink, "ZSOCKET-SEND-ERROR", "error in ZSocket::send(%s)", obj_frame->getClassName());
+        }
+    }
+    if (!(flags & ZFRAME_REUSE) && !frame->getPtr())
+        const_cast<QoreObject*>(obj_frame)->doDelete(xsink);
 }
 
 //! Receives a frame from the socket
@@ -315,19 +446,18 @@ ZFrame frm = zsock.recvFrame();
     @return the frame received from the socket
 
     @throw ZSOCKET-RECVFRAME-ERROR thrown if an error occurs during the call
+    @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
 */
 ZFrame ZSocket::recvFrame() {
-   zframe_t* frm;
-   {
-      // ensure atomicity of the call
-      QoreZSockLockHelper qzlh(*zsock);
-      frm = zframe_recv(**zsock);
-   }
-   if (!frm) {
-      zmq_error(xsink, "ZSOCKET-RECVFRAME-ERROR", "error in ZSocket::recvFrame()");
-      return QoreValue();
-   }
-   return new QoreObject(QC_ZFRAME, getProgram(), new QoreZFrame(frm));
+    // enforce access from the correct thread
+    if (zsock->check(xsink))
+        return QoreValue();
+    zframe_t* frm = zframe_recv(**zsock);
+    if (!frm) {
+        zmq_error(xsink, "ZSOCKET-RECVFRAME-ERROR", "error in ZSocket::recvFrame()");
+        return QoreValue();
+    }
+    return new QoreObject(QC_ZFRAME, getProgram(), new QoreZFrame(frm));
 }
 
 //! Receives a message from the socket
@@ -340,19 +470,18 @@ ZMsg frm = zsock.recvMsg();
 
     @throw ZSOCKET-RECVMSG-ERROR thrown if an error occurs during the call
     @throw ZSOCKET-TIMEOUT thrown if a timeout error occurs
+    @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
 */
 ZMsg ZSocket::recvMsg() {
-   zmsg_t* msg;
-   {
-      // ensure atomicity of the call
-      QoreZSockLockHelper qzlh(*zsock);
-      msg = zmsg_recv(**zsock);
-   }
-   if (!msg) {
-      zmq_error(xsink, "ZSOCKET-RECVMSG-ERROR", "error in ZSocket::recvMsg()");
-      return QoreValue();
-   }
-   return new QoreObject(QC_ZMSG, getProgram(), new QoreZMsg(msg));
+    // enforce access from the correct thread
+    if (zsock->check(xsink))
+        return QoreValue();
+    zmsg_t* msg = zmsg_recv(**zsock);
+    if (!msg) {
+        zmq_error(xsink, "ZSOCKET-RECVMSG-ERROR", "error in ZSocket::recvMsg()");
+        return QoreValue();
+    }
+    return new QoreObject(QC_ZMSG, getProgram(), new QoreZMsg(msg));
 }
 
 //! Sets the send timeout in milliseconds
@@ -364,24 +493,26 @@ zsock.setSendTimeout(30s);
     @param timeout_ms set the send timeout in milliseconds; like all %Qore functions and methods taking timeout values, a @ref relative_dates "relative date/time value" can be used to make the units clear (i.e. \c 2m = two minutes, etc.)
 
     @throw ZSOCKET-SETSENDTIMEOUT-ERROR if an error occurs setting the timeout option
+    @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
 
     @see
     - @ref ZSocket::setRecvTimeout()
     - @ref ZSocket::setTimeout()
  */
 nothing ZSocket::setSendTimeout(timeout timeout_ms) {
-   // ensure atomicity of the call
-   QoreZSockLockHelper qzlh(*zsock);
+    // enforce access from the correct thread
+    if (zsock->check(xsink))
+        return QoreValue();
 
-   int v = timeout_ms;
-   while (true) {
-      int rc = zmq_setsockopt(**zsock, ZMQ_SNDTIMEO, &v, sizeof v);
-      if (rc) {
-         if (errno == EINTR)
-            continue;
-         zmq_error(xsink, "ZSOCKET-SETSENDTIMEOUT-ERROR", "error in ZSocket::setSendTimeout()");
-      }
-   }
+    int v = timeout_ms;
+    while (true) {
+        int rc = zmq_setsockopt(**zsock, ZMQ_SNDTIMEO, &v, sizeof v);
+        if (rc) {
+            if (errno == EINTR)
+                continue;
+            zmq_error(xsink, "ZSOCKET-SETSENDTIMEOUT-ERROR", "error in ZSocket::setSendTimeout()");
+        }
+    }
 }
 
 //! Sets the receive timeout in milliseconds
@@ -393,24 +524,26 @@ zsock.setRecvTimeout(30s);
     @param timeout_ms set the receive timeout in milliseconds; like all %Qore functions and methods taking timeout values, a @ref relative_dates "relative date/time value" can be used to make the units clear (i.e. \c 2m = two minutes, etc.)
 
     @throw ZSOCKET-SETRECVTIMEOUT-ERROR if an error occurs setting the timeout option
+    @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
 
     @see
     - @ref ZSocket::setSendTimeout()
     - @ref ZSocket::setTimeout()
  */
 nothing ZSocket::setRecvTimeout(timeout timeout_ms) {
-   // ensure atomicity of the call
-   QoreZSockLockHelper qzlh(*zsock);
+    // enforce access from the correct thread
+    if (zsock->check(xsink))
+        return QoreValue();
 
-   int v = timeout_ms;
-   while (true) {
-      int rc = zmq_setsockopt(**zsock, ZMQ_RCVTIMEO, &v, sizeof v);
-      if (rc) {
-         if (errno == EINTR)
-            continue;
-         zmq_error(xsink, "ZSOCKET-SETRECVTIMEOUT-ERROR", "error in ZSocket::setRecvTimeout()");
-      }
-   }
+    int v = timeout_ms;
+    while (true) {
+        int rc = zmq_setsockopt(**zsock, ZMQ_RCVTIMEO, &v, sizeof v);
+        if (rc) {
+            if (errno == EINTR)
+                continue;
+            zmq_error(xsink, "ZSOCKET-SETRECVTIMEOUT-ERROR", "error in ZSocket::setRecvTimeout()");
+       }
+    }
 }
 
 //! Sets the send and receive timeout in milliseconds
@@ -422,34 +555,36 @@ zsock.setTimeout(30s);
     @param timeout_ms set the send and receive timeout in milliseconds; like all %Qore functions and methods taking timeout values, a @ref relative_dates "relative date/time value" can be used to make the units clear (i.e. \c 2m = two minutes, etc.)
 
     @throw ZSOCKET-SETTIMEOUT-ERROR if an error occurs setting the timeout option
+    @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
 
     @see
     - @ref ZSocket::setRecvTimeout()
     - @ref ZSocket::setSendTimeout()
  */
 nothing ZSocket::setTimeout(timeout timeout_ms) {
-   // ensure atomicity of the call
-   QoreZSockLockHelper qzlh(*zsock);
+    // enforce access from the correct thread
+    if (zsock->check(xsink))
+        return QoreValue();
 
-   int v = timeout_ms;
-   while (true) {
-      int rc = zmq_setsockopt(**zsock, ZMQ_RCVTIMEO, &v, sizeof v);
-      if (rc) {
-         if (errno == EINTR)
-            continue;
-         zmq_error(xsink, "ZSOCKET-SETTIMEOUT-ERROR", "error setting receive timeout in ZSocket::setTimeout()");
-         return QoreValue();
-      }
-   }
-   v = timeout_ms;
-   while (true) {
-      int rc = zmq_setsockopt(**zsock, ZMQ_SNDTIMEO, &v, sizeof v);
-      if (rc) {
-         if (errno == EINTR)
-            continue;
-         zmq_error(xsink, "ZSOCKET-SETTIMEOUT-ERROR", "error setting send timeout in ZSocket::setTimeout()");
-      }
-   }
+    int v = timeout_ms;
+    while (true) {
+        int rc = zmq_setsockopt(**zsock, ZMQ_RCVTIMEO, &v, sizeof v);
+        if (rc) {
+            if (errno == EINTR)
+                continue;
+            zmq_error(xsink, "ZSOCKET-SETTIMEOUT-ERROR", "error setting receive timeout in ZSocket::setTimeout()");
+            return QoreValue();
+        }
+    }
+    v = timeout_ms;
+    while (true) {
+        int rc = zmq_setsockopt(**zsock, ZMQ_SNDTIMEO, &v, sizeof v);
+        if (rc) {
+            if (errno == EINTR)
+                continue;
+            zmq_error(xsink, "ZSOCKET-SETTIMEOUT-ERROR", "error setting send timeout in ZSocket::setTimeout()");
+        }
+    }
 }
 
 //! Sets the socket identity string
@@ -462,6 +597,7 @@ zsock.setIdentity(str);
 
     @throw ENCODING-CONVERSION-ERROR this exception could be thrown if an encoding error is encountered when converting the given string to UTF-8
     @throw ZSOCKET-SETIDENTITY-ERROR if an error occurs setting the identity option on the socket
+    @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
 
     @note it is recommended to use an identity option with the following socket types:
     - @ref Qore::ZMQ::ZSocketReq "ZSocketReq": \c REQ
@@ -470,23 +606,24 @@ zsock.setIdentity(str);
     - @ref Qore::ZMQ::ZSocketRouter "ZSocketRouter": \c ROUTER
  */
 nothing ZSocket::setIdentity(string id) {
-   TempEncodingHelper id_utf8(id, QCS_UTF8, xsink);
-   if (!id_utf8)
-      return QoreValue();
+    // enforce access from the correct thread
+    if (zsock->check(xsink))
+        return QoreValue();
 
-   // ensure atomicity of the call
-   QoreZSockLockHelper qzlh(*zsock);
+    TempEncodingHelper id_utf8(id, QCS_UTF8, xsink);
+    if (!id_utf8)
+        return QoreValue();
 
-   // NOTE: cannot use zsock_setidentity() here as it will assert for all sockets except REQ, REP, DEALER, and ROUTER
-   while (true) {
-      int rc = zmq_setsockopt(**zsock, ZMQ_IDENTITY, id_utf8->c_str(), id_utf8->size());
-      if (rc) {
-         if (errno == EINTR)
-            continue;
-         zmq_error(xsink, "ZSOCKET-SETIDENTITY-ERROR", "error setting identity \"%s\"", id_utf8->c_str());
-      }
-      break;
-   }
+    // NOTE: cannot use zsock_setidentity() here as it will assert for all sockets except REQ, REP, DEALER, and ROUTER
+    while (true) {
+        int rc = zmq_setsockopt(**zsock, ZMQ_IDENTITY, id_utf8->c_str(), id_utf8->size());
+        if (rc) {
+            if (errno == EINTR)
+                continue;
+            zmq_error(xsink, "ZSOCKET-SETIDENTITY-ERROR", "error setting identity \"%s\"", id_utf8->c_str());
+        }
+        break;
+    }
 }
 
 //! retrieves the socket identity string
@@ -496,17 +633,20 @@ nothing ZSocket::setIdentity(string id) {
     @endcode
 
     @return the socket identity string or @ref nothing if no value is set
+
+    @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
 */
 *string ZSocket::getIdentity() [flags=CONSTANT] {
-   // ensure atomicity of the call
-   QoreZSockLockHelper qzlh(*zsock);
+    // enforce access from the correct thread
+    if (zsock->check(xsink))
+        return QoreValue();
 
-   char* str = zsock_identity(**zsock);
-   if (!str)
-      return QoreValue();
+    char* str = zsock_identity(**zsock);
+    if (!str)
+        return QoreValue();
 
-   size_t len = strlen(str);
-   return new QoreStringNode(str, len, len + 1, QCS_UTF8);
+    size_t len = strlen(str);
+    return new QoreStringNode(str, len, len + 1, QCS_UTF8);
 }
 
 //! Sends a string over the socket
@@ -519,11 +659,16 @@ zsock.send(str);
 
     @throw ZSOCKET-SEND-ERROR an error occurred sending the data
     @throw ZSOCKET-TIMEOUT thrown if a timeout error occurs
+    @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
  */
 nothing ZSocket::send(string str) {
-   int rc = zstr_send(**zsock, str->c_str());
-   if (rc)
-      zmq_error(xsink, "ZSOCKET-SEND-ERROR", "error sending string");
+    // enforce access from the correct thread
+    if (zsock->check(xsink))
+        return QoreValue();
+
+    int rc = zstr_send(**zsock, str->c_str());
+    if (rc)
+        zmq_error(xsink, "ZSOCKET-SEND-ERROR", "error sending string");
 }
 
 //! Sends a binary object over the socket
@@ -536,11 +681,16 @@ zsock.send(bin);
 
     @throw ZSOCKET-SEND-ERROR an error occurred sending the data
     @throw ZSOCKET-TIMEOUT thrown if a timeout error occurs
- */
+    @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
+*/
 nothing ZSocket::send(binary bin) {
-   int rc = zsock_send(**zsock, "b", bin->getPtr(), (size_t)bin->size());
-   if (rc)
-      zmq_error(xsink, "ZSOCKET-SEND-ERROR", "error sending binary object");
+    // enforce access from the correct thread
+    if (zsock->check(xsink))
+        return QoreValue();
+
+    int rc = zsock_send(**zsock, "b", bin->getPtr(), (size_t)bin->size());
+    if (rc)
+        zmq_error(xsink, "ZSOCKET-SEND-ERROR", "error sending binary object");
 }
 
 //! Send a 'picture' message to the socket
@@ -572,11 +722,14 @@ zsock.send("i", i);
     @throw ZSOCKET-SENDPICTURE-ARG-ERROR there was an error processing the arguments for the send call
     @throw ZSOCKET-SENDPICTURE-ERROR an error occurred sending the data
     @throw ZSOCKET-TIMEOUT thrown if a timeout error occurs
+    @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
 */
 nothing ZSocket::sendPicture(string picture, ...) {
-   // ensure atomicity of the call
-   QoreZSockLockHelper qzlh(*zsock);
-   int rc = zsock_vsend(**zsock, picture->c_str(), nullptr);//zargs);
-   if (rc < 0)
-      zmq_error(xsink, "ZSOCKET-SENDPICTURE-ERROR", "error in ZSocket::send()");
+    // enforce access from the correct thread
+    if (zsock->check(xsink))
+        return QoreValue();
+
+    int rc = zsock_vsend(**zsock, picture->c_str(), nullptr);//zargs);
+    if (rc < 0)
+        zmq_error(xsink, "ZSOCKET-SENDPICTURE-ERROR", "error in ZSocket::send()");
 }

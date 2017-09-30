@@ -27,7 +27,10 @@
 #include "QC_ZSocketPub.h"
 
 //! The ZSocketPub class implements a ZeroMQ PUB socket
-/**
+/** @note
+    - This class is not designed to be accessed from multiple threads; it was created without
+      locking for fast and efficient use when used from a single thread.  For methods that would be
+      unsafe to use in another thread, any use of such methods in threads other than the thread where the constructor was called will cause a \c ZSOCKET-THREAD-ERROR to be thrown.
  */
 qclass ZSocketPub [arg=QoreZSock* sock; ns=Qore::ZMQ; vparent=ZSocket; dom=NETWORK];
 

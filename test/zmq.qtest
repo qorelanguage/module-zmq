@@ -39,11 +39,12 @@ class ZmqTest inherits QUnit::Test {
     }
 
     basicTest() {
-        hash h = zmq_version();
-        assertEq(Type::Int, h.major);
-        assertEq(Type::Int, h.minor);
-        assertEq(Type::Int, h.patch);
-        assertEq(Type::String, h.version);
+        hash<auto> h = zmq_version();
+        assertEq("hash<ZmqVersionInfo>", h.fullType());
+        assertEq(Type::Int, h.major.type());
+        assertEq(Type::Int, h.minor.type());
+        assertEq(Type::Int, h.patch.type());
+        assertEq(Type::String, h.version.type());
         assertEq(h.version, sprintf("%d.%d.%d", h.major, h.minor, h.patch));
     }
 
@@ -234,6 +235,34 @@ class ZmqTest inherits QUnit::Test {
         ZSocketPush writer(zctx, "@tcp://127.0.0.1:*");
         softint port = (writer.endpoint() =~ x/:([0-9]+)/)[0];
 
+        # start monitoring push Socket
+        writer.monitor(ZMQ_EVENT_ALL, "inproc://mon-1");
+
+        # event list
+        list el = ();
+        Counter c(1);
+        code mon1 = sub () {
+            on_exit
+                c.dec();
+            ZSocketPair zsmon1(zctx, "inproc://mon-1");
+            while (True) {
+                ZMsg msg = zsmon1.recvMsg();
+                ZFrame f1 = msg.popFrame();
+                string estr = msg.popStr();
+                if (!estr.val())
+                    break;
+                int event_number = f1.readi2(0);
+                int event_code = f1.readi4(2);
+                el += (
+                    "event_number": event_number,
+                    "event_code": event_code,
+                    "string": estr,
+                );
+                #printf("EVENT: %y event(s): %y (%d)\n", estr, ZmqEventCodeMap{event_number} ?? "unknown: " + event_number, event_code);
+            }
+        };
+        background mon1();
+
         assertEq(NOTHING, writer.unbind("tcp://127.0.0.1:" + port));
         port = writer.bind("tcp://127.0.0.1:*");
         assertEq("tcp://127.0.0.1:" + port, writer.endpoint());
@@ -273,6 +302,12 @@ class ZmqTest inherits QUnit::Test {
         assertEq(NOTHING, frame.meta("Resource"));
         assertEq("127.0.0.1", frame.meta("Peer-Address"));
         assertEq(NOTHING, frame.meta("User-Id"));
+
+        delete writer;
+        delete reader;
+        # wait for monitoring thread to exit
+        c.waitForZero();
+        assertEq(4, el.size());
     }
 
     zSocketReqRepTest() {

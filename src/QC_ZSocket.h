@@ -41,92 +41,87 @@
 // default timeout value: 2 minutes
 #define ZSOCK_TIMEOUT_MS 120000
 
-class QoreZSock : public AbstractPrivateData {
-   friend class QoreZSockLockHelper;
+class QoreZSock : public AbstractZmqThreadLocalData {
 public:
-   // creates the object
-   DLLLOCAL QoreZSock(QoreZContext& ctx, int type, ExceptionSink* xsink) : sock(zmq_socket(*ctx, type)) {
-      if (!sock) {
-         zmq_error(xsink, "ZSOCKET-CONSTRUCTOR-ERROR", "error creating socket");
-         return;
-      }
+    // creates the object
+    DLLLOCAL QoreZSock(QoreZContext& ctx, int type, ExceptionSink* xsink) : sock(zmq_socket(*ctx, type)) {
+        if (!sock) {
+            zmq_error(xsink, "ZSOCKET-CONSTRUCTOR-ERROR", "error creating socket");
+            return;
+        }
 
-      setTimeouts();
-   }
+        setTimeouts();
+    }
 
-   DLLLOCAL void* operator*() {
-      return sock;
-   }
+    DLLLOCAL void* operator*() {
+        return sock;
+    }
 
-   DLLLOCAL const void* operator*() const {
-      return sock;
-   }
+    DLLLOCAL const void* operator*() const {
+        return sock;
+    }
 
-   // returns -1 for error (exception raised), 0 for OK
-   DLLLOCAL int poll(short events, int timeout_ms, const char* meth, ExceptionSink *xsink);
+    // returns -1 for error (exception raised), 0 for OK
+    DLLLOCAL int poll(short events, int timeout_ms, const char* meth, ExceptionSink *xsink);
 
-   // like zsock_attach() from the czmq; returns -1 for error (exception raised), 0 for OK
-   DLLLOCAL int attach(ExceptionSink *xsink, const char* endpoints, bool do_bind);
+    // like zsock_attach() from the czmq; returns -1 for error (exception raised), 0 for OK
+    DLLLOCAL int attach(ExceptionSink *xsink, const char* endpoints, bool do_bind);
 
-   // returns -1 for error (exception raised), >= 0 for OK, > 0 = the port bound
-   DLLLOCAL int bind(ExceptionSink *xsink, const char* endpoint, const char* err = "ZSOCKET-BIND-ERROR");
+    // returns -1 for error (exception raised), >= 0 for OK, > 0 = the port bound
+    DLLLOCAL int bind(ExceptionSink *xsink, const char* endpoint, const char* err = "ZSOCKET-BIND-ERROR");
 
-   // returns -1 for error (exception raised), 0 for OK
-   DLLLOCAL int connect(ExceptionSink *xsink, const char* endpoint, const char* err = "ZSOCKET-CONNECT-ERROR");
+    // returns -1 for error (exception raised), 0 for OK
+    DLLLOCAL int connect(ExceptionSink *xsink, const char* endpoint, const char* err = "ZSOCKET-CONNECT-ERROR");
 
-   //! returns the socket type code
-   virtual int getType() const = 0;
+    //! the error string for exceptions
+    DLLLOCAL virtual const char* getErrorString() const {
+        return "ZSOCKET-THREAD-ERROR";
+    }
 
-   //! returns the socket type name
-   virtual const char* getTypeName() const = 0;
+    //! returns the socket type code
+    virtual int getType() const = 0;
+
+    //! returns the socket type name
+    virtual const char* getTypeName() const = 0;
 
 protected:
-   QoreThreadLock lck;
+    int tid = gettid();
 
-   DLLLOCAL virtual ~QoreZSock() {
-      zmq_close(sock);
-   }
+    DLLLOCAL virtual ~QoreZSock() {
+        zmq_close(sock);
+    }
 
-   DLLLOCAL void setTimeouts() {
-      // set default timeout values
-      int v = ZSOCK_TIMEOUT_MS;
-      zmq_setsockopt(sock, ZMQ_SNDTIMEO, &v, sizeof v);
-      v = ZSOCK_TIMEOUT_MS;
-      zmq_setsockopt(sock, ZMQ_RCVTIMEO, &v, sizeof v);
+    DLLLOCAL void setTimeouts() {
+        // set default timeout values
+        int v = ZSOCK_TIMEOUT_MS;
+        zmq_setsockopt(sock, ZMQ_SNDTIMEO, &v, sizeof v);
+        v = ZSOCK_TIMEOUT_MS;
+        zmq_setsockopt(sock, ZMQ_RCVTIMEO, &v, sizeof v);
 #ifdef ZMQ_CONNECT_TIMEOUT
-      v = ZSOCK_TIMEOUT_MS;
-      zmq_setsockopt(sock, ZMQ_CONNECT_TIMEOUT, &v, sizeof v);
+        v = ZSOCK_TIMEOUT_MS;
+        zmq_setsockopt(sock, ZMQ_CONNECT_TIMEOUT, &v, sizeof v);
 #endif
-   }
+    }
 
-   void* sock = nullptr;
-};
-
-class QoreZSockLockHelper : public AutoLocker {
-public:
-   DLLLOCAL QoreZSockLockHelper(QoreZSock& s) : AutoLocker(s.lck) {
-   }
-
-   DLLLOCAL QoreZSockLockHelper(QoreZSock* s) : AutoLocker(s->lck) {
-   }
+    void* sock = nullptr;
 };
 
 class QoreZSockBind : public QoreZSock {
 public:
-   // creates the object
-   DLLLOCAL QoreZSockBind(QoreZContext& ctx, int type, const char* endpoint, ExceptionSink* xsink) : QoreZSock(ctx, type, xsink) {
-      if (sock && endpoint && endpoint[0])
-         attach(xsink, endpoint, true);
-   }
+    // creates the object
+    DLLLOCAL QoreZSockBind(QoreZContext& ctx, int type, const char* endpoint, ExceptionSink* xsink) : QoreZSock(ctx, type, xsink) {
+        if (sock && endpoint && endpoint[0])
+            attach(xsink, endpoint, true);
+    }
 };
 
 class QoreZSockConnect : public QoreZSock {
 public:
-   // creates the object
-   DLLLOCAL QoreZSockConnect(QoreZContext& ctx, int type, const char* endpoint, ExceptionSink* xsink) : QoreZSock(ctx, type, xsink) {
-      if (sock && endpoint && endpoint[0])
-         attach(xsink, endpoint, false);
-   }
+    // creates the object
+    DLLLOCAL QoreZSockConnect(QoreZContext& ctx, int type, const char* endpoint, ExceptionSink* xsink) : QoreZSock(ctx, type, xsink) {
+        if (sock && endpoint && endpoint[0])
+            attach(xsink, endpoint, false);
+    }
 };
 
 DLLLOCAL extern QoreClass* QC_ZSOCKET;

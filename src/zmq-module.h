@@ -30,4 +30,29 @@
 
 DLLLOCAL void zmq_error(ExceptionSink* xsink, const char* err, const char* desc_fmt, ...);
 
+// for hashdecls
+DLLLOCAL extern const TypedHashDecl* hashdeclZmqVersionInfo;
+
+// base class for private data restricted to the thread in which it was created
+class AbstractZmqThreadLocalData : public AbstractPrivateData {
+public:
+    DLLLOCAL int check(ExceptionSink* xsink) const {
+        if (tid != gettid()) {
+            xsink->raiseException(getErrorString(), "this object was created in TID %d; it is an error to access it from any other thread (accessed from TID %d)", tid, gettid());
+            return -1;
+        }
+        return 0;
+    }
+
+    DLLLOCAL int gettid() const {
+        return tid;
+    }
+
+    //! the error string for exceptions
+    virtual const char* getErrorString() const = 0;
+
+private:
+    int tid = gettid();
+};
+
 #endif

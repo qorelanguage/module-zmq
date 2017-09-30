@@ -28,6 +28,10 @@ static void zmq_module_delete();
 DLLLOCAL void preinitZFrameClass();
 DLLLOCAL void preinitZMsgClass();
 
+// for hashdecls
+const TypedHashDecl* hashdeclZmqVersionInfo;
+DLLLOCAL TypedHashDecl* init_hashdecl_ZmqVersionInfo(QoreNamespace& ns);
+
 DLLLOCAL QoreClass* initZContextClass(QoreNamespace& ns);
 DLLLOCAL QoreClass* initZSocketClass(QoreNamespace& ns);
 DLLLOCAL QoreClass* initZSocketPubClass(QoreNamespace& ns);
@@ -76,6 +80,8 @@ static QoreStringNode* zmq_module_init() {
 
    preinitZFrameClass();
    preinitZMsgClass();
+
+   hashdeclZmqVersionInfo = init_hashdecl_ZmqVersionInfo(zmqns);
 
    zmqns.addSystemClass(initZFrameClass(zmqns));
    zmqns.addSystemClass(initZMsgClass(zmqns));

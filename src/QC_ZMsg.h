@@ -30,52 +30,48 @@
 
 #include <czmq.h>
 
-class QoreZMsg : public AbstractPrivateData {
+class QoreZMsg : public AbstractZmqThreadLocalData {
 public:
-   // creates an empty msg
-   DLLLOCAL QoreZMsg() : msg(zmsg_new()) {
-   }
+    // creates an empty msg
+    DLLLOCAL QoreZMsg() : msg(zmsg_new()) {
+    }
 
-   DLLLOCAL QoreZMsg(zmsg_t* msg) : msg(msg) {
-   }
+    DLLLOCAL QoreZMsg(zmsg_t* msg) : msg(msg) {
+    }
 
-   // copies the msg
-   DLLLOCAL QoreZMsg(const QoreZMsg& old) : msg(zmsg_dup(old.msg)) {
-   }
+    // copies the msg
+    DLLLOCAL QoreZMsg(const QoreZMsg& old) : msg(zmsg_dup(old.msg)) {
+    }
 
-   DLLLOCAL zmsg_t* operator*() {
-      return msg;
-   }
+    DLLLOCAL zmsg_t* operator*() {
+        return msg;
+    }
 
-   DLLLOCAL const zmsg_t* operator*() const {
-      return msg;
-   }
+    DLLLOCAL const zmsg_t* operator*() const {
+        return msg;
+    }
 
-   DLLLOCAL int addFrames(const QoreListNode* l, ExceptionSink* xsink);
-   DLLLOCAL int addFrames(const QoreValueList* l, ExceptionSink* xsink);
+    DLLLOCAL int addFrames(const QoreListNode* l, ExceptionSink* xsink);
+    DLLLOCAL int addFrames(const QoreValueList* l, ExceptionSink* xsink);
 
-   DLLLOCAL zmsg_t** getPtr() {
-      return &msg;
-   }
+    DLLLOCAL zmsg_t** getPtr() {
+        return &msg;
+    }
 
-   DLLLOCAL int check(ExceptionSink* xsink) const {
-      if (tid != gettid()) {
-         xsink->raiseException("ZMSG-THREAD-ERROR", "this object was created in TID %d; it is an error to access it from any other thread (accessed from TID %d)", tid, gettid());
-         return -1;
-      }
-      return 0;
-   }
+    //! the error string for exceptions
+    DLLLOCAL virtual const char* getErrorString() const {
+        return "ZMSG-THREAD-ERROR";
+    }
 
 protected:
-   DLLLOCAL virtual ~QoreZMsg() {
-      zmsg_destroy(&msg);
-   }
+    DLLLOCAL virtual ~QoreZMsg() {
+        zmsg_destroy(&msg);
+    }
 
-   DLLLOCAL int addFrame(const QoreValue v, int i, int max, ExceptionSink* xsink);
+    DLLLOCAL int addFrame(const QoreValue v, int i, int max, ExceptionSink* xsink);
 
 private:
-   zmsg_t* msg = nullptr;
-   int tid = gettid();
+    zmsg_t* msg = nullptr;
 };
 
 DLLLOCAL extern QoreClass* QC_ZMSG;
