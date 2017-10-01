@@ -1,25 +1,25 @@
 /* -*- mode: c++; indent-tabs-mode: nil -*- */
 /** @file QC_ZSocket.h defines the c++ implementation of the Qore ZSocket class */
 /*
-  QC_ZSocket.h
+    QC_ZSocket.h
 
-  Qore Programming Language
+    Qore Programming Language
 
-  Copyright (C) 2017 Qore Technologies, s.r.o.
+    Copyright (C) 2017 Qore Technologies, s.r.o.
 
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 2.1 of the License, or (at your option) any later version.
+    This library is free software; you can redistribute it and/or
+    modify it under the terms of the GNU Lesser General Public
+    License as published by the Free Software Foundation; either
+    version 2.1 of the License, or (at your option) any later version.
 
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+    Lesser General Public License for more details.
 
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+    You should have received a copy of the GNU Lesser General Public
+    License along with this library; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
 #ifndef _QORE_ZMQ_QC_ZSOCKET_H
@@ -73,6 +73,24 @@ public:
     // returns -1 for error (exception raised), 0 for OK
     DLLLOCAL int connect(ExceptionSink *xsink, const char* endpoint, const char* err = "ZSOCKET-CONNECT-ERROR");
 
+    // return -1 for error (exceptio raised), 0 for OK
+    DLLLOCAL int setIdentity(const QoreString& id, ExceptionSink* xsink) {
+        TempEncodingHelper id_utf8(id, QCS_UTF8, xsink);
+        if (!id_utf8)
+            return -1;
+
+        while (true) {
+            int rc = zmq_setsockopt(sock, ZMQ_IDENTITY, id_utf8->c_str(), id_utf8->size());
+            if (rc) {
+                if (errno == EINTR)
+                    continue;
+                zmq_error(xsink, "ZSOCKET-SETIDENTITY-ERROR", "error setting identity \"%s\"", id_utf8->c_str());
+            }
+            break;
+        }
+        return *xsink ? -1 : 0;
+    }
+
     //! the error string for exceptions
     DLLLOCAL virtual const char* getErrorString() const {
         return "ZSOCKET-THREAD-ERROR";
@@ -113,12 +131,28 @@ public:
         if (sock && endpoint && endpoint[0])
             attach(xsink, endpoint, true);
     }
+
+    // creates the object
+    DLLLOCAL QoreZSockBind(QoreZContext& ctx, int type, const QoreString* id, const char* endpoint, ExceptionSink* xsink) : QoreZSock(ctx, type, xsink) {
+        if (id && !id->empty())
+            setIdentity(*id, xsink);
+        if (sock && endpoint && endpoint[0])
+            attach(xsink, endpoint, true);
+    }
 };
 
 class QoreZSockConnect : public QoreZSock {
 public:
     // creates the object
     DLLLOCAL QoreZSockConnect(QoreZContext& ctx, int type, const char* endpoint, ExceptionSink* xsink) : QoreZSock(ctx, type, xsink) {
+        if (sock && endpoint && endpoint[0])
+            attach(xsink, endpoint, false);
+    }
+
+    // creates the object
+    DLLLOCAL QoreZSockConnect(QoreZContext& ctx, int type, const QoreString* id, const char* endpoint, ExceptionSink* xsink) : QoreZSock(ctx, type, xsink) {
+        if (id && !id->empty())
+            setIdentity(*id, xsink);
         if (sock && endpoint && endpoint[0])
             attach(xsink, endpoint, false);
     }

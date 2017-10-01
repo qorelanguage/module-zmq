@@ -1,67 +1,77 @@
 /* -*- mode: c++; indent-tabs-mode: nil -*- */
 /** @file ZSocketReq.qpp defines the ZSocketReq class */
 /*
-  QC_ZSocketReq.qpp
+    QC_ZSocketReq.qpp
 
-  Qore Programming Language
+    Qore Programming Language
 
-  Copyright (C) 2017 Qore Technologies, s.r.o.
+    Copyright (C) 2017 Qore Technologies, s.r.o.
 
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 2.1 of the License, or (at your option) any later version.
+    This library is free software; you can redistribute it and/or
+    modify it under the terms of the GNU Lesser General Public
+    License as published by the Free Software Foundation; either
+    version 2.1 of the License, or (at your option) any later version.
 
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+    Lesser General Public License for more details.
 
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+    You should have received a copy of the GNU Lesser General Public
+    License along with this library; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
-
-//#include "qore-zmq-module.h"
 
 #include "QC_ZSocketReq.h"
 
-//! The ZSocketReq class implements a ZeroMQ REQ socket
+//! The ZSocketReq class implements a ZeroMQ \c REQ socket
 /** @note
     - This class is not designed to be accessed from multiple threads; it was created without
       locking for fast and efficient use when used from a single thread.  For methods that would be
       unsafe to use in another thread, any use of such methods in threads other than the thread where the constructor was called will cause a \c ZSOCKET-THREAD-ERROR to be thrown.
+    - It is recommended to use an identity with \c REQ sockets
  */
 qclass ZSocketReq [arg=QoreZSock* sock; ns=Qore::ZMQ; vparent=ZSocket; dom=NETWORK];
 
-//! constructs a REQ zsocket
+//! constructs a \c REQ zsocket with an explicit identity and endpoint
 /** @par Example
     @code
-ZSocketReq sock(ctx, "tcp://127.0.0.1:8001");
+ZSocketReq sock(ctx, "my-identity", "tcp://127.0.0.1:8001");
     @endcode
 
     @param ctx the context for the socket
+    @param identity the identity value for the socket; a missing or empty value here results in the default identity being assigned
     @param endpoint the @ref zmqendpoints "endpoint" for the socket; the default action is connect
 
     @throw ZSOCKET-CONSTRUCTOR-ERROR this exception is thrown if there is any error creating the socket
     @throw ZSOCKET-CONNECT-ERROR this exception is thrown if there is any error connecting the socket
+
+    @note It is recommended to use an identity with \c REQ sockets
  */
-ZSocketReq::constructor(Qore::ZMQ::ZContext[QoreZContext] ctx, string endpoint) {
-   ReferenceHolder<QoreZContext> ctx_holder(ctx, xsink);
-   self->setPrivate(CID_ZSOCKETREQ, new QoreReqZSock(*ctx, endpoint->c_str(), xsink));
+ZSocketReq::constructor(Qore::ZMQ::ZContext[QoreZContext] ctx, *string identity, string endpoint) {
+    ReferenceHolder<QoreZContext> ctx_holder(ctx, xsink);
+    SimpleRefHolder<QoreReqZSock> req(new QoreReqZSock(*ctx, identity, endpoint->c_str(), xsink));
+    if (!*xsink)
+        self->setPrivate(CID_ZSOCKETREQ, req.release());
 }
 
-//! constructs an unconnected REQ zsocket
+//! constructs an unconnected \c REQ zsocket with a default system-assigned identity
 /** @par Example
     @code
-ZSocketReq sock(ctx);
+# create an unconnected REQ socket
+ZSocketReq req(zctx);
+# set the req's identity value explicitly before connecting
+req.setIdentity(ReqIdentity);
+req.connect("tcp://127.0.0.1:" + port);
     @endcode
 
     @param ctx the context for the socket
 
     @throw ZSOCKET-CONSTRUCTOR-ERROR this exception is thrown if there is any error creating the socket
+
+    @note It is recommended to use an identity with \c REQ sockets
  */
 ZSocketReq::constructor(Qore::ZMQ::ZContext[QoreZContext] ctx) {
-   ReferenceHolder<QoreZContext> ctx_holder(ctx, xsink);
-   self->setPrivate(CID_ZSOCKETREQ, new QoreReqZSock(*ctx, nullptr, xsink));
+    ReferenceHolder<QoreZContext> ctx_holder(ctx, xsink);
+    self->setPrivate(CID_ZSOCKETREQ, new QoreReqZSock(*ctx, nullptr, nullptr, xsink));
 }

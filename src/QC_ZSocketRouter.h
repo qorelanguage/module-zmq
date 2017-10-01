@@ -31,7 +31,7 @@
 class QoreRouterZSock : public QoreZSockBind {
 public:
    // creates the object
-   DLLLOCAL QoreRouterZSock(QoreZContext& ctx, const char* endpoint, ExceptionSink* xsink) : QoreZSockBind(ctx, ZMQ_ROUTER, endpoint, xsink) {
+   DLLLOCAL QoreRouterZSock(QoreZContext& ctx, const QoreString* id, const char* endpoint, ExceptionSink* xsink) : QoreZSockBind(ctx, ZMQ_ROUTER, id, endpoint, xsink) {
    }
 
    DLLLOCAL virtual int getType() const {

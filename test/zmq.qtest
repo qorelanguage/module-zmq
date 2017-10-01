@@ -17,6 +17,7 @@ class ZmqTest inherits QUnit::Test {
         const HelloWorld = "Hello, World!";
         const Testing = "testing, 1, 2, 3";
         const Subscription = "TEST";
+        const DealerIdentity = "testDealer";
 
         const MAXINT32 = (pow(2, 31) - 1).toInt();
     }
@@ -154,43 +155,43 @@ class ZmqTest inherits QUnit::Test {
         sock.setIdentity("IdTest");
         assertEq("IdTest", sock.getIdentity());
 
-        sock = new ZSocketDealer(zctx, "@tcp://127.0.0.1:*");
+        sock = new ZSocketDealer(zctx, "", "@tcp://127.0.0.1:*");
         assertEq("DEALER", sock.type());
-        assertThrows("ZSOCKET-BIND-ERROR", sub () { new ZSocketDealer(zctx, "@tcp://127.0.0.1:xxx"); });
-        sock = new ZSocketDealer(zctx, "");
+        assertThrows("ZSOCKET-BIND-ERROR", sub () { new ZSocketDealer(zctx, "", "@tcp://127.0.0.1:xxx"); });
+        sock = new ZSocketDealer(zctx, "", "");
         assertEq("DEALER", sock.type());
         sock = new ZSocketDealer(zctx);
         assertEq("DEALER", sock.type());
         sock.setIdentity("IdTest");
         assertEq("IdTest", sock.getIdentity());
 
-        sock = new ZSocketRouter(zctx, "@tcp://127.0.0.1:*");
+        sock = new ZSocketRouter(zctx, "", "@tcp://127.0.0.1:*");
         assertEq("ROUTER", sock.type());
         assertEq(True, (sock.endpoint() =~ x/:([0-9]+)/)[0].toInt() > 0);
-        assertThrows("ZSOCKET-BIND-ERROR", sub () { new ZSocketRouter(zctx, "@tcp://127.0.0.1:xxx"); });
-        sock = new ZSocketRouter(zctx, "");
+        assertThrows("ZSOCKET-BIND-ERROR", sub () { new ZSocketRouter(zctx, "", "@tcp://127.0.0.1:xxx"); });
+        sock = new ZSocketRouter(zctx, "", "");
         assertEq("ROUTER", sock.type());
         sock = new ZSocketRouter(zctx);
         assertEq("ROUTER", sock.type());
         sock.setIdentity("IdTest");
         assertEq("IdTest", sock.getIdentity());
 
-        sock = new ZSocketReq(zctx, "@tcp://127.0.0.1:*");
+        sock = new ZSocketReq(zctx, "", "@tcp://127.0.0.1:*");
         assertEq("REQ", sock.type());
         assertEq(True, (sock.endpoint() =~ x/:([0-9]+)/)[0].toInt() > 0);
-        assertThrows("ZSOCKET-BIND-ERROR", sub () { new ZSocketReq(zctx, "@tcp://127.0.0.1:xxx"); });
-        sock = new ZSocketReq(zctx, "");
+        assertThrows("ZSOCKET-BIND-ERROR", sub () { new ZSocketReq(zctx, "", "@tcp://127.0.0.1:xxx"); });
+        sock = new ZSocketReq(zctx, "", "");
         assertEq("REQ", sock.type());
         sock = new ZSocketReq(zctx);
         assertEq("REQ", sock.type());
         sock.setIdentity("IdTest");
         assertEq("IdTest", sock.getIdentity());
 
-        sock = new ZSocketRep(zctx, "@tcp://127.0.0.1:*");
+        sock = new ZSocketRep(zctx, "", "@tcp://127.0.0.1:*");
         assertEq("REP", sock.type());
         assertEq(True, (sock.endpoint() =~ x/:([0-9]+)/)[0].toInt() > 0);
-        assertThrows("ZSOCKET-BIND-ERROR", sub () { new ZSocketRep(zctx, "@tcp://127.0.0.1:xxx"); });
-        sock = new ZSocketRep(zctx, "");
+        assertThrows("ZSOCKET-BIND-ERROR", sub () { new ZSocketRep(zctx, "", "@tcp://127.0.0.1:xxx"); });
+        sock = new ZSocketRep(zctx, "", "");
         assertEq("REP", sock.type());
         sock = new ZSocketRep(zctx);
         assertEq("REP", sock.type());
@@ -235,12 +236,17 @@ class ZmqTest inherits QUnit::Test {
         ZSocketPush writer(zctx, "@tcp://127.0.0.1:*");
         softint port = (writer.endpoint() =~ x/:([0-9]+)/)[0];
 
+        # monitors require "inproc://" endpoints
+        assertThrows("ZSOCKET-MONITOR-ERROR", \writer.monitor(), (ZMQ_EVENT_ALL, "tcp://127.0.0.1:9999"));
+
         # start monitoring push Socket
         writer.monitor(ZMQ_EVENT_ALL, "inproc://mon-1");
 
         # event list
         list el = ();
+        # "monitoring done" counter
         Counter c(1);
+        # monitoring closure
         code mon1 = sub () {
             on_exit
                 c.dec();
@@ -248,17 +254,18 @@ class ZmqTest inherits QUnit::Test {
             while (True) {
                 ZMsg msg = zsmon1.recvMsg();
                 ZFrame f1 = msg.popFrame();
-                string estr = msg.popStr();
-                if (!estr.val())
-                    break;
                 int event_number = f1.readi2(0);
+                if (event_number == ZMQ_EVENT_MONITOR_STOPPED)
+                    break;
+                string estr = msg.popStr();
                 int event_code = f1.readi4(2);
+                if (m_options.verbose)
+                    printf("EVENT: %s (%d): %y\n", ZmqEventCodeMap{event_number} ?? "unknown: ", event_code, estr);
                 el += (
                     "event_number": event_number,
                     "event_code": event_code,
                     "string": estr,
                 );
-                #printf("EVENT: %y event(s): %y (%d)\n", estr, ZmqEventCodeMap{event_number} ?? "unknown: " + event_number, event_code);
             }
         };
         background mon1();
@@ -311,14 +318,14 @@ class ZmqTest inherits QUnit::Test {
     }
 
     zSocketReqRepTest() {
-        ZSocketRep reader(zctx, "@tcp://*:*");
+        ZSocketRep reader(zctx, "", "@tcp://*:*");
         softint port = (reader.endpoint() =~ x/:([0-9]+)/)[0];
 
         assertEq(NOTHING, reader.unbind(reader.endpoint()));
         port = reader.bind("tcp://127.0.0.1:*");
         assertEq("tcp://127.0.0.1:" + port, reader.endpoint());
 
-        ZSocketReq writer(zctx, ">" + reader.endpoint());
+        ZSocketReq writer(zctx, "", ">" + reader.endpoint());
         writer.setIdentity("ReqWriter");
         assertEq("ReqWriter", writer.getIdentity());
         writer.send(HelloWorld);
@@ -398,31 +405,49 @@ class ZmqTest inherits QUnit::Test {
     }
 
     zSocketDealerRouterTest() {
-        ZSocketRouter writer(zctx, "@tcp://127.0.0.1:*");
+        ZSocketDealer writer(zctx, "", "@tcp://127.0.0.1:*");
         softint port = (writer.endpoint() =~ x/:([0-9]+)/)[0];
 
         assertEq(NOTHING, writer.unbind("tcp://127.0.0.1:" + port));
         port = writer.bind("tcp://127.0.0.1:*");
         assertEq("tcp://127.0.0.1:" + port, writer.endpoint());
 
-        /*
-        ZSocketDealer reader(zctx, ">" + writer.endpoint());
+        # create a router with the default identity
+        ZSocketRouter reader(zctx, "", ">" + writer.endpoint());
         writer.send(HelloWorld);
         ZMsg msg = reader.recvMsg();
-        assertEq(1, msg.size());
+        assertEq(2, msg.size());
+        ZFrame idframe = msg.popFrame();
+        assertEq(5, idframe.size());
+        assertEq("", idframe.meta("Identity"));
+        #printf("id frame: %y\n", idframe.strhex());
+        assertThrows("ZFRAME-DECODE-ERROR", \idframe.decode());
+
         assertEq(HelloWorld.size(), msg.contentSize());
-        assertEq("PUSH", msg.meta("Socket-Type"));
-        assertEq(NOTHING, msg.meta("Identity"));
+        assertEq("DEALER", msg.meta("Socket-Type"));
+        assertEq("", msg.meta("Identity"));
         assertEq(NOTHING, msg.meta("Resource"));
         assertEq("127.0.0.1", msg.meta("Peer-Address"));
         assertEq(NOTHING, msg.meta("User-Id"));
         assertEq(HelloWorld, msg.popStr());
         assertEq(NOTHING, msg.popMsg());
 
+        # recreate the writer
+        writer = new ZSocketDealer(zctx);
+        # set the dealer's identity value explicitly before binding
+        writer.setIdentity(DealerIdentity);
+        port = writer.bind("tcp://127.0.0.1:*");
+
+        # recreate the reader with a default identity to connect to the new port
+        reader = new ZSocketRouter(zctx, "", ">" + writer.endpoint());
+
         # check that calling ZMsg::popMsg() when there is no submessage deletes all other content
         writer.send(HelloWorld);
         msg = reader.recvMsg();
-        assertEq(1, msg.size());
+        assertEq(2, msg.size());
+        idframe = msg.popFrame();
+        assertEq(DealerIdentity.size(), idframe.size());
+        assertEq(DealerIdentity, idframe.meta("Identity"));
         assertEq(HelloWorld.size(), msg.contentSize());
         assertEq(NOTHING, msg.popMsg());
         assertEq(0, msg.size());
@@ -431,16 +456,18 @@ class ZmqTest inherits QUnit::Test {
 
         writer.send(HelloWorld);
         msg = reader.recvMsg();
+        idframe = msg.popFrame();
+        assertEq(DealerIdentity.size(), idframe.size());
+        assertEq(DealerIdentity, idframe.meta("Identity"));
         assertEq(1, msg.size());
         assertEq(HelloWorld.size(), msg.contentSize());
         ZFrame frame = msg.popFrame();
         assertEq(0, msg.size());
         assertEq(0, msg.contentSize());
-        assertEq("PUSH", frame.meta("Socket-Type"));
-        assertEq(NOTHING, frame.meta("Identity"));
+        assertEq("DEALER", frame.meta("Socket-Type"));
+        assertEq(DealerIdentity, frame.meta("Identity"));
         assertEq(NOTHING, frame.meta("Resource"));
         assertEq("127.0.0.1", frame.meta("Peer-Address"));
         assertEq(NOTHING, frame.meta("User-Id"));
-        */
     }
 }
