@@ -26,15 +26,28 @@
 
 #include "QC_ZSocketPull.h"
 
-//! The ZSocketPull class implements a ZeroMQ PULL socket
-/** @note
+//! The ZSocketPull class implements a ZeroMQ \c PULL socket
+/** A socket of type \c PULL is used by a pipeline node to receive messages from upstream
+    pipeline nodes. Messages are fair-queued from among all connected upstream nodes.
+    The @ref ZSocket::send() "ZSocket::send*()" methods are not implemented for this socket type.
+    \n\n
+    <b>Summary of \c PULL characteristics</b>
+    |!Property|!Value
+    |Compatible peer sockets|@ref ZSocketPush "PUSH"
+    |Direction|Unidirectional
+    |Send/receive pattern|Receive only
+    |Incoming routing strategy|Fair-queued
+    |Outgoing routing strategy|N/A
+    |Action in mute state|Block
+
+    @note
     - This class is not designed to be accessed from multiple threads; it was created without
       locking for fast and efficient use when used from a single thread.  For methods that would be
       unsafe to use in another thread, any use of such methods in threads other than the thread where the constructor was called will cause a \c ZSOCKET-THREAD-ERROR to be thrown.
  */
 qclass ZSocketPull [arg=QoreZSock* sock; ns=Qore::ZMQ; vparent=ZSocket; dom=NETWORK];
 
-//! constructs a PULL zsocket
+//! constructs a \c PULL zsocket
 /** @par Example
     @code
 ZSocketPull sock(ctx, "tcp://127.0.0.1:8001");
@@ -51,7 +64,7 @@ ZSocketPull::constructor(Qore::ZMQ::ZContext[QoreZContext] ctx, string endpoint)
    self->setPrivate(CID_ZSOCKETPULL, new QorePullZSock(*ctx, endpoint->c_str(), xsink));
 }
 
-//! constructs an unconnected PULL zsocket
+//! constructs an unconnected \c PULL zsocket
 /** @par Example
     @code
 ZSocketPull sock(ctx);

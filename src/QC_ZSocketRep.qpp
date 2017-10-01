@@ -27,7 +27,22 @@
 #include "QC_ZSocketRep.h"
 
 //! The ZSocketRep class implements a ZeroMQ \c REP socket
-/** @note
+/** A socket of type \c REP is used by a service to receive requests from and send replies to
+    a client. This socket type allows only an alternating sequence of
+    @ref ZSocket::recvMsg() "ZSocket::recv*()" and subsequent
+    @ref ZSocket::sendMsg() "ZSocket::send*()" calls. Each request received is fair-queued
+    from among all clients, and each reply sent is routed to the client that issued the last
+    request. If the original requester does not exist anymore, the reply is silently discarded.
+    \n\n
+    <b>Summary of \c REP characteristics</b>
+    |!Property|!Value
+    |Compatible peer sockets|@ref ZSocketReq "REQ", @ref ZSocketDealer "DEALER"
+    |Direction|Bidirectional
+    |Send/receive pattern|Receive, Send, Receive, Send, …
+    |Incoming routing strategy|Fair-queued
+    |Outgoing routing strategy|Last peer
+
+    @note
     - This class is not designed to be accessed from multiple threads; it was created without
       locking for fast and efficient use when used from a single thread.  For methods that would be
       unsafe to use in another thread, any use of such methods in threads other than the thread where the constructor was called will cause a \c ZSOCKET-THREAD-ERROR to be thrown.

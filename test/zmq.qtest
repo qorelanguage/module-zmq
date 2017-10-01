@@ -102,6 +102,8 @@ class ZmqTest inherits QUnit::Test {
         sock = new ZSocketSub(zctx, "@ipc://*", "xxx");
         assertEq("SUB", sock.type());
 %endif
+        # SUB sockets cannot send messages
+        assertThrows("ZSOCKET-SEND-ERROR", \sock.send(), "test");
 
         assertThrows("ZSOCKET-BIND-ERROR", sub () { new ZSocketSub(zctx, "@tcp://127.0.0.1:xxx", "xxx"); });
         sock = new ZSocketSub(zctx, "", "xxx");
@@ -121,6 +123,8 @@ class ZmqTest inherits QUnit::Test {
         assertEq("PUB", sock.type());
         sock.setIdentity("IdTest");
         assertEq("IdTest", sock.getIdentity());
+        # PUB sockets cannot receive messages
+        assertThrows("ZSOCKET-RECVMSG-ERROR", \sock.recvMsg());
 
         sock = new ZSocketXSub(zctx, "@tcp://127.0.0.1:*");
         assertEq("XSUB", sock.type());
@@ -132,6 +136,8 @@ class ZmqTest inherits QUnit::Test {
         assertEq("XSUB", sock.type());
         sock.setIdentity("IdTest");
         assertEq("IdTest", sock.getIdentity());
+        # XSUB sockets cannot send messages
+        assertThrows("ZSOCKET-SEND-ERROR", \sock.send(), "test");
 
         sock = new ZSocketXPub(zctx, "@tcp://127.0.0.1:*");
         assertEq("XPUB", sock.type());
@@ -208,6 +214,8 @@ class ZmqTest inherits QUnit::Test {
         assertEq("PUSH", sock.type());
         sock.setIdentity("IdTest");
         assertEq("IdTest", sock.getIdentity());
+        # PUSH sockets cannot receive messages
+        assertThrows("ZSOCKET-RECVMSG-ERROR", \sock.recvMsg());
 
         sock = new ZSocketPull(zctx, "@tcp://127.0.0.1:*");
         assertEq("PULL", sock.type());
@@ -219,6 +227,8 @@ class ZmqTest inherits QUnit::Test {
         assertEq("PULL", sock.type());
         sock.setIdentity("IdTest");
         assertEq("IdTest", sock.getIdentity());
+        # PULL sockets cannot send messages
+        assertThrows("ZSOCKET-SEND-ERROR", \sock.send(), "test");
 
         sock = new ZSocketPair(zctx, "@tcp://127.0.0.1:*");
         assertEq("PAIR", sock.type());

@@ -73,7 +73,7 @@ public:
     // returns -1 for error (exception raised), 0 for OK
     DLLLOCAL int connect(ExceptionSink *xsink, const char* endpoint, const char* err = "ZSOCKET-CONNECT-ERROR");
 
-    // return -1 for error (exceptio raised), 0 for OK
+    // returns -1 for error (exception raised), 0 for OK
     DLLLOCAL int setIdentity(const QoreString& id, ExceptionSink* xsink) {
         TempEncodingHelper id_utf8(id, QCS_UTF8, xsink);
         if (!id_utf8)
@@ -89,6 +89,19 @@ public:
             break;
         }
         return *xsink ? -1 : 0;
+    }
+
+    // returns -1 for error, 0 for OK
+    DLLLOCAL int setSocketOption(int option_name, const void *option_value, size_t option_len) {
+        while (true) {
+            int rc = zmq_setsockopt(sock, option_name, option_value, sizeof option_len);
+            if (!rc)
+                break;
+            if (errno == EINTR)
+                continue;
+            return -1;
+        }
+        return 0;
     }
 
     //! the error string for exceptions

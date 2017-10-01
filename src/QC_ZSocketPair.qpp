@@ -26,17 +26,37 @@
 
 #include "QC_ZSocketPair.h"
 
-//! The ZSocketPair class implements a ZeroMQ PAIR socket for the "exclusive pair" socket pattern
-/** @see <a href="https://rfc.zeromq.org/spec:31/EXPAIR/">ZMQ PAIR socket spec</a>
+//! The ZSocketPair class implements a ZeroMQ \c PAIR socket for the "exclusive pair" socket pattern
+/** @par Overview
+    A socket of type \c PAIR can only be connected to a single peer at any one time. No message
+    routing or filtering is performed on messages sent over a \c PAIR socket.
+    \n\n
+    When a \c PAIR socket enters the mute state due to having reached the high water mark for
+    the connected peer, or if no peer is connected, then any
+    @ref ZSocket::send() "ZSocket::send*()" operations on the socket shall block until the
+    peer becomes available for sending; messages are not discarded.
+    \n\n
+    <b>Summary of \c PAIR characteristics</b>
+    |!Property|!Value
+    |Compatible peer sockets|@ref ZSocketPair "PAIR"
+    |Direction|Bidirectional
+    |Send/receive pattern|Unrestricted
+    |Incoming routing strategy|N/A
+    |Outgoing routing strategy|N/A
+    |Action in mute state|Block
+
+    @see <a href="https://rfc.zeromq.org/spec:31/EXPAIR/">ZMQ PAIR socket spec</a>
 
     @note
     - This class is not designed to be accessed from multiple threads; it was created without
       locking for fast and efficient use when used from a single thread.  For methods that would be
       unsafe to use in another thread, any use of such methods in threads other than the thread where the constructor was called will cause a \c ZSOCKET-THREAD-ERROR to be thrown.
+    - \c PAIR sockets are designed for inter-thread communication across \c inproc:// transports
+      and do not implement functionality such as auto-reconnection.
  */
 qclass ZSocketPair [arg=QoreZSock* sock; ns=Qore::ZMQ; vparent=ZSocket; dom=NETWORK];
 
-//! constructs a PAIR zsocket
+//! constructs a \c PAIR zsocket
 /** @par Example
     @code
 ZSocketPair sock(ctx, "tcp://127.0.0.1:8001");
@@ -53,7 +73,7 @@ ZSocketPair::constructor(Qore::ZMQ::ZContext[QoreZContext] ctx, string endpoint)
    self->setPrivate(CID_ZSOCKETPAIR, new QorePairZSock(*ctx, endpoint->c_str(), xsink));
 }
 
-//! constructs an unconnected PAIR zsocket
+//! constructs an unconnected \c PAIR zsocket
 /** @par Example
     @code
 ZSocketPair sock(ctx);

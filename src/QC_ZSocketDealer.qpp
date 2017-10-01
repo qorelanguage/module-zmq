@@ -27,7 +27,30 @@
 #include "QC_ZSocketDealer.h"
 
 //! The ZSocketDealer class implements a ZeroMQ \c DEALER socket
-/** @note
+/** A socket of type \c DEALER is an advanced pattern used for extending request/reply
+    sockets. Each message sent is round-robined among all connected peers, and each
+    message received is fair-queued from all connected peers.
+    \n\n
+    When a \c DEALER socket enters the mute state due to having reached the high water
+    mark for all peers, or if there are no peers at all, then any
+    @ref ZSocket::send() "ZSocket::send*()" operations on the socket shall block until
+    the mute state ends or at least one peer becomes available for sending; messages
+    are not discarded.
+    \n\n
+    When a \c DEALER socket is connected to a @ref ZSocketRep "REP" socket, each message
+    sent must consist of an empty message part, the delimiter, followed by one or more
+    body parts.
+    \n\n
+    <b>Summary of \c DEALER characteristics</b>
+    |!Property|!Value
+    |Compatible peer sockets|@ref ZSocketRouter "ROUTER", @ref ZSocketRep "REP", @ref ZSocketDealer "DEALER"
+    |Direction|Bidirectional
+    |Send/receive pattern|Unrestricted
+    |Outgoing routing strategy|Round-robin
+    |Incoming routing strategy|Fair-queued
+    |Action in mute state|Block
+
+    @note
     - This class is not designed to be accessed from multiple threads; it was created without
       locking for fast and efficient use when used from a single thread.  For methods that would be
       unsafe to use in another thread, any use of such methods in threads other than the thread where the constructor was called will cause a \c ZSOCKET-THREAD-ERROR to be thrown.

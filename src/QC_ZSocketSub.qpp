@@ -26,12 +26,29 @@
 
 #include "QC_ZSocketSub.h"
 
-//! The ZSocketSub class implements a ZeroMQ SUB socket
-/**
+//! The ZSocketSub class implements a ZeroMQ \c SUB socket
+/** @par Overview
+    A socket of type \c SUB is used by a subscriber to subscribe to data distributed by a publisher.
+    Initially a \c SUB socket is not subscribed to any messages, use the @ref ZSocketSub::subscribe()
+    method to specify which messages to subscribe to. The @ref ZSocket::send() method is not
+    implemented for this socket type.
+    \n\n
+    <b>Summary of \c SUB characteristics</b>
+    |!Property|!Value
+    |Compatible peer sockets|@ref ZSocketPub "PUB", @ref ZSocketXPub "XPUB"
+    |Direction|Unidirectional
+    |Send/receive pattern|Receive only
+    |Incoming routing strategy|Fair-queued
+    |Outgoing routing strategy|N/A
+
+    @note
+    - This class is not designed to be accessed from multiple threads; it was created without
+      locking for fast and efficient use when used from a single thread.  For methods that would be
+      unsafe to use in another thread, any use of such methods in threads other than the thread where the constructor was called will cause a \c ZSOCKET-THREAD-ERROR to be thrown.
  */
 qclass ZSocketSub [arg=QoreSubZSock* zsock; ns=Qore::ZMQ; vparent=ZSocket; dom=NETWORK];
 
-//! constructs a SUB zsocket
+//! constructs a \c SUB zsocket
 /** @par Example
     @code
 ZSocketSub sock(ctx, "tcp://127.0.0.1:8001", str);
@@ -49,7 +66,7 @@ ZSocketSub::constructor(Qore::ZMQ::ZContext[QoreZContext] ctx, string endpoint, 
     self->setPrivate(CID_ZSOCKETSUB, new QoreSubZSock(*ctx, endpoint->c_str(), subscribe, xsink));
 }
 
-//! constructs an unconnected SUB zsocket
+//! constructs an unconnected \c SUB zsocket
 /** @par Example
     @code
 ZSocketSub sock(ctx);

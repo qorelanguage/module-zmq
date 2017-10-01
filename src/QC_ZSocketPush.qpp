@@ -26,15 +26,34 @@
 
 #include "QC_ZSocketPush.h"
 
-//! The ZSocketPush class implements a ZeroMQ PUSH socket
-/** @note
+//! The ZSocketPush class implements a ZeroMQ \c PUSH socket
+/** A socket of type \c PUSH is used by a pipeline node to send messages to downstream
+    pipeline nodes. Messages are round-robined to all connected downstream nodes. The
+    @ref ZSocket::recvMsg() "ZSocket::recv*()" methods are not implemented for this socket type.
+    \n\n
+    When a \c PUSH socket enters the mute state due to having reached the high water mark
+    for all downstream nodes, or if there are no downstream nodes at all, then any
+    @ref ZSocket::sendMsg "ZSocket::send*()" operations on the socket shall block until
+    the mute state ends or at least one downstream node becomes available for sending;
+    messages are not discarded.
+    \n\n
+    <b>Summary of \c PUSH characteristics</b>
+    |!Property|!Value
+    |Compatible peer sockets|@ref ZSocketPull "PULL"
+    |Direction|Unidirectional
+    |Send/receive pattern|Send only
+    |Incoming routing strategy|N/A
+    |Outgoing routing strategy|Round-robin
+    |Action in mute state|Block
+
+    @note
     - This class is not designed to be accessed from multiple threads; it was created without
       locking for fast and efficient use when used from a single thread.  For methods that would be
       unsafe to use in another thread, any use of such methods in threads other than the thread where the constructor was called will cause a \c ZSOCKET-THREAD-ERROR to be thrown.
  */
 qclass ZSocketPush [arg=QoreZSock* sock; ns=Qore::ZMQ; vparent=ZSocket; dom=NETWORK];
 
-//! constructs a PUSH zsocket
+//! constructs a \c PUSH zsocket
 /** @par Example
     @code
 ZSocketPush sock(ctx, "tcp://127.0.0.1:8001");
@@ -51,7 +70,7 @@ ZSocketPush::constructor(Qore::ZMQ::ZContext[QoreZContext] ctx, string endpoint)
    self->setPrivate(CID_ZSOCKETPUSH, new QorePushZSock(*ctx, endpoint->c_str(), xsink));
 }
 
-//! constructs an unconnected PUSH zsocket
+//! constructs an unconnected \c PUSH zsocket
 /** @par Example
     @code
 ZSocketPush sock(ctx);

@@ -489,6 +489,8 @@ int size = msg.size();
     @endcode
 
     @throw ZMSG-THREAD-ERROR this exception is thrown when the object is used in a thread other than the one that created it
+
+    @see contentSize()
  */
 int ZMsg::size() [flags=CONSTANT] {
    if (msg->check(xsink))
@@ -504,6 +506,8 @@ int size = msg.contentSize();
     @endcode
 
     @throw ZMSG-THREAD-ERROR this exception is thrown when the object is used in a thread other than the one that created it
+
+    @see size()
  */
 int ZMsg::contentSize() [flags=CONSTANT] {
    if (msg->check(xsink))

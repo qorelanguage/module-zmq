@@ -528,14 +528,8 @@ nothing ZSocket::setSendTimeout(timeout timeout_ms) {
         return QoreValue();
 
     int v = timeout_ms;
-    while (true) {
-        int rc = zmq_setsockopt(**zsock, ZMQ_SNDTIMEO, &v, sizeof v);
-        if (rc) {
-            if (errno == EINTR)
-                continue;
-            zmq_error(xsink, "ZSOCKET-SETSENDTIMEOUT-ERROR", "error in ZSocket::setSendTimeout()");
-        }
-    }
+    if (zsock->setSocketOption(ZMQ_SNDTIMEO, &v, sizeof v))
+        zmq_error(xsink, "ZSOCKET-SETSENDTIMEOUT-ERROR", "error in ZSocket::setSendTimeout()");
 }
 
 //! Sets the receive timeout in milliseconds
@@ -559,14 +553,8 @@ nothing ZSocket::setRecvTimeout(timeout timeout_ms) {
         return QoreValue();
 
     int v = timeout_ms;
-    while (true) {
-        int rc = zmq_setsockopt(**zsock, ZMQ_RCVTIMEO, &v, sizeof v);
-        if (rc) {
-            if (errno == EINTR)
-                continue;
-            zmq_error(xsink, "ZSOCKET-SETRECVTIMEOUT-ERROR", "error in ZSocket::setRecvTimeout()");
-       }
-    }
+    if (zsock->setSocketOption(ZMQ_RCVTIMEO, &v, sizeof v))
+        zmq_error(xsink, "ZSOCKET-SETRECVTIMEOUT-ERROR", "error in ZSocket::setRecvTimeout()");
 }
 
 //! Sets the send and receive timeout in milliseconds
@@ -590,24 +578,11 @@ nothing ZSocket::setTimeout(timeout timeout_ms) {
         return QoreValue();
 
     int v = timeout_ms;
-    while (true) {
-        int rc = zmq_setsockopt(**zsock, ZMQ_RCVTIMEO, &v, sizeof v);
-        if (rc) {
-            if (errno == EINTR)
-                continue;
-            zmq_error(xsink, "ZSOCKET-SETTIMEOUT-ERROR", "error setting receive timeout in ZSocket::setTimeout()");
-            return QoreValue();
-        }
-    }
+    if (zsock->setSocketOption(ZMQ_RCVTIMEO, &v, sizeof v))
+        zmq_error(xsink, "ZSOCKET-SETTIMEOUT-ERROR", "error setting receive timeout in ZSocket::setTimeout()");
     v = timeout_ms;
-    while (true) {
-        int rc = zmq_setsockopt(**zsock, ZMQ_SNDTIMEO, &v, sizeof v);
-        if (rc) {
-            if (errno == EINTR)
-                continue;
-            zmq_error(xsink, "ZSOCKET-SETTIMEOUT-ERROR", "error setting send timeout in ZSocket::setTimeout()");
-        }
-    }
+    if (zsock->setSocketOption(ZMQ_SNDTIMEO, &v, sizeof v))
+        zmq_error(xsink, "ZSOCKET-SETTIMEOUT-ERROR", "error setting send timeout in ZSocket::setTimeout()");
 }
 
 //! Sets the socket identity string
@@ -710,43 +685,24 @@ nothing ZSocket::send(binary bin) {
         zmq_error(xsink, "ZSOCKET-SEND-ERROR", "error sending binary object");
 }
 
-//! Send a 'picture' message to the socket
+//! Sends a zero-length message over the socket
 /** @par Example:
     @code{.py}
-zsock.send("i", i);
+zsock.send();
     @endcode
 
-    @param picture a string that defines the type of each frame. This makes it easy to send a complex multiframe message in one call. The picture can contain any of these characters, each corresponding to one or two arguments:
-    - \c i = \c int (signed)
-    - \c 1 = \c uint8_t (i.e. an 8 bit / single byte value)
-    - \c 2 = \c uint16_t (i.e. a 16 bit / 2-byte unsigned integer value)
-    - \c 4 = \c uint32_t (i.e. a 32 bit / 4-byte unsigned integer value)
-    - \c 8 = \c uint64_t (i.e. a 64 bit / 8-byte unsigned integer value)
-    - \c s = \c string
-    - \c b = \c binary
-    - \c c = \c zchunk_t*
-    - \c f = @ref Qore::ZMQ::ZFrame "ZFrame"
-    - \c h = \c zhashx_t*
-    - \c U = \c zuuid_t*
-    - \c m = @ref Qore::ZMQ::ZMsg "ZMsg" (sends all frames in the zmsg)
-    - \c z = sends zero-sized frame (0 arguments)
-    .
-    Note that s, b, c, and f are encoded the same way and the choice is
-    offered as a convenience to the sender, which may or may not already
-    have data in a zchunk or zframe. Does
-    @param ... arguments corresponding to \a picture; if there are not enough arguments an exception is thrown
-
-    @throw ZSOCKET-SENDPICTURE-ARG-ERROR there was an error processing the arguments for the send call
-    @throw ZSOCKET-SENDPICTURE-ERROR an error occurred sending the data
+    @throw ZSOCKET-SEND-ERROR an error occurred sending the data
     @throw ZSOCKET-TIMEOUT thrown if a timeout error occurs
     @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
+
+    @note equivalent to calling ZSocket::send(string) or ZSocket::send(binary) with empty arguments
 */
-nothing ZSocket::sendPicture(string picture, ...) {
+nothing ZSocket::send() {
     // enforce access from the correct thread
     if (zsock->check(xsink))
         return QoreValue();
 
-    int rc = zsock_vsend(**zsock, picture->c_str(), nullptr);//zargs);
-    if (rc < 0)
-        zmq_error(xsink, "ZSOCKET-SENDPICTURE-ERROR", "error in ZSocket::send()");
+    int rc = zsock_send(**zsock, "b", nullptr, 0);
+    if (rc)
+        zmq_error(xsink, "ZSOCKET-SEND-ERROR", "error sending empty message");
 }

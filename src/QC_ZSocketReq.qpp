@@ -25,7 +25,27 @@
 #include "QC_ZSocketReq.h"
 
 //! The ZSocketReq class implements a ZeroMQ \c REQ socket
-/** @note
+/** @par Overview
+    A socket of type \c REQ is used by a client to send requests to and receive replies from a
+    service. This socket type allows only an alternating sequence of
+    @ref ZSocket::sendMsg() "ZSocket::send*()"
+    and subsequent @ref ZSocket::recvMsg() "ZSocket::recv*()" calls. Each request sent
+    is round-robined among all services, and each reply received is matched with the last
+    issued request.
+    \n\n
+    If no services are available, then any send operation on the socket shall block until at
+    least one service becomes available. The \c REQ socket shall not discard messages.
+    \n\n
+    <b>Summary of \c REQ characteristics</b>
+    |!Property|!Value
+    |Compatible peer sockets|@ref ZSocketRep "REP", @ref ZSocketRouter "ROUTER"
+    |Direction|Bidirectional
+    |Send/receive pattern|Send, Receive, Send, Receive, ...
+    |Outgoing routing strategy|Round-robin
+    |Incoming routing strategy|Last peer
+    |Action in mute state|Block
+
+    @note
     - This class is not designed to be accessed from multiple threads; it was created without
       locking for fast and efficient use when used from a single thread.  For methods that would be
       unsafe to use in another thread, any use of such methods in threads other than the thread where the constructor was called will cause a \c ZSOCKET-THREAD-ERROR to be thrown.

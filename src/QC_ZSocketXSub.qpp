@@ -26,15 +26,32 @@
 
 #include "QC_ZSocketXSub.h"
 
-//! The ZSocketXSub class implements a ZeroMQ XSUB socket
-/** @note
+//! The ZSocketXSub class implements a ZeroMQ \c XSUB socket
+/** @par Overview
+    A socket of type \c XSUB is used by a subscriber to subscribe to data distributed by a publisher.
+    Initially a \c XSUB socket is not subscribed to any messages.
+    Subscribe by sending subscription messages to the socket.
+    The subscription message is a single byte; 1 (for subscriptions) or 0 (for unsubscriptions) followed by the subscription body.
+    Messages without a sub/unsub prefix may also be sent, but have no effect on subscription status.
+    \n\n
+    <b>Summary of \c XSUB characteristics</b>
+    |!Property|!Value
+    |Compatible peer sockets|@ref ZSocketPub "PUB", @ref ZSocketXPub "XPUB"
+    |Direction|Unidirectional
+    |Send/receive pattern|Receive messages, send subscriptions
+    |Incoming routing strategy|Fair-queued
+    |Outgoing routing strategy|N/A
+    |Action in mute state|Drop
+
+    @note
+    - The @ref ZSocket::send() method is not implemented for this socket type.
     - This class is not designed to be accessed from multiple threads; it was created without
       locking for fast and efficient use when used from a single thread.  For methods that would be
       unsafe to use in another thread, any use of such methods in threads other than the thread where the constructor was called will cause a \c ZSOCKET-THREAD-ERROR to be thrown.
  */
 qclass ZSocketXSub [arg=QoreZSock* sock; ns=Qore::ZMQ; vparent=ZSocket; dom=NETWORK];
 
-//! constructs a XSUB zsocket
+//! constructs a \c XSUB zsocket
 /** @par Example
     @code
 ZSocketXSub sock(ctx, "tcp://127.0.0.1:8001");
@@ -51,7 +68,7 @@ ZSocketXSub::constructor(Qore::ZMQ::ZContext[QoreZContext] ctx, string endpoint)
    self->setPrivate(CID_ZSOCKETXSUB, new QoreXSubZSock(*ctx, endpoint->c_str(), xsink));
 }
 
-//! constructs an unconnected XSUB zsocket
+//! constructs an unconnected \c XSUB zsocket
 /** @par Example
     @code
 ZSocketXSub sock(ctx);

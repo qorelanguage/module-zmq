@@ -26,15 +26,29 @@
 
 #include "QC_ZSocketXPub.h"
 
-//! The ZSocketXPub class implements a ZeroMQ XPUB socket
-/** @note
+//! The ZSocketXPub class implements a ZeroMQ \c XPUB socket
+/** @par Overview
+    Objects of this class can receive subscriptions from the peers in form of incoming messages.
+    The subscription message is a single byte; 1 (for subscriptions) or  0 (for unsubscriptions) followed by the subscription body.
+    Messages without a sub/unsub prefix are also received, but have no effect on subscription status.
+    \n\n
+    <b>Summary of \c XPUB characteristics</b>
+    |!Property|!Value
+    |Compatible peer sockets|@ref ZSocketSub "SUB", @ref ZSocketXSub "XSUB"
+    |Direction|Unidirectional
+    |Send/receive pattern|Send messages, receive subscriptions
+    |Incoming routing strategy|N/A
+    |Outgoing routing strategy|Fan out
+    |Action in mute state|Drop
+
+    @note
     - This class is not designed to be accessed from multiple threads; it was created without
       locking for fast and efficient use when used from a single thread.  For methods that would be
       unsafe to use in another thread, any use of such methods in threads other than the thread where the constructor was called will cause a \c ZSOCKET-THREAD-ERROR to be thrown.
  */
 qclass ZSocketXPub [arg=QoreZSock* sock; ns=Qore::ZMQ; vparent=ZSocket; dom=NETWORK];
 
-//! constructs a XPUB zsocket
+//! constructs a \c XPUB zsocket
 /** @par Example
     @code
 ZSocketXPub sock(ctx, "endpoint");
@@ -51,7 +65,7 @@ ZSocketXPub::constructor(Qore::ZMQ::ZContext[QoreZContext] ctx, string endpoint)
    self->setPrivate(CID_ZSOCKETXPUB, new QoreXPubZSock(*ctx, endpoint->c_str(), xsink));
 }
 
-//! constructs an unconnected XPUB zsocket
+//! constructs an unconnected \c XPUB zsocket
 /** @par Example
     @code
 ZSocketXPub sock(ctx);

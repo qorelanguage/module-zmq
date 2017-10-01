@@ -26,15 +26,78 @@
 
 #include "QC_ZSocketStream.h"
 
-//! The ZSocketStream class implements a ZeroMQ STREAM socket
-/** @note
+//! The ZSocketStream class implements a ZeroMQ \c STREAM socket
+/** @par Overview
+    A socket of type \c STREAM is used to send and receive TCP data from a non-ØMQ peer,
+    when using the \c tcp:// transport. A \c STREAM socket can act as client and/or server,
+    sending and/or receiving TCP data asynchronously.
+    \n\n
+    When receiving TCP data, a \c STREAM socket shall prepend a message part containing the
+    identity of the originating peer to the message before passing it to the application.
+    Messages received are fair-queued from among all connected peers.
+    \n\n
+    When sending TCP data, a \c STREAM socket shall remove the first part of the message and
+    use it to determine the identity of the peer the message shall be routed to, and unroutable
+    messages shall cause an \c EHOSTUNREACH or \c EAGAIN error.
+    \n\n
+    To open a connection to a server, use the @ref ZSocket::connect() call, and then fetch the
+    socket identity using the @ref ZSocket::getIdentity().
+    \n\n
+    To close a specific connection, send the identity frame followed by a zero-length message;
+    see the example below.
+    \n\n
+    When a connection is made, a zero-length message will be received by the application. Similarly,
+    when the peer disconnects (or the connection is lost), a zero-length message will be received
+    by the application.
+    \n\n
+    You must send one identity frame followed by one data frame; the @ref ZMQ_SNDMORE flag is required
+    for identity frames but is ignored for data frames.
+    \n\n
+    <b>Summary of \c STREAM characteristics</b>
+    |!Property|!Value
+    |Compatible peer sockets|none
+    |Direction|Bidirectional
+    |Send/receive pattern|Unrestricted
+    |Outgoing routing strategy|See text
+    |Incoming routing strategy|Fair-queued
+    |Action in mute state|\c EAGAIN
+
+    @par Example
+    @code{.py}
+ZContext zctx();
+ZSocketStream sock(zctx);
+sock.bind("tcp://*:8080");
+while (True) {
+    # Get HTTP request; ID frame and then request
+    ZFrame id = sock.recvFrame();
+    ZMsg msg = sock.recvMsg();
+    if (!msg.contentSize())
+        continue;
+    # prepare the response
+    string http_msg = "Hello, World!";
+    string http_response = sprintf("HTTP/1.0 200 OK\r
+Content-Type: text/plain\r
+Content-Length: %d\r
+\r
+%s", http_msg.size(), http_msg);
+
+    # Send the ID frame followed by the response
+    sock.send(id, Qore::ZMQ::ZFRAME_MORE);
+    sock.send(http_response);
+    # Closes the connection by sending the ID frame followed by a zero response
+    sock.send(id, Qore::ZMQ::ZFRAME_MORE);
+    sock.send();
+}
+    @endcode
+
+    @note
     - This class is not designed to be accessed from multiple threads; it was created without
       locking for fast and efficient use when used from a single thread.  For methods that would be
       unsafe to use in another thread, any use of such methods in threads other than the thread where the constructor was called will cause a \c ZSOCKET-THREAD-ERROR to be thrown.
  */
 qclass ZSocketStream [arg=QoreZSock* sock; ns=Qore::ZMQ; vparent=ZSocket; dom=NETWORK];
 
-//! constructs a STREAM zsocket
+//! constructs a \c STREAM zsocket
 /** @par Example
     @code
 ZSocketStream sock(ctx, "tcp://127.0.0.1:8001");
@@ -51,7 +114,7 @@ ZSocketStream::constructor(Qore::ZMQ::ZContext[QoreZContext] ctx, string endpoin
    self->setPrivate(CID_ZSOCKETSTREAM, new QoreStreamZSock(*ctx, endpoint->c_str(), xsink));
 }
 
-//! constructs an unconnected STREAM zsocket
+//! constructs an unconnected \c STREAM zsocket
 /** @par Example
     @code
 ZSocketStream sock(ctx);

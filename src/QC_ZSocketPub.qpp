@@ -27,7 +27,25 @@
 #include "QC_ZSocketPub.h"
 
 //! The ZSocketPub class implements a ZeroMQ PUB socket
-/** @note
+/** A socket of type \c PUB is used by a publisher to distribute data. Messages sent are
+    distributed in a fan out fashion to all connected peers. The
+    @ref ZSocket::recvMsg() "ZSocket::recv*()" methods are not implemented for this socket type.
+
+    When a \c PUB socket enters the mute state due to having reached the high water mark
+    for a subscriber, then any messages that would be sent to the subscriber in question
+    shall instead be dropped until the mute state ends. The @ref ZSocket::send() "ZSocket::send*()"
+    methods shall never block for this socket type.
+    \n\n
+    <b>Summary of \c PUB characteristics</b>
+    |!Property|!Value
+    |Compatible peer sockets|@ref ZSocketSub "SUB", @ref ZSocketXSub "XSUB"
+    |Direction|Unidirectional
+    |Send/receive pattern|Send only
+    |Incoming routing strategy|N/A
+    |Outgoing routing strategy|Fan out
+    |Action in mute state|Drop
+
+    @note
     - This class is not designed to be accessed from multiple threads; it was created without
       locking for fast and efficient use when used from a single thread.  For methods that would be
       unsafe to use in another thread, any use of such methods in threads other than the thread where the constructor was called will cause a \c ZSOCKET-THREAD-ERROR to be thrown.
