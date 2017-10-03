@@ -92,9 +92,22 @@ public:
     }
 
     // returns -1 for error, 0 for OK
-    DLLLOCAL int setSocketOption(int option_name, const void *option_value, size_t option_len) {
+    DLLLOCAL int setSocketOption(int option_name, const void* option_value, size_t option_len) {
         while (true) {
-            int rc = zmq_setsockopt(sock, option_name, option_value, sizeof option_len);
+            int rc = zmq_setsockopt(sock, option_name, option_value, option_len);
+            if (!rc)
+                break;
+            if (errno == EINTR)
+                continue;
+            return -1;
+        }
+        return 0;
+    }
+
+    // returns -1 for error, 0 for OK
+    DLLLOCAL int getSocketOption(int option_name, void* option_value, size_t* option_len) {
+        while (true) {
+            int rc = zmq_getsockopt(sock, option_name, option_value, option_len);
             if (!rc)
                 break;
             if (errno == EINTR)

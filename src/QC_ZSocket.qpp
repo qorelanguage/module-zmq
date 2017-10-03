@@ -32,6 +32,8 @@
 #include <zframe.h>
 #include <zmq.h>
 
+#include <map>
+
 /** @defgroup zsocket_events ZSocket Events
     These constants define event codes for @ref Qore::ZMQ::ZSocket::monitor() "ZSocket::monitor()"
     and are meant to be combined with binary or to create a socket event mask.
@@ -126,6 +128,1204 @@ const ZmqEventStringMap = (
 );
 //@}
 
+/** @defgroup zsocket_options ZSocket Options
+    These constants define socket option codes for
+    @ref Qore::ZMQ::ZSocket::setOption() "ZSocket::setOption()"
+    and @ref Qore::ZMQ::ZSocket::getOption() "ZSocket::getOption()"
+*/
+//@{
+//! Set I/O thread affinity
+/** The ZMQ_AFFINITY option shall set the I/O thread affinity for newly created connections on the specified socket.
+
+    Affinity determines which threads from the ØMQ I/O thread pool associated with the socket's context shall handle newly created connections. A value of zero specifies no affinity, meaning that work shall be distributed fairly among all ØMQ I/O threads in the thread pool. For non-zero values, the lowest bit corresponds to thread 1, second lowest bit to thread 2 and so on. For example, a value of 3 specifies that subsequent connections on socket shall be handled exclusively by I/O threads 1 and 2.
+
+    <b>0MQ Socket Option Information</b>
+    |!Property|!Description
+    |Option value type|uint64_t
+    |Option value unit|N/A (bitmap)
+    |Default value|0
+    |Applicable socket types|N/A
+*/
+const ZMQ_AFFINITY = ZMQ_AFFINITY;
+
+//! Set maximum length of the queue of outstanding connections
+/** The ZMQ_BACKLOG option shall set the maximum length of the queue of outstanding peer connections
+    for the specified socket; this only applies to connection-oriented transports. For details refer
+    to your operating system documentation for the listen function.
+
+    <b>0MQ Socket Option Information</b>
+    |!Property|!Description
+    |Option value type|int
+    |Option value unit|connections
+    |Default value|100
+    |Applicable socket types|all, only for connection-oriented transports.
+*/
+const ZMQ_BACKLOG = ZMQ_BACKLOG;
+
+//! Assign the next outbound connection id
+/** The ZMQ_CONNECT_RID option sets the peer id of the next host connected via the @ref ZSocket::connect()
+    call, and immediately readies that connection for data transfer with the named id. This option applies
+    only to the first subsequent call to @ref ZSocket::connect(), calls thereafter use default connection behaviour.
+
+    Typical use is to set this socket option ahead of each @ref ZSocket::connect() attempt to a new host. Each connection MUST be assigned a unique name. Assigning a name that is already in use is not allowed.
+
+    Useful when connecting @ref ZSocketRouter "ROUTER" to @ref ZSocketRouter "ROUTER", or
+    @ref ZSocketStream "STREAM" to @ref ZSocketStream "STREAM", as it allows for immediate sending to peers.
+    Outbound id framing requirements for @ref ZSocketRouter "ROUTER" and
+    @ref ZSocketStream "STREAM" sockets apply.
+
+    The peer id should be from 1 to 255 bytes long and MAY NOT start with binary zero.
+
+    <b>0MQ Socket Option Information</b>
+    |!Property|!Description
+    |Option value type|binary data
+    Option value unit|N/A
+    Default value|@ref nothing
+    Applicable socket types|@ref ZSocketRouter "ROUTER", @ref ZSocketStream "STREAM"
+*/
+const ZMQ_CONNECT_RID = ZMQ_CONNECT_RID;
+
+//! Keep only last message
+/** If set, a socket shall keep only one message in its inbound/outbound queue, this message being the
+    last message received/the last message to be sent. Ignores @ref ZMQ_RCVHWM and
+    @ref ZMQ_SNDHWM options. Does not support multi-part messages, in particular, only one part of it
+    is kept in the socket internal queue.
+
+    <b>0MQ Socket Option Information</b>
+    |!Property|!Description
+    |Option value type|int
+    |Option value unit|boolean
+    |Default value|0 (false)
+    |Applicable socket types|@ref ZSocketPull, @ref ZSocketPush, @ref ZSocketSub, @ref ZSocketPub, @ref ZSocketDealer
+*/
+const ZMQ_CONFLATE = ZMQ_CONFLATE;
+
+//! Set connect timeout
+/** Sets how long to wait before timing-out a \c connect() system call. The \c connect() system call
+    normally takes a long time before it returns a time out error. Setting this option allows the
+    library to time out the call at an earlier interval.
+
+    <b>0MQ Socket Option Information</b>
+    |!Property|!Description
+    |Option value type|int
+    |Option value unit|milliseconds
+    |Default value|0 (disabled)
+    |Applicable socket types|all, when using TCP transports.
+*/
+const ZMQ_CONNECT_TIMEOUT = ZMQ_CONNECT_TIMEOUT;
+
+//! Set CURVE public key
+/** Sets the socket's long term public key. You must set this on CURVE client sockets. You can provide
+    the key as 32 binary bytes, or as a 40-character string encoded in the Z85 encoding format and
+    terminated in a null byte. The public key must always be used with the matching secret key. To
+    generate a public/secret key pair, use zmq_curve_keypair(3). To derive the public key from a secret
+    key, use zmq_curve_public(3).
+
+    An option value size of 40 is supported for backwards compatibility, although it is deprecated.
+
+    <b>0MQ Socket Option Information</b>
+    |!Property|!Description
+    |Option value type|binary data or Z85 text string
+    |Option value size|32 or 41
+    |Default value|@ref nothing
+    |Applicable socket types|all, when using TCP transport
+*/
+const ZMQ_CURVE_PUBLICKEY = ZMQ_CURVE_PUBLICKEY;
+
+//! Set CURVE secret key
+/** Sets the socket's long term secret key. You must set this on both CURVE client and server sockets.
+    You can provide the key as 32 binary bytes, or as a 40-character string encoded in the Z85
+    encoding format and terminated in a null byte. To generate a public/secret key pair, use
+    zmq_curve_keypair(3). To derive the public key from a secret key, use zmq_curve_public(3).
+
+    An option value size of 40 is supported for backwards compatibility, although it is deprecated.
+
+    <b>0MQ Socket Option Information</b>
+    |!Property|!Description
+    |Option value type|binary data or Z85 text string
+    |Option value size|32 or 41
+    |Default value|@ref nothing
+    |Applicable socket types|all, when using TCP transport
+*/
+const ZMQ_CURVE_SECRETKEY = ZMQ_CURVE_SECRETKEY;
+
+//! Set CURVE server role
+/** Defines whether the socket will act as server for CURVE security. A value of 1 means the socket
+    will act as CURVE server. A value of 0 means the socket will not act as CURVE server, and its
+    security role then depends on other option settings. Setting this to 0 shall reset the socket
+    security to NULL. When you set this you must also set the server's secret key using the
+    @ref ZMQ_CURVE_SECRETKEY option. A server socket does not need to know its own public key.
+
+    <b>0MQ Socket Option Information</b>
+    |!Property|!Description
+    |Option value type|bool
+    |Option value unit|@ref True, @ref False
+    |Default value|@ref False
+    |Applicable socket types|all, when using TCP transport
+*/
+const ZMQ_CURVE_SERVER = ZMQ_CURVE_SERVER;
+
+//! Set CURVE server key
+/** Sets the socket's long term server key. You must set this on CURVE client sockets. You can provide
+    the key as 32 binary bytes, or as a 40-character string encoded in the Z85 encoding format and
+    terminated in a null byte. This key must have been generated together with the server's secret key.
+    To generate a public/secret key pair, use zmq_curve_keypair(3).
+
+    An option value size of 40 is supported for backwards compatibility, although it is deprecated.
+
+    <b>0MQ Socket Option Information</b>
+    |!Property|!Description
+    |Option value type|binary data or Z85 text string
+    |Option value size|32 or 41
+    |Default value|NULL
+    |Applicable socket types|all, when using TCP transport
+*/
+const ZMQ_CURVE_SERVERKEY = ZMQ_CURVE_SERVERKEY;
+
+//! Disable GSSAPI encryption
+/** Defines whether communications on the socket will be encrypted. A value of 1 means that communications will be plaintext. A value of 0 means communications will be encrypted.
+
+    <b>0MQ Socket Option Information</b>
+    |!Property|!Description
+    |Option value type|bool
+    |Option value unit|@ref True, @ref False
+    |Default value|@ref False
+    |Applicable socket types|all, when using TCP transport
+*/
+const ZMQ_GSSAPI_PLAINTEXT = ZMQ_GSSAPI_PLAINTEXT;
+
+//! Set name of GSSAPI principal
+/** Sets the name of the principal for whom GSSAPI credentials should be acquired.
+
+    <b>0MQ Socket Option Information</b>
+    |!Property|!Description
+    |Option value type|character string
+    |Option value unit|N/A
+    |Default value|not set
+    |Applicable socket types|all, when using TCP transport
+*/
+const ZMQ_GSSAPI_PRINCIPAL = ZMQ_GSSAPI_PRINCIPAL;
+
+//! Set GSSAPI server role
+/** Defines whether the socket will act as server for GSSAPI security. A value of 1 means the socket
+    will act as GSSAPI server. A value of 0 means the socket will act as GSSAPI client.
+
+    <b>0MQ Socket Option Information</b>
+    |!Property|!Description
+    |Option value type|bool
+    |Option value unit|@ref True, @ref False
+    |Default value|@ref False
+    |Applicable socket types|all, when using TCP transport
+*/
+const ZMQ_GSSAPI_SERVER = ZMQ_GSSAPI_SERVER;
+
+//! Set name of GSSAPI service principal
+/** Sets the name of the principal of the GSSAPI server to which a GSSAPI client intends to connect.
+
+    <b>0MQ Socket Option Information</b>
+    |!Property|!Description
+    |Option value type|character string
+    |Option value unit|N/A
+    |Default value|not set
+    |Applicable socket types|all, when using TCP transport
+*/
+const ZMQ_GSSAPI_SERVICE_PRINCIPAL = ZMQ_GSSAPI_SERVICE_PRINCIPAL;
+
+//! Set maximum handshake interval
+/** The ZMQ_HANDSHAKE_IVL option shall set the maximum handshake interval for the specified socket.
+    Handshaking is the exchange of socket configuration information (socket type, identity,
+    security) that occurs when a connection is first opened, only for connection-oriented
+    transports. If handshaking does not complete within the configured time, the connection shall
+    be closed. The value 0 means no handshake time limit.
+
+    <b>0MQ Socket Option Information</b>
+    |!Property|!Description
+    |Option value type|int
+    |Option value unit|milliseconds
+    |Default value|30000
+    |Applicable socket types|all but @ref ZSocketStream "STREAM", only for connection-oriented transports
+*/
+const ZMQ_HANDSHAKE_IVL = ZMQ_HANDSHAKE_IVL;
+
+//! Set interval between sending ZMTP heartbeats
+/** The ZMQ_HEARTBEAT_IVL option shall set the interval between sending ZMTP heartbeats for the
+    specified socket. If this option is set and is greater than 0, then a \c PING ZMTP command will
+    be sent every ZMQ_HEARTBEAT_IVL milliseconds.
+
+    <b>0MQ Socket Option Information</b>
+    |!Property|!Description
+    |Option value type|int
+    |Option value unit|milliseconds
+    |Default value|0
+    |Applicable socket types|all, when using connection-oriented transports
+*/
+const ZMQ_HEARTBEAT_IVL = ZMQ_HEARTBEAT_IVL;
+
+//! Set timeout for ZMTP heartbeats
+/** The ZMQ_HEARTBEAT_TIMEOUT option shall set how long to wait before timing-out a connection
+    after sending a \c PING command and not receiving any traffic. This option is only valid
+    if ZMQ_HEARTBEAT_IVL is also set, and is greater than 0. The connection will time out if
+    there is no traffic received after sending the \c PING command, but the received traffic does
+    not have to be a \c PONG command - any received traffic will cancel the timeout.
+
+    <b>0MQ Socket Option Information</b>
+    |!Property|!Description
+    |Option value type|int
+    |Option value unit|milliseconds
+    |Default value|0
+    |Applicable socket types|all, when using connection-oriented transports
+*/
+const ZMQ_HEARTBEAT_TIMEOUT = ZMQ_HEARTBEAT_TIMEOUT;
+
+//! Set the TTL value for ZMTP heartbeats
+/** The ZMQ_HEARTBEAT_TTL option shall set the timeout on the remote peer for ZMTP heartbeats.
+    If this option is greater than 0, the remote side shall time out the connection if it does
+    not receive any more traffic within the TTL period. This option does not have any effect
+    if ZMQ_HEARTBEAT_IVL is not set or is 0. Internally, this value is rounded down to the
+    nearest decisecond, any value less than 100 will have no effect.
+
+    <b>0MQ Socket Option Information</b>
+    |!Property|!Description
+    |Option value type|int
+    |Option value unit|milliseconds
+    |Default value|0
+    |Applicable socket types|all, when using connection-oriented transports
+*/
+const ZMQ_HEARTBEAT_TTL = ZMQ_HEARTBEAT_TTL;
+
+//! Set socket identity
+/** The ZMQ_IDENTITY option shall set the identity of the specified socket when connecting to a
+    @ref ZSocketRouter "ROUTER" socket. The identity should be from 1 to 255 bytes long and may
+    contain any values.
+
+    If two clients use the same identity when connecting to a @ref ZSocketRouter "ROUTER", the
+    results shall depend on the @ref ZMQ_ROUTER_HANDOVER option setting. If that is not set
+    (or set to the default of zero), the @ref ZSocketRouter "ROUTER" socket shall reject
+    clients trying to connect with an already-used identity. If that option is set to 1, the
+    @ref ZSocketRouter "ROUTER" socket shall hand-over the connection to the new client and
+    disconnect the existing one.
+
+    <b>0MQ Socket Option Information</b>
+    |!Property|!Description
+    |Option value type|binary data
+    |Option value unit|N/A
+    |Default value|NULL
+    |Applicable socket types|@ref ZSocketReq "REQ", @ref ZSocketRep "REP", @ref ZSocketRouter "ROUTER", @ref ZSocketDealer "DEALER".
+
+    @see
+    - @ref ZSocket::getIdentity()
+    - @ref ZSocket::setIdentity()
+*/
+const ZMQ_IDENTITY = ZMQ_IDENTITY;
+
+//! Queue messages only to completed connections
+/** By default queues will fill on outgoing connections even if the connection has not completed.
+    This can lead to "lost" messages on sockets with round-robin routing
+    (@ref ZSocketReq "REQ", @ref ZSocketPush "PUSH", @ref ZSocketDealer "DEALER").
+    If this option is set to @ref True, messages shall be queued only to completed connections.
+    This will cause the socket to block if there are no other connections, but will prevent
+    queues from filling on pipes awaiting connection.
+
+    <b>0MQ Socket Option Information</b>
+    |!Property|!Description
+    |Option value type|bool
+    |Option value unit|@ref True, @ref False
+    |Default value|@ref False
+    |Applicable socket types|all, only for connection-oriented transports.
+*/
+const ZMQ_IMMEDIATE = ZMQ_IMMEDIATE;
+
+//! Invert message filtering
+/** Reverses the filtering behavior of \c PUB-SUB sockets, when set to @ref True.
+
+    On @ref ZSocketPub "PUB" and @ref ZSocketXPub "XPUB" sockets, this causes messages to be
+    sent to all connected sockets except those subscribed to a prefix that matches the message.
+    On @ref ZSocketSub "SUB" sockets, this causes only incoming messages that do not match
+    any of the socket's subscriptions to be received by the user.
+
+    Whenever ZMQ_INVERT_MATCHING is set to @ref True on a @ref ZSocketPub "PUB" socket, all
+    @ref ZSocketSub "SUB" sockets connecting to it must also have the option set to 1. Failure
+    to do so will have the @ref ZSocketSub "SUB" sockets reject everything the
+    @ref ZSocketPub "PUB" socket sends them. @ref ZSocketXSub "XSUB" sockets do not need to
+    do this because they do not filter incoming messages.
+
+    <b>0MQ Socket Option Information</b>
+    |!Property|!Description
+    |Option value type|bool
+    |Option value unit|@ref True, @ref False
+    |Default value|@ref False
+    |Applicable socket types|@ref ZSocketPub "PUB", @ref ZSocketXPub "XPUB", @ref ZSocketSub "SUB"
+*/
+const ZMQ_INVERT_MATCHING = ZMQ_INVERT_MATCHING;
+
+//! Enable IPv6 on socket
+/** Set the IPv6 option for the socket. A value of @ref True means IPv6 is enabled on the socket,
+    while @ref False means the socket will use only IPv4. When IPv6 is enabled the socket will
+    connect to, or accept connections from, both IPv4 and IPv6 hosts.
+
+    <b>0MQ Socket Option Information</b>
+    |!Property|!Description
+    |Option value type|bool
+    |Option value unit|@ref True, @ref False
+    |Default value|@ref False
+    |Applicable socket types|all, when using TCP transports.
+*/
+const ZMQ_IPV6 = ZMQ_IPV6;
+
+//! Set linger period for socket shutdown
+/** The ZMQ_LINGER option shall set the linger period for the specified socket. The linger period
+    determines how long pending messages which have yet to be sent to a peer shall linger in memory
+    after a socket is disconnected and further affects the termination of the socket's context.
+
+    he following outlines the different behaviours:
+    - -1: specifies an infinite linger period. Pending messages shall not be discarded after a disconnect or close; attempting to terminate the socket's context shall block until all pending messages have been sent to a peer.
+    - 0: specifies no linger period. Pending messages shall be discarded immediately after a disconnect or close.
+    - positive values: specify an upper bound for the linger period in milliseconds. Pending messages shall not be discarded after a disconnect or close; attempting to terminate the socket's context shall block until either all pending messages have been sent to a peer, or the linger period expires, after which any pending messages shall be discarded.
+
+    <b>0MQ Socket Option Information</b>
+    |!Property|!Description
+    |Option value type|int
+    |Option value unit|milliseconds
+    |Default value|30000 (thirty seconds)
+    |Applicable socket types|all
+*/
+const ZMQ_LINGER = ZMQ_LINGER;
+
+//! Maximum acceptable inbound message size
+/** Limits the size of the inbound message. If a peer sends a message larger than ZMQ_MAXMSGSIZE it is disconnected. Value of -1 means no limit.
+
+    <b>0MQ Socket Option Information</b>
+    |!Property|!Description
+    |Option value type|int64_t
+    |Option value unit|bytes
+    |Default value|-1
+    |Applicable socket types|all
+*/
+const ZMQ_MAXMSGSIZE = ZMQ_MAXMSGSIZE;
+
+//! Maximum network hops for multicast packets
+/** Sets the time-to-live field in every multicast packet sent from this socket.
+    The default is 1 which means that the multicast packets don't leave the local network.
+
+    <b>0MQ Socket Option Information</b>
+    |!Property|!Description
+    |Option value type|int
+    |Option value unit|network hops
+    |Default value|1
+    |Applicable socket types|all, when using multicast transports
+*/
+const ZMQ_MULTICAST_HOPS = ZMQ_MULTICAST_HOPS;
+
+//! Maximum transport data unit size for multicast packets
+/** Sets the maximum transport data unit size used for outbound multicast packets.
+
+    This must be set at or below the minimum Maximum Transmission Unit (MTU) for all network paths over which multicast reception is required.
+
+    <b>0MQ Socket Option Information</b>
+    |!Property|!Description
+    |Option value type|int
+    |Option value unit|bytes
+    |Default value|1500
+    |Applicable socket types|all, when using multicast transports
+*/
+const ZMQ_MULTICAST_MAXTPDU = ZMQ_MULTICAST_MAXTPDU;
+
+//! Set PLAIN security password
+/** Sets the password for outgoing connections over TCP or IPC. If you set this to a non-null value,
+    the security mechanism used for connections shall be PLAIN. If you set this to a null value, the
+    security mechanism used for connections shall be NULL.
+
+    <b>0MQ Socket Option Information</b>
+    |!Property|!Description
+    |Option value type|character string
+    |Option value unit|N/A
+    |Default value|not set
+    |Applicable socket types|all, when using TCP transport
+*/
+const ZMQ_PLAIN_PASSWORD = ZMQ_PLAIN_PASSWORD;
+
+//! Set PLAIN server role
+/** Defines whether the socket will act as server for PLAIN security, see zmq_plain(7). A value of 1 means the socket will act as PLAIN server. A value of 0 means the socket will not act as PLAIN server, and its security role then depends on other option settings. Setting this to 0 shall reset the socket security to NULL.
+
+    <b>0MQ Socket Option Information</b>
+    |!Property|!Description
+    |Option value type|bool
+    |Option value unit|@ref True, @ref False
+    |Default value|@ref False
+    |Applicable socket types|all, when using TCP transport
+*/
+const ZMQ_PLAIN_SERVER = ZMQ_PLAIN_SERVER;
+
+//! Set PLAIN security username
+/** Sets the username for outgoing connections over TCP or IPC. If you set this to a non-null value,
+    the security mechanism used for connections shall be PLAIN. If you set this to a null value,
+    the security mechanism used for connections shall be NULL.
+
+    <b>0MQ Socket Option Information</b>
+    |!Property|!Description
+    |Option value type|character string
+    |Option value unit|N/A
+    |Default value|not set
+    |Applicable socket types|all, when using TCP transport
+*/
+const ZMQ_PLAIN_USERNAME = ZMQ_PLAIN_USERNAME;
+
+//! bootstrap connections to @ref ZSocketRouter "ROUTER" sockets
+/** When set to @ref True, the socket will automatically send an empty message when a new connection
+    is made or accepted. You may set this on @ref ZSocketRouter "ROUTER",
+    @ref ZSocketDealer "DEALER", or @ref ZSocketRouter "ROUTER" sockets connected to a
+    @ref ZSocketRouter "ROUTER" socket. The application must filter such empty messages.
+    The ZMQ_PROBE_ROUTER option in effect provides the @ref ZSocketRouter "ROUTER" application
+    with an event signaling the arrival of a new peer.
+
+    <b>0MQ Socket Option Information</b>
+    |!Property|!Description
+    |Option value type|bool
+    |Option value unit|@ref True, @ref False
+    |Default value|@ref False
+    |Applicable socket types|@ref ZSocketRouter "ROUTER", @ref ZSocketDealer "DEALER", @ref ZSocketReq "REQ"
+
+    @note Do not set this option on a socket that talks to any other socket types: the results are undefined.
+*/
+const ZMQ_PROBE_ROUTER = ZMQ_PROBE_ROUTER;
+
+//! Set multicast data rate
+/** The ZMQ_RATE option shall set the maximum send or receive data rate for multicast transports
+    such as zmq_pgm(7) using the specified socket.
+
+    <b>0MQ Socket Option Information</b>
+    |!Property|!Description
+    |Option value type|int
+    |Option value unit|kilobits per second
+    |Default value|100
+    |Applicable socket types|all, when using multicast transports
+*/
+const ZMQ_RATE = ZMQ_RATE;
+
+//! Set kernel receive buffer size
+/** The ZMQ_RCVBUF option shall set the underlying kernel receive buffer size for the socket
+    to the specified size in bytes. A value of -1 means leave the OS default unchanged.
+    For details refer to your operating system documentation for the SO_RCVBUF socket option.
+
+    <b>0MQ Socket Option Information</b>
+    |!Property|!Description
+    |Option value type|int
+    |Option value unit|bytes
+    |Default value|-1
+    |Applicable socket types|all
+*/
+const ZMQ_RCVBUF = ZMQ_RCVBUF;
+
+//! Set high water mark for inbound messages
+/** The ZMQ_RCVHWM option shall set the high water mark for inbound messages on the
+    specified socket. The high water mark is a hard limit on the maximum number of
+    outstanding messages ØMQ shall queue in memory for any single peer that the
+    specified socket is communicating with. A value of zero means no limit.
+
+    If this limit has been reached the socket shall enter an exceptional state and
+    depending on the socket type, ØMQ shall take appropriate action such as
+    blocking or dropping sent messages. Refer to the individual socket descriptions
+    for details on the exact action taken for each socket type.
+
+    <b>0MQ Socket Option Information</b>
+    |!Property|!Description
+    |Option value type|int
+    |Option value unit|messages
+    |Default value|1000
+    |Applicable socket types|all
+*/
+const ZMQ_RCVHWM = ZMQ_RCVHWM;
+
+//! Maximum time before a recv operation returns with \c EAGAIN
+/** Sets the timeout for receive operation on the socket. If the value is 0, a receive
+    operation will return immediately with an \c EAGAIN error if there is no message
+    to receive. If the value is -1, it will block until a message is available. For
+    all other values, it will wait for a message for that amount of time before
+    returning with an \c EAGAIN error.
+
+    <b>0MQ Socket Option Information</b>
+    |!Property|!Description
+    |Option value type|int
+    |Option value unit|milliseconds
+    |Default value|-1 (infinite)
+    |Applicable socket types|all
+
+    @see
+    - ZSocket::setRecvTimeout()
+    - ZSocket::setTimeout()
+*/
+const ZMQ_RCVTIMEO = ZMQ_RCVTIMEO;
+
+//! Set reconnection interval
+/** The ZMQ_RECONNECT_IVL option shall set the initial reconnection interval for the
+    specified socket. The reconnection interval is the period ØMQ shall wait between
+    attempts to reconnect disconnected peers when using connection-oriented
+    transports. The value -1 means no reconnection.
+
+    The reconnection interval may be randomized by ØMQ to prevent reconnection storms
+    in topologies with a large number of peers per socket.
+
+    <b>0MQ Socket Option Information</b>
+    |!Property|!Description
+    |Option value type|int
+    |Option value unit|milliseconds
+    |Default value|100
+    |Applicable socket types|all, only for connection-oriented transports
+*/
+const ZMQ_RECONNECT_IVL = ZMQ_RECONNECT_IVL;
+
+//! Set maximum reconnection interval
+/** The \c ZMQ_RECONNECT_IVL_MAX option shall set the maximum reconnection interval for
+    the specified socket. This is the maximum period ØMQ shall wait between attempts
+    to reconnect. On each reconnect attempt, the previous interval shall be doubled
+    until \c ZMQ_RECONNECT_IVL_MAX is reached. This allows for exponential backoff strategy.
+    Default value means no exponential backoff is performed and reconnect interval
+    calculations are only based on @ref ZMQ_RECONNECT_IVL.
+
+    Values less than @ref ZMQ_RECONNECT_IVL will be ignored.
+
+    <b>0MQ Socket Option Information</b>
+    |!Property|!Description
+    |Option value type|int
+    |Option value unit|milliseconds
+    |Default value|0 (only use ZMQ_RECONNECT_IVL)
+    |Applicable socket types|all, only for connection-oriented transports
+*/
+const ZMQ_RECONNECT_IVL_MAX = ZMQ_RECONNECT_IVL_MAX;
+
+//! Set multicast recovery interval
+/** The ZMQ_RECOVERY_IVL option shall set the recovery interval for multicast
+    transports using the specified socket. The recovery interval determines
+    the maximum time in milliseconds that a receiver can be absent from a
+    multicast group before unrecoverable data loss will occur.
+
+    Exercise care when setting large recovery intervals as the data needed for
+    recovery will be held in memory. For example, a 1 minute recovery interval
+    at a data rate of 1Gbps requires a 7GB in-memory buffer.
+
+    <b>0MQ Socket Option Information</b>
+    |!Property|!Description
+    |Option value type|int
+    |Option value unit|milliseconds
+    |Default value|\c 10000
+    |Applicable socket types|all, when using multicast transports
+*/
+const ZMQ_RECOVERY_IVL = ZMQ_RECOVERY_IVL;
+
+//! match replies with requests
+/** The default behaviour of @ref ZSocketReq "REQ" sockets is to rely on the ordering of
+    messages to match requests and responses and that is usually sufficient. When this
+    option is set to 1, the @ref ZSocketReq "REQ" socket will prefix outgoing messages
+    with an extra frame containing a request id. That means the full message is
+    (request id, 0, user frames…). The @ref ZSocketReq "REQ" socket will discard all
+    incoming messages that don't begin with these two frames.
+
+    <b>0MQ Socket Option Information</b>
+    |!Property|!Description
+    |Option value type|bool
+    |Option value unit|@ref True, @ref False
+    |Default value|@ref False
+    |Applicable socket types|@ref ZSocketReq "REQ"
+*/
+const ZMQ_REQ_CORRELATE = ZMQ_REQ_CORRELATE;
+
+//! relax strict alternation between request and reply
+/** By default, a @ref ZSocketReq "REQ" socket does not allow initiating a new request
+    with send() until the reply to the previous one has been received. When set to
+    @ref True, sending another message is allowed and previous replies will be
+    discarded if any. The request-reply state machine is reset and a new request is
+    sent to the next available peer.
+
+    If set to @ref True, also enable @ref ZMQ_REQ_CORRELATE to ensure correct matching
+    of requests and replies. Otherwise a late reply to an aborted request can be
+    reported as the reply to the superseding request.
+
+    <b>0MQ Socket Option Information</b>
+    |!Property|!Description
+    |Option value type|bool
+    |Option value unit|@ref True, @ref False
+    |Default value|@ref False
+    |Applicable socket types|@ref ZSocketReq "REQ"
+*/
+const ZMQ_REQ_RELAXED = ZMQ_REQ_RELAXED;
+
+//! handle duplicate client identities on @ref ZSocketRouter "ROUTER" sockets
+/** If two clients use the same identity when connecting to a @ref ZSocketRouter "ROUTER",
+    the results shall depend on the \c ZMQ_ROUTER_HANDOVER option setting. If that is not
+    set (or set to the default of zero), the @ref ZSocketRouter "ROUTER" socket shall
+    reject clients trying to connect with an already-used identity. If that option is set
+    to @ref True, the @ref ZSocketRouter "ROUTER" socket shall hand-over the connection
+    to the new client and disconnect the existing one.
+
+    <b>0MQ Socket Option Information</b>
+    |!Property|!Description
+    |Option value type|bool
+    |Option value unit|@ref True, @ref False
+    |Default value|@ref False
+    |Applicable socket types|@ref ZSocketRouter "ROUTER"
+*/
+const ZMQ_ROUTER_HANDOVER = ZMQ_ROUTER_HANDOVER;
+
+//! accept only routable messages on ROUTER sockets
+/** Sets the @ref ZSocketRouter "ROUTER" socket behaviour when an unroutable message is
+    encountered. A value of @ref False is the default and discards the message silently
+    when it cannot be routed or the peers \c SNDHWM is reached. A value of @ref True
+    returns an \c EHOSTUNREACH error code if the message cannot be routed or \c EAGAIN
+    error code if the \c SNDHWM is reached and \c ZMQ_DONTWAIT was used. Without
+    \c ZMQ_DONTWAIT it will block until the \c SNDTIMEO is reached or a spot in the
+    send queue opens up.
+
+    <b>0MQ Socket Option Information</b>
+    |!Property|!Description
+    |Option value type|bool
+    |Option value unit|@ref True, @ref False
+    |Default value|@ref False
+    |Applicable socket types|@ref ZSocketRouter "ROUTER"
+
+    @see @ref ZSocketRouter::setMandatory()
+*/
+const ZMQ_ROUTER_MANDATORY = ZMQ_ROUTER_MANDATORY;
+
+//! Set kernel transmit buffer size
+/** The \c ZMQ_SNDBUF option shall set the underlying kernel transmit buffer size
+    for the socket to the specified size in bytes. A value of -1 means leave the
+    OS default unchanged. For details please refer to your operating system
+    documentation for the \c SO_SNDBUF socket option.
+
+    <b>0MQ Socket Option Information</b>
+    |!Property|!Description
+    |Option value type|int
+    |Option value unit|bytes
+    |Default value|-1
+    |Applicable socket types|all
+*/
+const ZMQ_SNDBUF = ZMQ_SNDBUF;
+
+//! Set the high water mark for outbound messages
+/** If this limit has been reached the socket shall enter an exceptional state and depending
+    on the socket type, ØMQ shall take appropriate action such as blocking or dropping sent
+    messages. Refer to the individual socket descriptions for details on the exact action
+    taken for each socket type.
+
+    ØMQ does not guarantee that the socket will accept as many messages as set here, and
+    the actual limit may be as much as 60-70% lower depending on the flow of messages
+    on the socket.
+
+    <b>0MQ Socket Option Information</b>
+    |!Property|!Description
+    |Option value type|int
+    |Option value unit|messages
+    |Default value|1000
+    |Applicable socket types|all
+*/
+const ZMQ_SNDHWM = ZMQ_SNDHWM;
+
+//! Maximum time before a send operation returns with \c EAGAIN
+/** Sets the timeout for send operation on the socket. If the value is 0, send operations
+    will return immediately with an \c EAGAIN error if the message cannot be sent. If the
+    value is -1, it will block until the message is sent. For all other values, it will
+    try to send the message for that amount of time before returning with an \c EAGAIN
+    error.
+
+    <b>0MQ Socket Option Information</b>
+    |!Property|!Description
+    |Option value type|int
+    |Option value unit|milliseconds
+    |Default value|-1 (infinite)
+    |Applicable socket types|all
+
+    @see
+    - ZSocket::setRecvTimeout()
+    - ZSocket::setTimeout()
+*/
+const ZMQ_SNDTIMEO = ZMQ_SNDTIMEO;
+
+//! Set SOCKS5 proxy address
+/** Sets the SOCKS5 proxy address that shall be used by the socket for the TCP connection(s).
+    Does not support SOCKS5 authentication. If the endpoints are domain names instead of
+    addresses they shall not be resolved and they shall be forwarded unchanged to the SOCKS
+    proxy service in the client connection request message (address type \c 0x03 domain name).
+
+    <b>0MQ Socket Option Information</b>
+    |!Property|!Description
+    |Option value type|character string
+    |Option value unit|N/A
+    |Default value|not set
+    |Applicable socket types|all, when using TCP transport
+*/
+const ZMQ_SOCKS_PROXY = ZMQ_SOCKS_PROXY;
+
+//! send connect and disconnect notifications
+/** Enables connect and disconnect notifications on a @ref ZSocketStream "STREAM" socket
+    when set to @ref True.  When notifications are enabled, the socket delivers a
+    zero-length message when a peer connects or disconnects.
+
+    <b>0MQ Socket Option Information</b>
+    |!Property|!Description
+    |Option value type|bool
+    |Option value unit|@ref True, @ref False
+    |Default value|@ref False
+    |Applicable socket types|@ref ZSocketStream "STREAM"
+*/
+const ZMQ_STREAM_NOTIFY = ZMQ_STREAM_NOTIFY;
+
+//! Establish message filter
+/** The \c ZMQ_SUBSCRIBE option shall establish a new message filter on a
+    @ref ZSocketSub "SUB" socket. Newly created @ref ZSocketSub "SUB" sockets
+    shall filter out all incoming messages, therefore you should call this option
+    to establish an initial message filter.
+
+    An empty option_value of length zero shall subscribe to all incoming messages.
+    A non-empty option_value shall subscribe to all messages beginning with the
+    specified prefix. Multiple filters may be attached to a single
+    @ref ZSocketSub "SUB" socket, in which case a message shall be accepted if
+    it matches at least one filter.
+
+    <b>0MQ Socket Option Information</b>
+    |!Property|!Description
+    |Option value type|binary data
+    |Option value unit|N/A
+    |Default value|N/A
+    |Applicable socket types|@ref ZSocketSub "SUB"
+
+    @see
+    - @ref ZMQ_UNSUBSCRIBE
+    - @ref ZSocketSub::subcribe()
+    - @ref ZSocketSub::unsubscribe()
+*/
+const ZMQ_SUBSCRIBE = ZMQ_SUBSCRIBE;
+
+//! Override \c SO_KEEPALIVE socket option
+/** Override \c SO_KEEPALIVE socket option (where supported by OS).  The default value
+    of -1 means to skip any overrides and leave it to OS default.
+
+    <b>0MQ Socket Option Information</b>
+    |!Property|!Description
+    |Option value type|int
+    |Option value unit|-1,0,1
+    |Default value|-1 (leave to OS default)
+    |Applicable socket types|all, when using TCP transports.
+*/
+const ZMQ_TCP_KEEPALIVE = ZMQ_TCP_KEEPALIVE;
+
+//! Override \c TCP_KEEPCNT socket option
+/** Override \c TCP_KEEPCNT socket option (where supported by OS). The default value
+    of -1 means to skip any overrides and leave it to OS default.
+
+    <b>0MQ Socket Option Information</b>
+    |!Property|!Description
+    |Option value type|int
+    |Option value unit|-1,&gt;0
+    |Default value|-1 (leave to OS default)
+    |Applicable socket types|all, when using TCP transports.
+*/
+const ZMQ_TCP_KEEPALIVE_CNT = ZMQ_TCP_KEEPALIVE_CNT;
+
+//! Override \c TCP_KEEPIDLE (or \c TCP_KEEPALIVE on some OSes)
+/** Override \c TCP_KEEPIDLE (or \c TCP_KEEPALIVE on some OSes) socket option (where
+    supported by OS). The default value of -1 means to skip any overrides and leave it to OS default.
+
+    <b>0MQ Socket Option Information</b>
+    |!Property|!Description
+    |Option value type|int
+    |Option value unit|-1,&gt;0
+    |Default value|-1 (leave to OS default)
+    |Applicable socket types|all, when using TCP transports.
+*/
+const ZMQ_TCP_KEEPALIVE_IDLE = ZMQ_TCP_KEEPALIVE_IDLE;
+
+//! Override \c TCP_KEEPINTVL socket option
+/** Override \c TCP_KEEPINTVL socket option(where supported by OS). The default value
+    of -1 means to skip any overrides and leave it to OS default.
+
+    <b>0MQ Socket Option Information</b>
+    |!Property|!Description
+    |Option value type|int
+    |Option value unit|-1,&gt;0
+    |Default value|-1 (leave to OS default)
+    |Applicable socket types|all, when using TCP transports.
+*/
+const ZMQ_TCP_KEEPALIVE_INTVL = ZMQ_TCP_KEEPALIVE_INTVL;
+
+//! Set TCP Maximum Retransmit Timeout
+/** On OSes where it is supported, sets how long before an unacknowledged TCP retransmit
+    times out. The system normally attempts many TCP retransmits following an exponential
+    backoff strategy. This means that after a network outage, it may take a long time
+    before the session can be re-established. Setting this option allows the timeout to
+    happen at a shorter interval.
+
+    <b>0MQ Socket Option Information</b>
+    |!Property|!Description
+    |Option value type|int
+    |Option value unit|milliseconds
+    |Default value|0 (leave to OS default)
+    |Applicable socket types|all, when using TCP transports.
+*/
+const ZMQ_TCP_MAXRT = ZMQ_TCP_MAXRT;
+
+//! Set the Type-of-Service on socket
+/** Sets the ToS fields (Differentiated services (DS) and Explicit Congestion
+    Notification (ECN) field of the IP header. The ToS field is typically used
+    to specify a packets priority. The availability of this option is dependent
+    on intermediate network equipment that inspect the ToS field and provide a
+    path for low-delay, high-throughput, highly-reliable service, etc.
+
+    <b>0MQ Socket Option Information</b>
+    |!Property|!Description
+    |Option value type|int
+    |Option value unit|&gt;0
+    |Default value|0
+    |Applicable socket types|all, only for connection-oriented transports
+*/
+const ZMQ_TOS = ZMQ_TOS;
+
+//! Remove message filter
+/** The \c ZMQ_UNSUBSCRIBE option shall remove an existing message filter on a
+    @ref ZSocketSub "SUB" socket. The filter specified must match an existing
+    filter previously established with the @ref ZMQ_SUBSCRIBE option. If the
+    socket has several instances of the same filter attached the \c ZMQ_UNSUBSCRIBE
+    option shall remove only one instance, leaving the rest in place and functional.
+
+    <b>0MQ Socket Option Information</b>
+    |!Property|!Description
+    |Option value type|binary data
+    |Option value unit|N/A
+    |Default value|N/A
+    |Applicable socket types|@ref ZSocketSub "SUB"
+
+    @see
+    - @ref ZMQ_SUBSCRIBE
+    - @ref ZSocketSub::subcribe()
+    - @ref ZSocketSub::unsubscribe()
+*/
+const ZMQ_UNSUBSCRIBE = ZMQ_UNSUBSCRIBE;
+
+//! pass subscribe messages on an @ref ZSocketXPub "XPUB" socket
+/** Sets the @ref ZSocketXPub "XPUB" socket behaviour on new subscriptions. If enabled,
+    the socket passes all subscribe messages to the caller. If disabled, these are not
+    visible to the caller. The default is @ref False (disabled).
+
+    <b>0MQ Socket Option Information</b>
+    |!Property|!Description
+    |Option value type|bool
+    |Option value unit|@ref True, @ref False
+    |Default value|@ref False
+    |Applicable socket types|@ref ZSocketXPub "XPUB"
+*/
+const ZMQ_XPUB_VERBOSE = ZMQ_XPUB_VERBOSE;
+
+//! pass subscribe and unsubscribe messages on @ref ZSocketXPub "XPUB" socket
+/** Sets the @ref ZSocketXPub "XPUB" socket behaviour on new subscriptions and
+    ubsubscriptions. If enabled, the socket passes all subscribe and
+    unsubscribe messages to the caller. If disabled, these are not visible to
+    the caller. The default is @ref False (disabled).
+
+    <b>0MQ Socket Option Information</b>
+    |!Property|!Description
+    |Option value type|bool
+    |Option value unit|@ref True, @ref False
+    |Default value|@ref False
+    |Applicable socket types|@ref ZSocketXPub "XPUB"
+*/
+const ZMQ_XPUB_VERBOSER = ZMQ_XPUB_VERBOSER;
+
+//! change the subscription handling to manual
+/** Sets the @ref ZSocketXPub "XPUB" socket subscription handling mode
+    manual/automatic. A value of @ref False is the default and subscription requests
+    will be handled automatically. A value of @ref True will change the subscription
+    requests handling to manual, with manual mode subscription requests are not
+    added to the subscription list. To add subscription the user needs to set the
+    subscription on the socket manually by setting the @ref ZMQ_SUBSCRIBE option
+    on the @ref ZSocketXPub "XPUB" socket with @ref ZSocket::setOption().
+
+    <b>0MQ Socket Option Information</b>
+    |!Property|!Description
+    |Option value type|bool
+    |Option value unit|@ref True, @ref False
+    |Default value|@ref False
+    |Applicable socket types|@ref ZSocketXPub "XPUB"
+*/
+const ZMQ_XPUB_MANUAL = ZMQ_XPUB_MANUAL;
+
+//! do not silently drop messages if \c SENDHWM is reached
+/** Sets the @ref ZSocketXPub "XPUB" socket behaviour to return error \c EAGAIN
+    if \c SENDHWM is reached and the message could not be sent.
+
+    A value of @ref False is the default and drops the message silently when the peer's
+    \c SNDHWM is reached. A value of @ref True returns an \c EAGAIN error code if the
+    \c SNDHWM is reached and \c ZMQ_DONTWAIT was used.
+
+    <b>0MQ Socket Option Information</b>
+    |!Property|!Description
+    |Option value type|bool
+    |Option value unit|@ref True, @ref False
+    |Default value|@ref False
+    |Applicable socket types|@ref ZSocketXPub "XPUB", @ref ZSocketPub "PUB"
+*/
+const ZMQ_XPUB_NODROP = ZMQ_XPUB_NODROP;
+
+//! Set welcome message that will be received by subscriber when connecting
+/** Sets a welcome message the will be recieved by subscriber when connecting.
+
+    The subscriber must subscribe to the welcome message before connecting.
+
+    Welcome message will also be sent on reconnecting. For the welcome message
+    to work well, the user must poll on incoming subscription messages on the
+    @ref ZSocketXPub "XPUB" socket and handle them.
+
+    Use NULL and length of zero to disable the welcome message.
+
+    <b>0MQ Socket Option Information</b>
+    |!Property|!Description
+    |Option value type|binary data
+    |Option value unit|N/A
+    |Default value|NULL
+    |Applicable socket types|@ref ZSocketXPub "XPUB"
+*/
+const ZMQ_XPUB_WELCOME_MSG = ZMQ_XPUB_WELCOME_MSG;
+
+//! Set RFC 27 authentication domain
+/** Sets the domain for ZAP (ZMQ RFC 27) authentication. For NULL security
+    (the default on all tcp:// connections), ZAP authentication only happens
+    if you set a non-empty domain.
+
+    For PLAIN and CURVE security, ZAP requests are always made, if there is a
+    ZAP handler present. See http://rfc.zeromq.org/spec:27 for more details.
+
+    <b>0MQ Socket Option Information</b>
+    |!Property|!Description
+    |Option value type|character string
+    |Option value unit|N/A
+    |Default value|not set
+    |Applicable socket types|all, when using TCP transport
+*/
+const ZMQ_ZAP_DOMAIN = ZMQ_ZAP_DOMAIN;
+
+//! ZeroMQ option map mapping option codes to strings
+const ZmqOptionCodeMap = (
+    "4": "ZMQ_AFFINITY",
+    "5": "ZMQ_IDENTITY",
+    "6": "ZMQ_SUBSCRIBE",
+    "7": "ZMQ_UNSUBSCRIBE",
+    "8": "ZMQ_RATE",
+    "9": "ZMQ_RECOVERY_IVL",
+    "11": "ZMQ_SNDBUF",
+    "12": "ZMQ_RCVBUF",
+    "13": "ZMQ_RCVMORE",
+    "14": "ZMQ_FD",
+    "15": "ZMQ_EVENTS",
+    "16": "ZMQ_TYPE",
+    "17": "ZMQ_LINGER",
+    "18": "ZMQ_RECONNECT_IVL",
+    "19": "ZMQ_BACKLOG",
+    "21": "ZMQ_RECONNECT_IVL_MAX",
+    "22": "ZMQ_MAXMSGSIZE",
+    "23": "ZMQ_SNDHWM",
+    "24": "ZMQ_RCVHWM",
+    "25": "ZMQ_MULTICAST_HOPS",
+    "27": "ZMQ_RCVTIMEO",
+    "28": "ZMQ_SNDTIMEO",
+    "32": "ZMQ_LAST_ENDPOINT",
+    "33": "ZMQ_ROUTER_MANDATORY",
+    "34": "ZMQ_TCP_KEEPALIVE",
+    "35": "ZMQ_TCP_KEEPALIVE_CNT",
+    "36": "ZMQ_TCP_KEEPALIVE_IDLE",
+    "37": "ZMQ_TCP_KEEPALIVE_INTVL",
+    "39": "ZMQ_IMMEDIATE",
+    "40": "ZMQ_XPUB_VERBOSE",
+    "41": "ZMQ_ROUTER_RAW",
+    "42": "ZMQ_IPV6",
+    "43": "ZMQ_MECHANISM",
+    "44": "ZMQ_PLAIN_SERVER",
+    "45": "ZMQ_PLAIN_USERNAME",
+    "46": "ZMQ_PLAIN_PASSWORD",
+    "47": "ZMQ_CURVE_SERVER",
+    "48": "ZMQ_CURVE_PUBLICKEY",
+    "49": "ZMQ_CURVE_SECRETKEY",
+    "50": "ZMQ_CURVE_SERVERKEY",
+    "51": "ZMQ_PROBE_ROUTER",
+    "52": "ZMQ_REQ_CORRELATE",
+    "53": "ZMQ_REQ_RELAXED",
+    "54": "ZMQ_CONFLATE",
+    "55": "ZMQ_ZAP_DOMAIN",
+    "56": "ZMQ_ROUTER_HANDOVER",
+    "57": "ZMQ_TOS",
+    "61": "ZMQ_CONNECT_RID",
+    "62": "ZMQ_GSSAPI_SERVER",
+    "63": "ZMQ_GSSAPI_PRINCIPAL",
+    "64": "ZMQ_GSSAPI_SERVICE_PRINCIPAL",
+    "65": "ZMQ_GSSAPI_PLAINTEXT",
+    "66": "ZMQ_HANDSHAKE_IVL",
+    "68": "ZMQ_SOCKS_PROXY",
+    "69": "ZMQ_XPUB_NODROP",
+    "70": "ZMQ_BLOCKY",
+    "71": "ZMQ_XPUB_MANUAL",
+    "72": "ZMQ_XPUB_WELCOME_MSG",
+    "73": "ZMQ_STREAM_NOTIFY",
+    "74": "ZMQ_INVERT_MATCHING",
+    "75": "ZMQ_HEARTBEAT_IVL",
+    "76": "ZMQ_HEARTBEAT_TTL",
+    "77": "ZMQ_HEARTBEAT_TIMEOUT",
+    "78": "ZMQ_XPUB_VERBOSER",
+    "79": "ZMQ_CONNECT_TIMEOUT",
+    "80": "ZMQ_TCP_MAXRT",
+    "81": "ZMQ_THREAD_SAFE",
+    "84": "ZMQ_MULTICAST_MAXTPDU",
+    "85": "ZMQ_VMCI_BUFFER_SIZE",
+    "86": "ZMQ_VMCI_BUFFER_MIN_SIZE",
+    "87": "ZMQ_VMCI_BUFFER_MAX_SIZE",
+    "88": "ZMQ_VMCI_CONNECT_TIMEOUT",
+);
+
+//! ZeroMQ option map mapping strings to option codes
+const ZmqOptionStringMap = (
+    "ZMQ_AFFINITY": ZMQ_AFFINITY,
+    "ZMQ_IDENTITY": ZMQ_IDENTITY,
+    "ZMQ_SUBSCRIBE": ZMQ_SUBSCRIBE,
+    "ZMQ_UNSUBSCRIBE": ZMQ_UNSUBSCRIBE,
+    "ZMQ_RATE": ZMQ_RATE,
+    "ZMQ_RECOVERY_IVL": ZMQ_RECOVERY_IVL,
+    "ZMQ_SNDBUF": ZMQ_SNDBUF,
+    "ZMQ_RCVBUF": ZMQ_RCVBUF,
+    "ZMQ_RCVMORE": ZMQ_RCVMORE,
+    "ZMQ_FD": ZMQ_FD,
+    "ZMQ_EVENTS": ZMQ_EVENTS,
+    "ZMQ_TYPE": ZMQ_TYPE,
+    "ZMQ_LINGER": ZMQ_LINGER,
+    "ZMQ_RECONNECT_IVL": ZMQ_RECONNECT_IVL,
+    "ZMQ_BACKLOG": ZMQ_BACKLOG,
+    "ZMQ_RECONNECT_IVL_MAX": ZMQ_RECONNECT_IVL_MAX,
+    "ZMQ_MAXMSGSIZE": ZMQ_MAXMSGSIZE,
+    "ZMQ_SNDHWM": ZMQ_SNDHWM,
+    "ZMQ_RCVHWM": ZMQ_RCVHWM,
+    "ZMQ_MULTICAST_HOPS": ZMQ_MULTICAST_HOPS,
+    "ZMQ_RCVTIMEO": ZMQ_RCVTIMEO,
+    "ZMQ_SNDTIMEO": ZMQ_SNDTIMEO,
+    "ZMQ_LAST_ENDPOINT": ZMQ_LAST_ENDPOINT,
+    "ZMQ_ROUTER_MANDATORY": ZMQ_ROUTER_MANDATORY,
+    "ZMQ_TCP_KEEPALIVE": ZMQ_TCP_KEEPALIVE,
+    "ZMQ_TCP_KEEPALIVE_CNT": ZMQ_TCP_KEEPALIVE_CNT,
+    "ZMQ_TCP_KEEPALIVE_IDLE": ZMQ_TCP_KEEPALIVE_IDLE,
+    "ZMQ_TCP_KEEPALIVE_INTVL": ZMQ_TCP_KEEPALIVE_INTVL,
+    "ZMQ_IMMEDIATE": ZMQ_IMMEDIATE,
+    "ZMQ_XPUB_VERBOSE": ZMQ_XPUB_VERBOSE,
+    "ZMQ_ROUTER_RAW": ZMQ_ROUTER_RAW,
+    "ZMQ_IPV6": ZMQ_IPV6,
+    "ZMQ_MECHANISM": ZMQ_MECHANISM,
+    "ZMQ_PLAIN_SERVER": ZMQ_PLAIN_SERVER,
+    "ZMQ_PLAIN_USERNAME": ZMQ_PLAIN_USERNAME,
+    "ZMQ_PLAIN_PASSWORD": ZMQ_PLAIN_PASSWORD,
+    "ZMQ_CURVE_SERVER": ZMQ_CURVE_SERVER,
+    "ZMQ_CURVE_PUBLICKEY": ZMQ_CURVE_PUBLICKEY,
+    "ZMQ_CURVE_SECRETKEY": ZMQ_CURVE_SECRETKEY,
+    "ZMQ_CURVE_SERVERKEY": ZMQ_CURVE_SERVERKEY,
+    "ZMQ_PROBE_ROUTER": ZMQ_PROBE_ROUTER,
+    "ZMQ_REQ_CORRELATE": ZMQ_REQ_CORRELATE,
+    "ZMQ_REQ_RELAXED": ZMQ_REQ_RELAXED,
+    "ZMQ_CONFLATE": ZMQ_CONFLATE,
+    "ZMQ_ZAP_DOMAIN": ZMQ_ZAP_DOMAIN,
+    "ZMQ_ROUTER_HANDOVER": ZMQ_ROUTER_HANDOVER,
+    "ZMQ_TOS": ZMQ_TOS,
+    "ZMQ_CONNECT_RID": ZMQ_CONNECT_RID,
+    "ZMQ_GSSAPI_SERVER": ZMQ_GSSAPI_SERVER,
+    "ZMQ_GSSAPI_PRINCIPAL": ZMQ_GSSAPI_PRINCIPAL,
+    "ZMQ_GSSAPI_SERVICE_PRINCIPAL": ZMQ_GSSAPI_SERVICE_PRINCIPAL,
+    "ZMQ_GSSAPI_PLAINTEXT": ZMQ_GSSAPI_PLAINTEXT,
+    "ZMQ_HANDSHAKE_IVL": ZMQ_HANDSHAKE_IVL,
+    "ZMQ_SOCKS_PROXY": ZMQ_SOCKS_PROXY,
+    "ZMQ_XPUB_NODROP": ZMQ_XPUB_NODROP,
+    "ZMQ_BLOCKY": ZMQ_BLOCKY,
+    "ZMQ_XPUB_MANUAL": ZMQ_XPUB_MANUAL,
+    "ZMQ_XPUB_WELCOME_MSG": ZMQ_XPUB_WELCOME_MSG,
+    "ZMQ_STREAM_NOTIFY": ZMQ_STREAM_NOTIFY,
+    "ZMQ_INVERT_MATCHING": ZMQ_INVERT_MATCHING,
+    "ZMQ_HEARTBEAT_IVL": ZMQ_HEARTBEAT_IVL,
+    "ZMQ_HEARTBEAT_TTL": ZMQ_HEARTBEAT_TTL,
+    "ZMQ_HEARTBEAT_TIMEOUT": ZMQ_HEARTBEAT_TIMEOUT,
+    "ZMQ_XPUB_VERBOSER": ZMQ_XPUB_VERBOSER,
+    "ZMQ_CONNECT_TIMEOUT": ZMQ_CONNECT_TIMEOUT,
+    "ZMQ_TCP_MAXRT": ZMQ_TCP_MAXRT,
+    "ZMQ_THREAD_SAFE": ZMQ_THREAD_SAFE,
+    "ZMQ_MULTICAST_MAXTPDU": ZMQ_MULTICAST_MAXTPDU,
+    "ZMQ_VMCI_BUFFER_SIZE": ZMQ_VMCI_BUFFER_SIZE,
+    "ZMQ_VMCI_BUFFER_MIN_SIZE": ZMQ_VMCI_BUFFER_MIN_SIZE,
+    "ZMQ_VMCI_BUFFER_MAX_SIZE": ZMQ_VMCI_BUFFER_MAX_SIZE,
+    "ZMQ_VMCI_CONNECT_TIMEOUT": ZMQ_VMCI_CONNECT_TIMEOUT,
+);
+//@}
+
+enum qzmq_option_type {
+    QZOT_INT = 0,
+    QZOT_BIN = 1,
+    QZOT_INT64 = 2,
+    QZOT_STR = 3,
+    QZOT_BOOL = 4,
+};
+
+// zmq option to type map
+typedef std::map<int, qzmq_option_type> qzmq_opt_map_t;
+
+static qzmq_opt_map_t qzmq_opt_map = {
+    {ZMQ_AFFINITY, QZOT_INT64},
+    {ZMQ_BACKLOG, QZOT_INT},
+    {ZMQ_CONNECT_RID, QZOT_BIN},
+    {ZMQ_CONFLATE, QZOT_INT},
+    {ZMQ_CONNECT_TIMEOUT, QZOT_INT},
+    {ZMQ_CURVE_PUBLICKEY, QZOT_BIN},
+    {ZMQ_CURVE_SECRETKEY, QZOT_BIN},
+    {ZMQ_CURVE_SERVER, QZOT_BOOL},
+    {ZMQ_CURVE_SERVERKEY, QZOT_BIN},
+    {ZMQ_GSSAPI_PLAINTEXT, QZOT_BOOL},
+    {ZMQ_GSSAPI_PRINCIPAL, QZOT_STR},
+    {ZMQ_GSSAPI_SERVER, QZOT_BOOL},
+    {ZMQ_GSSAPI_SERVICE_PRINCIPAL, QZOT_STR},
+    {ZMQ_HANDSHAKE_IVL, QZOT_INT},
+    {ZMQ_HEARTBEAT_IVL, QZOT_INT},
+    {ZMQ_HEARTBEAT_TIMEOUT, QZOT_INT},
+    {ZMQ_HEARTBEAT_TTL, QZOT_INT},
+    {ZMQ_IDENTITY, QZOT_BIN},
+    {ZMQ_IMMEDIATE, QZOT_BOOL},
+    {ZMQ_INVERT_MATCHING, QZOT_BOOL},
+    {ZMQ_IPV6, QZOT_BOOL},
+    {ZMQ_LINGER, QZOT_INT},
+    {ZMQ_MAXMSGSIZE, QZOT_INT64},
+    {ZMQ_MULTICAST_HOPS, QZOT_INT},
+    {ZMQ_MULTICAST_MAXTPDU, QZOT_INT},
+    {ZMQ_PLAIN_PASSWORD, QZOT_STR},
+    {ZMQ_PLAIN_USERNAME, QZOT_STR},
+    {ZMQ_PROBE_ROUTER, QZOT_BOOL},
+    {ZMQ_RATE, QZOT_INT},
+    {ZMQ_RCVBUF, QZOT_INT},
+    {ZMQ_RCVHWM, QZOT_INT},
+    {ZMQ_RCVTIMEO, QZOT_INT},
+    {ZMQ_RECONNECT_IVL, QZOT_INT},
+    {ZMQ_RECONNECT_IVL_MAX, QZOT_INT},
+    {ZMQ_RECOVERY_IVL, QZOT_INT},
+    {ZMQ_REQ_CORRELATE, QZOT_BOOL},
+    {ZMQ_REQ_RELAXED, QZOT_BOOL},
+    {ZMQ_ROUTER_HANDOVER, QZOT_BOOL},
+    {ZMQ_ROUTER_MANDATORY, QZOT_BOOL},
+    {ZMQ_SNDBUF, QZOT_INT},
+    {ZMQ_SNDHWM, QZOT_INT},
+    {ZMQ_SNDTIMEO, QZOT_INT},
+    {ZMQ_SOCKS_PROXY, QZOT_STR},
+    {ZMQ_STREAM_NOTIFY, QZOT_BOOL},
+    {ZMQ_SUBSCRIBE, QZOT_BIN},
+    {ZMQ_TCP_KEEPALIVE, QZOT_INT},
+    {ZMQ_TCP_KEEPALIVE_CNT, QZOT_INT},
+    {ZMQ_TCP_KEEPALIVE_IDLE, QZOT_INT},
+    {ZMQ_TCP_KEEPALIVE_INTVL, QZOT_INT},
+    {ZMQ_TCP_MAXRT, QZOT_INT},
+    {ZMQ_TOS, QZOT_INT},
+    {ZMQ_UNSUBSCRIBE, QZOT_BIN},
+    {ZMQ_XPUB_VERBOSE, QZOT_BOOL},
+    {ZMQ_XPUB_VERBOSER, QZOT_BOOL},
+    {ZMQ_XPUB_MANUAL, QZOT_BOOL},
+    {ZMQ_XPUB_NODROP, QZOT_BOOL},
+    {ZMQ_XPUB_WELCOME_MSG, QZOT_BIN},
+    {ZMQ_ZAP_DOMAIN, QZOT_STR},
+};
+
 //! The ZSocket class provides the abstract base class for ZeroMQ socket classes
 /** @note
     - The ZSocket class is not designed to be accessed from multiple threads; it was created without
@@ -147,6 +1347,254 @@ abstract private:internal ZSocket::constructor() {
 */
 ZSocket::copy() {
     xsink->raiseException("ZSOCKET-COPY-ERROR", "copying ZSocket objects is not currently supported");
+}
+
+//! Sets the given socket option to the given value
+/** @par Examples:
+    @code{.py}
+zsock.setOption(ZMQ_RCVHWM, 2000);
+    @endcode
+
+    @param opt the option code; see @ref zsocket_options for possibile values
+    @param value the integer value for the option; this method variant processes options that take integer values
+
+    If any errors occur setting the option, an exception is raised.
+
+    @throw ZSOCKET-OPTION-ERROR unknown option or invalid value type
+    @throw ZSOCKET-SETOPTION-ERROR error setting option
+    @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
+*/
+ZSocket::setOption(int opt, int value) {
+    // enforce access from the correct thread
+    if (zsock->check(xsink))
+        return QoreValue();
+
+    // get option info
+    qzmq_opt_map_t::const_iterator i = qzmq_opt_map.find(opt);
+    if (i == qzmq_opt_map.end()) {
+        xsink->raiseException("ZSOCKET-OPTION-ERROR", "option " QLLD " is unknown; cannot set an option value for an unknown option", opt);
+        return QoreValue();
+    }
+
+    int rc;
+    switch (i->second) {
+        case QZOT_INT: {
+            int v = value;
+            rc = zsock->setSocketOption(opt, &v, sizeof v);
+            break;
+        }
+
+        case QZOT_INT64: {
+            int64_t v = value;
+            rc = zsock->setSocketOption(opt, &v, sizeof v);
+            break;
+        }
+
+        case QZOT_BOOL: {
+            int v = value ? 1 : 0;
+            rc = zsock->setSocketOption(opt, &v, sizeof v);
+            break;
+        }
+
+        default:
+            xsink->raiseException("ZSOCKET-OPTION-ERROR", "option " QLLD " does not take an integer value; please check the option description and try again with a correct value type", opt);
+            rc = 0;
+            break;
+    }
+
+    if (rc)
+        zmq_error(xsink, "ZSOCKET-SETOPTION-ERROR", "error in zmq_setsockopt(" QLLD ")", opt);
+}
+
+//! Sets the given socket option to the given value
+/** @par Examples:
+    @code{.py}
+zsock.setOption(ZMQ_CURVESERVER, True);
+    @endcode
+
+    @param opt the option code; see @ref zsocket_options for possibile values
+    @param value the boolean value for the option; this method variant processes options that take boolean values
+
+    If any errors occur setting the option, an exception is raised.
+
+    @throw ZSOCKET-OPTION-ERROR unknown option or invalid value type
+    @throw ZSOCKET-SETOPTION-ERROR error setting option
+    @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
+*/
+ZSocket::setOption(int opt, bool value) {
+    // enforce access from the correct thread
+    if (zsock->check(xsink))
+        return QoreValue();
+
+    // get option info
+    qzmq_opt_map_t::const_iterator i = qzmq_opt_map.find(opt);
+    if (i == qzmq_opt_map.end()) {
+        xsink->raiseException("ZSOCKET-OPTION-ERROR", "option " QLLD " is unknown; cannot set an option value for an unknown option", opt);
+        return QoreValue();
+    }
+
+    int rc;
+    switch (i->second) {
+        case QZOT_BOOL: {
+            int v = value ? 1 : 0;
+            rc = zsock->setSocketOption(opt, &v, sizeof v);
+            break;
+        }
+
+        default:
+            xsink->raiseException("ZSOCKET-OPTION-ERROR", "option " QLLD " does not take a boolean value; please check the option description and try again with a correct value type", opt);
+            rc = 0;
+            break;
+    }
+
+    if (rc)
+        zmq_error(xsink, "ZSOCKET-SETOPTION-ERROR", "error in zmq_setsockopt(" QLLD ")", opt);
+}
+
+//! Sets the given socket option to the given value
+/** @par Examples:
+    @code{.py}
+zsock.setOption(ZMQ_CONNECT_RID, bin);
+    @endcode
+
+    @param opt the option code; see @ref zsocket_options for possibile values
+    @param value the binary or string value for the option; this method variant processes options that take binary or string values
+
+    If any errors occur setting the option, an exception is raised.
+
+    @throw ZSOCKET-OPTION-ERROR unknown option or invalid value type
+    @throw ZSOCKET-SETOPTION-ERROR error setting option
+    @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
+*/
+ZSocket::setOption(int opt, data value) {
+    // enforce access from the correct thread
+    if (zsock->check(xsink))
+        return QoreValue();
+
+    // get option info
+    qzmq_opt_map_t::const_iterator i = qzmq_opt_map.find(opt);
+    if (i == qzmq_opt_map.end()) {
+        xsink->raiseException("ZSOCKET-OPTION-ERROR", "option " QLLD " is unknown; cannot set an option value for an unknown option", opt);
+        return QoreValue();
+    }
+
+    const char* ptr;
+    size_t len;
+    q_get_data(value, ptr, len);
+
+    int rc;
+    switch (i->second) {
+        case QZOT_STR:
+        case QZOT_BIN:
+            rc = zsock->setSocketOption(opt, ptr, len);
+            break;
+
+        default:
+            xsink->raiseException("ZSOCKET-OPTION-ERROR", "option " QLLD " does not take a binary value; please check the option description and try again with a correct value type", opt);
+            rc = 0;
+            break;
+    }
+
+    if (rc)
+        zmq_error(xsink, "ZSOCKET-SETOPTION-ERROR", "error in zmq_setsockopt(" QLLD ")", opt);
+}
+
+//! Retrieves the value of the given socket option
+/** @par Examples:
+    @code{.py}
+int v = zsock.getOption(ZMQ_RCVHWM);
+    @endcode
+
+    @param opt the option code; see @ref zsocket_options for possibile values
+    @param bufsize the size of the buffer for string and binary options
+
+    @return the value for the option; the return type depends on the option
+
+    If any errors occur retrieving the option, an exception is raised.
+
+    @throw ZSOCKET-OPTION-ERROR unknown option
+    @throw ZSOCKET-GETOPTION-ERROR error setting option
+    @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
+*/
+auto ZSocket::getOption(int opt, int bufsize = 100) [flags=RET_VALUE_ONLY] {
+    // enforce access from the correct thread
+    if (zsock->check(xsink))
+        return QoreValue();
+
+    // check bufsize
+    if (bufsize <= 0) {
+        xsink->raiseException("ZSOCKET-GETOPTION-ERROR", "bufsize " QLLD " is illegal; expecting a positive integer", bufsize);
+        return QoreValue();
+    }
+
+    // get option info
+    qzmq_opt_map_t::const_iterator i = qzmq_opt_map.find(opt);
+    if (i == qzmq_opt_map.end()) {
+        xsink->raiseException("ZSOCKET-OPTION-ERROR", "option " QLLD " is unknown; cannot set an option value for an unknown option", opt);
+        return QoreValue();
+    }
+
+    int rc;
+    QoreValue rv;
+    switch (i->second) {
+        case QZOT_INT: {
+            int v;
+            size_t len = sizeof v;
+            rc = zsock->getSocketOption(opt, &v, &len);
+            if (!rc)
+                rv = v;
+            break;
+        }
+
+        case QZOT_BOOL: {
+            int v;
+            size_t len = sizeof v;
+            rc = zsock->getSocketOption(opt, &v, &len);
+            if (!rc)
+                rv = (bool)v;
+            break;
+        }
+
+        case QZOT_INT64: {
+            int64_t v;
+            size_t len = sizeof v;
+            rc = zsock->getSocketOption(opt, &v, &len);
+            if (!rc)
+                rv = v;
+            break;
+        }
+
+        case QZOT_BIN: {
+            SimpleRefHolder<BinaryNode> b(new BinaryNode);
+            b->preallocate(bufsize);
+            size_t len = bufsize;
+            rc = zsock->getSocketOption(opt, (void*)b->getPtr(), &len);
+            if (!rc) {
+                b->setSize(len);
+                rv = b.release();
+            }
+            break;
+        }
+
+        case QZOT_STR: {
+            SimpleRefHolder<QoreStringNode> str(new QoreStringNode);
+            str->reserve(bufsize + 1);
+            size_t len = bufsize + 1;
+            rc = zsock->getSocketOption(opt, (void*)str->c_str(), &len);
+            if (!rc) {
+                str->terminate(len);
+                rv = str.release();
+            }
+            break;
+        }
+    }
+
+    if (rc) {
+        zmq_error(xsink, "ZSOCKET-GETOPTION-ERROR", "error in zmq_getsockopt(" QLLD ")", opt);
+        return QoreValue();
+    }
+
+    return rv;
 }
 
 //! Creates a bound \c PAIR socket on the given endpoint which will send the specified events to a single client
@@ -507,6 +1955,39 @@ ZMsg ZSocket::recvMsg() {
     return new QoreObject(QC_ZMSG, getProgram(), new QoreZMsg(msg));
 }
 
+//! Sets the receive high water mark
+/** @par Example:
+    @code{.py}
+zsock.setRecvHighWaterMark(2000);
+    @endcode
+
+    @param value the "high water mark" value which is a hard limit on the maximum number of outstanding messages ØMQ shall queue in memory for any single peer that the specified socket is communicating with; a value of zero means no limit
+
+    If this limit has been reached the socket shall enter an exceptional state and depending on the socket type, ØMQ shall take appropriate action such as blocking or dropping sent messages. Refer to the individual socket descriptions for details on the exact action taken for each socket type.
+
+    <b>0MQ Socket Option Information</b>
+    |!Property|!Description
+    |Option value type|int
+    |Option value unit|messages
+    |Default value|1000
+    |Applicable socket types|all
+
+    @throw ZSOCKET-SETRECVHIGHWATERMARK-ERROR if an error occurs setting the timeout option
+    @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
+
+    @see
+    - @ref ZSocket::setSendHighWaterMark()
+ */
+ nothing ZSocket::setRecvHighWaterMark(int value) {
+    // enforce access from the correct thread
+    if (zsock->check(xsink))
+        return QoreValue();
+
+    int v = value;
+    if (zsock->setSocketOption(ZMQ_RCVHWM, &v, sizeof v))
+        zmq_error(xsink, "ZSOCKET-SETRECVHIGHWATERMARK-ERROR", "error in ZSocket::setRecvHighWaterMark()");
+}
+
 //! Sets the send timeout in milliseconds
 /** @par Example:
     @code{.py}
@@ -521,6 +2002,7 @@ zsock.setSendTimeout(30s);
     @see
     - @ref ZSocket::setRecvTimeout()
     - @ref ZSocket::setTimeout()
+    - @ref ZMQ_SNDTIMEO
  */
 nothing ZSocket::setSendTimeout(timeout timeout_ms) {
     // enforce access from the correct thread
@@ -546,6 +2028,7 @@ zsock.setRecvTimeout(30s);
     @see
     - @ref ZSocket::setSendTimeout()
     - @ref ZSocket::setTimeout()
+    - @ref ZMQ_RCVTIMEO
  */
 nothing ZSocket::setRecvTimeout(timeout timeout_ms) {
     // enforce access from the correct thread
@@ -571,6 +2054,8 @@ zsock.setTimeout(30s);
     @see
     - @ref ZSocket::setRecvTimeout()
     - @ref ZSocket::setSendTimeout()
+    - @ref ZMQ_RCVTIMEO
+    - @ref ZMQ_SNDTIMEO
  */
 nothing ZSocket::setTimeout(timeout timeout_ms) {
     // enforce access from the correct thread
@@ -608,6 +2093,8 @@ port = router.bind("tcp://127.0.0.1:*");
       - @ref Qore::ZMQ::ZSocketRep "ZSocketRep": \c REP
       - @ref Qore::ZMQ::ZSocketDealer "ZSocketDealer": \c DEALER
       - @ref Qore::ZMQ::ZSocketRouter "ZSocketRouter": \c ROUTER
+
+    @see @ref ZMQ_IDENTITY
  */
 nothing ZSocket::setIdentity(string id) {
     // enforce access from the correct thread

@@ -102,7 +102,10 @@ zsock.subscribe(str);
     @throw ZSOCKET-SUBSCRIBE-ERROR if an error occurs setting the subscription option on the socket
     @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
 
-    @see unsubscribe()
+    @see
+    - unsubscribe()
+    - @ref ZMQ_SUBSCRIBE
+    - @ref ZMQ_UNSUBSCRIBE
  */
 nothing ZSocketSub::subscribe(*string subs) {
     // enforce access from the correct thread
@@ -133,7 +136,10 @@ zsock.unsubscribe(str);
     @throw ZSOCKET-UNSUBSCRIBE-ERROR if an error occurs setting the subscription option on the socket
     @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
 
-    @see unsubscribe()
+    @see
+    - subscribe()
+    - @ref ZMQ_SUBSCRIBE
+    - @ref ZMQ_UNSUBSCRIBE
  */
 nothing ZSocketSub::unsubscribe(*string subs) {
     // enforce access from the correct thread
