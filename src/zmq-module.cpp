@@ -1,22 +1,22 @@
 /* indent-tabs-mode: nil -*- */
 /*
-  Qore zmq module
+    Qore zmq module
 
-  Copyright (C) 2017 Qore Technologies, s.r.o.
+    Copyright (C) 2017 Qore Technologies, s.r.o.
 
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 2.1 of the License, or (at your option) any later version.
+    This library is free software; you can redistribute it and/or
+    modify it under the terms of the GNU Lesser General Public
+    License as published by the Free Software Foundation; either
+    version 2.1 of the License, or (at your option) any later version.
 
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+    Lesser General Public License for more details.
 
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+    You should have received a copy of the GNU Lesser General Public
+    License along with this library; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
 #include "zmq-module.h"
@@ -25,12 +25,19 @@ static QoreStringNode* zmq_module_init();
 static void zmq_module_ns_init(QoreNamespace* rns, QoreNamespace* qns);
 static void zmq_module_delete();
 
+DLLLOCAL void preinitZSocketClass();
 DLLLOCAL void preinitZFrameClass();
 DLLLOCAL void preinitZMsgClass();
 
+// complex types
+// list<hash<ZmqPollInfo>>
+const QoreTypeInfo* pollInfoListTypeInfo;
+
 // for hashdecls
-const TypedHashDecl* hashdeclZmqVersionInfo;
+const TypedHashDecl* hashdeclZmqVersionInfo,
+    * hashdeclZmqPollInfo;
 DLLLOCAL TypedHashDecl* init_hashdecl_ZmqVersionInfo(QoreNamespace& ns);
+DLLLOCAL TypedHashDecl* init_hashdecl_ZmqPollInfo(QoreNamespace& ns);
 
 DLLLOCAL QoreClass* initZContextClass(QoreNamespace& ns);
 DLLLOCAL QoreClass* initZSocketClass(QoreNamespace& ns);
@@ -76,45 +83,51 @@ DLLLOCAL void init_zmq_constants(QoreNamespace& ns);
 QoreNamespace zmqns("ZMQ");
 
 static QoreStringNode* zmq_module_init() {
-   zmqns.addSystemClass(initZContextClass(zmqns));
+    zmqns.addSystemClass(initZContextClass(zmqns));
 
-   preinitZFrameClass();
-   preinitZMsgClass();
+    preinitZSocketClass();
+    preinitZFrameClass();
+    preinitZMsgClass();
 
-   hashdeclZmqVersionInfo = init_hashdecl_ZmqVersionInfo(zmqns);
+    hashdeclZmqVersionInfo = init_hashdecl_ZmqVersionInfo(zmqns);
+    hashdeclZmqPollInfo = init_hashdecl_ZmqPollInfo(zmqns);
 
-   zmqns.addSystemClass(initZFrameClass(zmqns));
-   zmqns.addSystemClass(initZMsgClass(zmqns));
+    // complex types
+    // list<hash<ZmqPollInfo>>
+    pollInfoListTypeInfo = qore_get_complex_list_type(hashdeclZmqPollInfo->getTypeInfo(false));
 
-   zmqns.addSystemClass(initZSocketClass(zmqns));
-   zmqns.addSystemClass(initZSocketPubClass(zmqns));
-   zmqns.addSystemClass(initZSocketSubClass(zmqns));
-   zmqns.addSystemClass(initZSocketReqClass(zmqns));
-   zmqns.addSystemClass(initZSocketRepClass(zmqns));
-   zmqns.addSystemClass(initZSocketDealerClass(zmqns));
-   zmqns.addSystemClass(initZSocketRouterClass(zmqns));
-   zmqns.addSystemClass(initZSocketPushClass(zmqns));
-   zmqns.addSystemClass(initZSocketPullClass(zmqns));
-   zmqns.addSystemClass(initZSocketXPubClass(zmqns));
-   zmqns.addSystemClass(initZSocketXSubClass(zmqns));
-   zmqns.addSystemClass(initZSocketPairClass(zmqns));
-   zmqns.addSystemClass(initZSocketStreamClass(zmqns));
-   //zmqns.addSystemClass(initZSocketRadioClass(zmqns));
-   //zmqns.addSystemClass(initZSocketDishClass(zmqns));
-   //zmqns.addSystemClass(initZSocketServerClass(zmqns));
-   //zmqns.addSystemClass(initZSocketClientClass(zmqns));
-   //zmqns.addSystemClass(initZSocketScatterClass(zmqns));
-   //zmqns.addSystemClass(initZSocketGatherClass(zmqns));
-   //zmqns.addSystemClass(initZSocketDGramClass(zmqns));
+    zmqns.addSystemClass(initZFrameClass(zmqns));
+    zmqns.addSystemClass(initZMsgClass(zmqns));
 
-   init_zmq_constants(zmqns);
-   init_zmq_functions(zmqns);
+    zmqns.addSystemClass(initZSocketClass(zmqns));
+    zmqns.addSystemClass(initZSocketPubClass(zmqns));
+    zmqns.addSystemClass(initZSocketSubClass(zmqns));
+    zmqns.addSystemClass(initZSocketReqClass(zmqns));
+    zmqns.addSystemClass(initZSocketRepClass(zmqns));
+    zmqns.addSystemClass(initZSocketDealerClass(zmqns));
+    zmqns.addSystemClass(initZSocketRouterClass(zmqns));
+    zmqns.addSystemClass(initZSocketPushClass(zmqns));
+    zmqns.addSystemClass(initZSocketPullClass(zmqns));
+    zmqns.addSystemClass(initZSocketXPubClass(zmqns));
+    zmqns.addSystemClass(initZSocketXSubClass(zmqns));
+    zmqns.addSystemClass(initZSocketPairClass(zmqns));
+    zmqns.addSystemClass(initZSocketStreamClass(zmqns));
+    //zmqns.addSystemClass(initZSocketRadioClass(zmqns));
+    //zmqns.addSystemClass(initZSocketDishClass(zmqns));
+    //zmqns.addSystemClass(initZSocketServerClass(zmqns));
+    //zmqns.addSystemClass(initZSocketClientClass(zmqns));
+    //zmqns.addSystemClass(initZSocketScatterClass(zmqns));
+    //zmqns.addSystemClass(initZSocketGatherClass(zmqns));
+    //zmqns.addSystemClass(initZSocketDGramClass(zmqns));
 
-   return 0;
+    init_zmq_constants(zmqns);
+    init_zmq_functions(zmqns);
+
+    return 0;
 }
 
 static void zmq_module_ns_init(QoreNamespace* rns, QoreNamespace* qns) {
-   qns->addNamespace(zmqns.copy());
+    qns->addNamespace(zmqns.copy());
 }
 
 static void zmq_module_delete() {
@@ -122,20 +135,20 @@ static void zmq_module_delete() {
 
 // module library functions
 void zmq_error(ExceptionSink* xsink, const char* err, const char* desc_fmt, ...) {
-   va_list args;
+    va_list args;
 
-   QoreString desc;
+    QoreString desc;
 
-   while (true) {
-      va_start(args, desc_fmt);
-      int rc = desc.vsprintf(desc_fmt, args);
-      va_end(args);
-      if (!rc)
-         break;
-   }
+    while (true) {
+        va_start(args, desc_fmt);
+        int rc = desc.vsprintf(desc_fmt, args);
+        va_end(args);
+        if (!rc)
+            break;
+    }
 
-   desc.concat(": ");
-   desc.concat(zmq_strerror(errno));
+    desc.concat(": ");
+    desc.concat(zmq_strerror(errno));
 
-   xsink->raiseExceptionArg(err, new QoreBigIntNode(errno), desc.c_str());
+    xsink->raiseExceptionArg(err, new QoreBigIntNode(errno), desc.c_str());
 }

@@ -28,10 +28,15 @@
 
 #include <stdarg.h>
 
+// complex types
+// list<hash<ZmqPollInfo>>
+DLLLOCAL extern const QoreTypeInfo* pollInfoListTypeInfo;
+
 DLLLOCAL void zmq_error(ExceptionSink* xsink, const char* err, const char* desc_fmt, ...);
 
 // for hashdecls
 DLLLOCAL extern const TypedHashDecl* hashdeclZmqVersionInfo;
+DLLLOCAL extern const TypedHashDecl* hashdeclZmqPollInfo;
 
 // base class for private data restricted to the thread in which it was created
 class AbstractZmqThreadLocalData : public AbstractPrivateData {

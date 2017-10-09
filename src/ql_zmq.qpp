@@ -34,7 +34,7 @@
 //! ZeroMQ library version info hash
 /**
 */
-hashdecl ZmqVersionInfo {
+hashdecl Qore::ZMQ::ZmqVersionInfo {
     //! ZeroMQ library major version
     int major;
     //! ZeroMQ library minor version
@@ -43,7 +43,7 @@ hashdecl ZmqVersionInfo {
     int patch;
     //! complete ZeroMQ library version string (ex: \c "4.2.2")
     string version;
- }
+}
 
 /** @defgroup zmq_functions zmq Module Functions
 */
@@ -58,7 +58,7 @@ hash h = zmq_version();
 
     @return a @ref ZmqVersionInfo hash of ZeroMQ library information
  */
-hash<ZmqVersionInfo> zmq_version() [flags=CONSTANT] {
+hash<Qore::ZMQ::ZmqVersionInfo> zmq_version() [flags=CONSTANT] {
    int major, minor, patch;
    zmq_version(&major, &minor, &patch);
    QoreHashNode* h = new QoreHashNode(hashdeclZmqVersionInfo, xsink);

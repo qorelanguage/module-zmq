@@ -32,7 +32,54 @@
 #include <zframe.h>
 #include <zmq.h>
 
+#include <assert.h>
 #include <map>
+#include <vector>
+
+template <typename T>
+class PrivateDataListHolder {
+public:
+    DLLLOCAL PrivateDataListHolder(ExceptionSink* xsink) : xsink(xsink) {
+    }
+
+    DLLLOCAL ~PrivateDataListHolder() {
+        for (auto& i : pd_vec)
+            i->deref(xsink);
+    }
+
+    DLLLOCAL T* add(const QoreObject* o, qore_classid_t cid) {
+        T* pd = static_cast<T*>(o->getReferencedPrivateData(cid, xsink));
+        if (!pd)
+            return nullptr;
+        pd_vec.push_back(pd);
+        return pd;
+    }
+
+private:
+    typedef std::vector<T*> pd_vec_t;
+    pd_vec_t pd_vec;
+    ExceptionSink* xsink;
+};
+
+//! ZeroMQ poll info hash
+/** for use with @ref Qore::ZMQ::ZSocket::poll() "ZSocket::poll()""
+*/
+hashdecl Qore::ZMQ::ZmqPollInfo {
+    //! ZeroMQ poll type; see @ref zsocket_poll_constants for possible values to be combined with binary or; on input, these are the events to check, on output, this value gives the events found in the timeout period
+    int events;
+    //! the socket to monitor
+    ZSocket socket;
+}
+
+/** @defgroup zsocket_poll_constants ZSocket Poll Constants
+*/
+//@{
+//! for polling for read events
+const ZMQ_POLLIN = ZMQ_POLLIN;
+
+//! for polling for write events
+const ZMQ_POLLOUT = ZMQ_POLLOUT;
+//@}
 
 /** @defgroup zsocket_events ZSocket Events
     These constants define event codes for @ref Qore::ZMQ::ZSocket::monitor() "ZSocket::monitor()"
@@ -1327,7 +1374,9 @@ static qzmq_opt_map_t qzmq_opt_map = {
 };
 
 //! The ZSocket class provides the abstract base class for ZeroMQ socket classes
-/** @note
+/** To poll for events with multiple sockets, use @ref ZSocket::poll()
+
+    @note
     - The ZSocket class is not designed to be accessed from multiple threads; it was created without
       locking for fast and efficient use when used from a single thread.  For methods that would be
       unsafe to use in another thread, any use of such methods in threads other than the thread where the constructor was called will cause a \c ZSOCKET-THREAD-ERROR to be thrown.
@@ -2192,4 +2241,71 @@ nothing ZSocket::send() {
     int rc = zsock_send(**zsock, "b", nullptr, 0);
     if (rc)
         zmq_error(xsink, "ZSOCKET-SEND-ERROR", "error sending empty message");
+}
+
+//! polls multiple sockets and returns all sockets with events
+/** @par Example:
+    @code{.py}
+list<hash<ZmqPollInfo>> l(
+    new hash<ZmqPollInfo>(()),
+    new hash<ZmqPollInfo>(()),
+);
+l = ZSocket::poll(l, 2s);
+    @endcode
+
+    @param item list of @ref ZmqPollInfo hashes
+    @param timeout_ms the poll timeout period
+
+    @return a list of sockets with events in the timeout period
+
+    @throw ZSOCKET-POLL-ERROR \a socket element in the \a items argument is not assigned or there was an error in the poll operation
+    @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
+*/
+static list<hash<ZmqPollInfo>> ZSocket::poll(list<hash<ZmqPollInfo>> items, timeout timeout_ms) {
+    ReferenceHolder<QoreListNode> rv(new QoreListNode(pollInfoListTypeInfo), xsink);
+
+    if (items->empty())
+        return rv.release();
+
+    PrivateDataListHolder<QoreZSock> pdlh(xsink);
+
+    zmq_pollitem_t pitem[items->size()];
+    ConstListIterator li(items);
+    while (li.next()) {
+        const QoreHashNode* h = static_cast<const QoreHashNode*>(li.getValue());
+        const AbstractQoreNode* p = h->getKeyValue("socket");
+        if (get_node_type(p) != NT_OBJECT) {
+            xsink->raiseException("ZSOCKET-POLL-ERROR", "items element %d/%d is assigned type '%s'; expecting 'ZSocket' object", (int)li.index() + 1, (int)items->size(), get_type_name(p));
+            return QoreValue();
+        }
+
+        QoreZSock* zsock = pdlh.add(static_cast<const QoreObject*>(p), CID_ZSOCKET);
+        if (!zsock)
+            return QoreValue();
+
+        // enforce access from the correct thread
+        if (zsock->check(xsink))
+            return QoreValue();
+
+        pitem[li.index()].socket = **zsock;
+        bool found;
+        pitem[li.index()].events = h->getKeyAsBigInt("events", found);
+    }
+
+    int rc = zmq_poll(pitem, items->size(), timeout_ms);
+    if (rc < 0) {
+        zmq_error(xsink, "ZSOCKET-POLL-ERROR", "error polling %d socket%s", (int)items->size(), items->size() == 1 ? "" : "s");
+        return QoreValue();
+    }
+    if (rc) {
+        for (unsigned i = 0; i < items->size(); ++i) {
+            if (pitem[i].revents) {
+                ReferenceHolder<QoreHashNode> h(static_cast<const QoreHashNode*>(items->retrieve_entry(i))->copy(), xsink);
+                h->setKeyValue("events", new QoreBigIntNode(pitem[i].revents), xsink);
+                rv->push(h.release());
+            }
+        }
+    }
+    assert(rv.size() == rc);
+    return rv.release();
 }

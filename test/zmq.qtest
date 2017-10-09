@@ -465,10 +465,24 @@ class ZmqTest inherits QUnit::Test {
         assertEq(NOTHING, msg.popStr());
 
         writer.send(HelloWorld);
+
+        {
+            list<hash<ZmqPollInfo>> l;
+            l += new hash<ZmqPollInfo>((
+                "socket": reader,
+                "events": ZMQ_POLLIN,
+            ));
+            l = ZSocket::poll(l, 20s);
+            assertEq("list<hash<ZmqPollInfo>>", l.fullType());
+            assertEq(1, l.size());
+            assertEq(ZMQ_POLLIN, l[0].events);
+            assertEq(reader, l[0].socket);
+        }
+
         msg = reader.recvMsg();
         idframe = msg.popFrame();
         assertEq(DealerIdentity.size(), idframe.size());
-        assertEq(DealerIdentity, idframe.meta("Identity"));
+        assertEq(DealerIdentity, idframe.bin().toString());
         assertEq(1, msg.size());
         assertEq(HelloWorld.size(), msg.contentSize());
         ZFrame frame = msg.popFrame();
