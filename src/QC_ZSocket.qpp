@@ -2309,3 +2309,70 @@ static list<hash<ZmqPollInfo>> ZSocket::poll(list<hash<ZmqPollInfo>> items, time
     assert(rv.size() == rc);
     return rv.release();
 }
+
+//! starts the built-in ZeroMQ proxy to connect messages between two sockets
+/** @par Example:
+    @code{.py}
+    ZSocketDealer frontend(zctx2, "dealer-1", "@tcp://127.0.0.1:*");
+    ZSocketRouter backend(zctx2, "router-1", ">" + writer.endpoint());
+    ZSocket::proxy(frontend, backend);
+    @endcode
+
+    @param frontend the frontend socket for the proxy
+    @param backend the backend socket for the proxy
+    @param capture an optional capture socket to capture frontend and backend messages
+
+    @par Description
+    The proxy connects a frontend socket to a backend socket. Conceptually, data flows from
+    \a frontend to \a backend. Depending on the socket types, replies may flow in the
+    opposite direction. The direction is conceptual only; the proxy is fully symmetric and
+    there is no technical difference between \a frontend and \a backend.\n
+    \n
+    Before calling this method you must set any socket options, and connect or bind both
+    \a frontend and \a backend sockets.\n
+    \n
+    This method runs in the current thread and returns only if and when the @ref ZContext
+    object associated with either of the sockets is closed by calling
+    @ref ZContext::shutdown() in another thread.\n
+    \n
+    If the capture socket is not @ref nothing, the proxy shall send all messages received on both
+    \a frontend and \a backend to the capture socket. The capture socket should be a
+    @ref ZSocketPub "PUB", @ref ZSocketDealer "DEALER", @ref ZSocketPush "PUSH", or
+    @ref ZSocketPair "PAIR" socket.
+
+    @par Example usage
+    <i>Shared queue</i>\n
+    When the frontend is a @ref ZSocketRouter "ROUTER" socket, and the backend is a
+    @ref ZSocketDealer "DEALER" socket, the proxy shall act as a shared queue that collects
+    requests from a set of clients, and distributes these fairly among a set of services.
+    Requests shall be fair-queued from frontend connections and distributed evenly across
+    backend connections. Replies shall automatically return to the client that made the
+    original request.\n
+    \n
+    <i>Forwarder</i>\n
+    When the frontend is a @ref ZSocketXSub "XSUB" socket, and the backend is a
+    @ref ZSocketXPub "XPUB" socket, the proxy shall act as a message forwarder that collects
+    messages from a set of publishers and forwards these to a set of subscribers. This may be
+    used to bridge networks transports, e.g. read on \c tcp:// and forward on \c pgm://.\n
+    \n
+    <i>Streamer</i>\n
+    When the frontend is a @ref ZSocketPull "PULL" socket, and the backend is a
+    @ref ZSocketPush "PUSH" socket, the proxy shall collect tasks from a set of clients and
+    forward these to a set of workers using the pipeline pattern.
+
+    @throw ZSOCKET-PROXY-ERROR error executing the proxy call
+*/
+static nothing ZSocket::proxy(ZSocket[QoreZSock] frontend, ZSocket[QoreZSock] backend, *ZSocket[QoreZSock] capture) {
+    ReferenceHolder<QoreZSock> frontend_holder(frontend, xsink);
+    ReferenceHolder<QoreZSock> backend_holder(backend, xsink);
+    ReferenceHolder<QoreZSock> capture_holder(capture, xsink);
+
+    // enforce access from the correct thread
+    if (frontend->check(xsink) || backend->check(xsink) || (capture && capture->check(xsink)))
+        return QoreValue();
+
+    zmq_proxy(**frontend, **backend, capture ? **capture : nullptr);
+    // zmq_proxy() always returns -1 and errno set to EINTR or ETERM with an orderly shutdown
+    if (errno != EINTR && errno != ETERM)
+        zmq_error(xsink, "ZSOCKET-PROXY-ERROR", "error in ZSocket::proxy()");
+}

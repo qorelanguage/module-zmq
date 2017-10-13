@@ -35,6 +35,7 @@ class ZmqTest inherits QUnit::Test {
         addTestCase("zsocket pub/sub", \zSocketPubSubTest());
         addTestCase("zsocket dealer/router", \zSocketDealerRouterTest());
         addTestCase("zmsg", \zMsgTest());
+        addTestCase("proxy", \proxyTest());
 
         set_return_value(main());
     }
@@ -493,5 +494,21 @@ class ZmqTest inherits QUnit::Test {
         assertEq(NOTHING, frame.meta("Resource"));
         assertEq("127.0.0.1", frame.meta("Peer-Address"));
         assertEq(NOTHING, frame.meta("User-Id"));
+    }
+
+    proxyTest() {
+        # new context for proxied sockets
+        ZContext zctx2();
+
+        code proxy = sub () {
+            ZSocketDealer writer(zctx2, "", "@tcp://127.0.0.1:*");
+            #softint port = (writer.endpoint() =~ x/:([0-9]+)/)[0];
+            # create a router
+            ZSocketRouter reader(zctx2, "router-1", ">" + writer.endpoint());
+            ZSocket::proxy(writer, reader);
+        };
+
+        background proxy();
+        zctx2.shutdown();
     }
 }
