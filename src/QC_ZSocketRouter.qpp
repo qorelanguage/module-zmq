@@ -37,7 +37,7 @@
     When a \c ROUTER socket enters the mute state due to having reached the high water mark for all
     peers, then any messages sent to the socket shall be dropped until the mute state ends. Likewise,
     any messages routed to a peer for which the individual high water mark has been reached shall
-    also be dropped, unless  @ref ZSocketRouter::setMandatory() is set to @ref True.
+    also be dropped, unless @ref ZSocketRouter::setMandatory() is set to @ref True.
     \n\n
     When a @ref ZSocketReq "REQ" socket is connected to a \c ROUTER socket, in addition to the
     identity of the originating peer each message received shall contain an empty delimiter message

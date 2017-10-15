@@ -571,7 +571,7 @@ msg.save(f);
     versions of CZMQ. The file format is at present undocumented and liable
     to arbitrary change.
 */
-nothing ZMsg::save(Qore::File[File] file) [dom=FILESYSTEM] {
+nothing ZMsg::save(Qore::File[File] file) {
    ReferenceHolder<File> holder(file, xsink);
 
    if (msg->check(xsink))

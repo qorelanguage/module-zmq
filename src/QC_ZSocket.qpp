@@ -2177,48 +2177,43 @@ nothing ZSocket::setIdentity(string id) {
     return new QoreStringNode(str, len, len + 1, QCS_UTF8);
 }
 
-//! Sends a string over the socket
+//! Sends one or more strings or binary data objects over the socket
 /** @par Example:
     @code{.py}
-zsock.send(str);
+zsock.send(str1, str2);
     @endcode
 
-    @param str the string to send as a frame over the socket
+    @param val the string or binary value to send as a frame over the socket; no encoding convertions are performed on strings
+    @param ... additional arguments must be strings or binary objects or a \c ZSOCKET-SEND-DATA-ERROR will be thrown
+
+    The @ref ZMQ_SNDMORE flag is set on all frames except the last
 
     @throw ZSOCKET-SEND-ERROR an error occurred sending the data
+    @throw ZSOCKET-SEND-DATA-ERROR an argument was included that was not a string or binary object
     @throw ZSOCKET-TIMEOUT thrown if a timeout error occurs
     @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
  */
-nothing ZSocket::send(string str) {
+nothing ZSocket::send(data val, ...) {
     // enforce access from the correct thread
     if (zsock->check(xsink))
         return QoreValue();
 
-    int rc = zstr_send(**zsock, str->c_str());
-    if (rc)
-        zmq_error(xsink, "ZSOCKET-SEND-ERROR", "error sending string");
-}
-
-//! Sends a binary object over the socket
-/** @par Example:
-    @code{.py}
-zsock.send(bin);
-    @endcode
-
-    @param bin the binary object to send
-
-    @throw ZSOCKET-SEND-ERROR an error occurred sending the data
-    @throw ZSOCKET-TIMEOUT thrown if a timeout error occurs
-    @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
-*/
-nothing ZSocket::send(binary bin) {
-    // enforce access from the correct thread
-    if (zsock->check(xsink))
-        return QoreValue();
-
-    int rc = zsock_send(**zsock, "b", bin->getPtr(), (size_t)bin->size());
-    if (rc)
-        zmq_error(xsink, "ZSOCKET-SEND-ERROR", "error sending binary object");
+    // send all arguments
+    for (unsigned i = 0; i < args->size(); ++i) {
+        const char* ptr;
+        size_t len;
+        if (q_get_data(args->retrieveEntry(i), ptr, len)) {
+            xsink->raiseException("ZSOCKET-SEND-DATA-ERROR", "expecting 'string' or 'binary' argument type in position %d/%d; got '%s' instead", (int)i + 1, (int)args->size(), args->retrieveEntry(i).getTypeName());
+            // send a zero-length frame to close the message
+            int rc = zmq_send(**zsock, nullptr, 0, 0);
+            if (rc < 0)
+                zmq_error(xsink, "ZSOCKET-SEND-ERROR", "error sending data");
+            break;
+        }
+        int rc = zmq_send(**zsock, ptr, len, (i == args->size() - 1) ? 0 : ZMQ_SNDMORE);
+        if (rc < 0)
+            zmq_error(xsink, "ZSOCKET-SEND-ERROR", "error sending data");
+    }
 }
 
 //! Sends a zero-length message over the socket

@@ -257,29 +257,7 @@ class ZmqTest inherits QUnit::Test {
         list el = ();
         # "monitoring done" counter
         Counter c(1);
-        # monitoring closure
-        code mon1 = sub () {
-            on_exit
-                c.dec();
-            ZSocketPair zsmon1(zctx, "inproc://mon-1");
-            while (True) {
-                ZMsg msg = zsmon1.recvMsg();
-                ZFrame f1 = msg.popFrame();
-                int event_number = f1.readi2(0);
-                if (event_number == ZMQ_EVENT_MONITOR_STOPPED)
-                    break;
-                string estr = msg.popStr();
-                int event_code = f1.readi4(2);
-                if (m_options.verbose)
-                    printf("EVENT: %s (%d): %y\n", ZmqEventCodeMap{event_number} ?? "unknown: ", event_code, estr);
-                el += (
-                    "event_number": event_number,
-                    "event_code": event_code,
-                    "string": estr,
-                );
-            }
-        };
-        background mon1();
+        background monitorUntil(ZMQ_EVENT_MONITOR_STOPPED, \el, c);
 
         assertEq(NOTHING, writer.unbind("tcp://127.0.0.1:" + port));
         port = writer.bind("tcp://127.0.0.1:*");
@@ -326,6 +304,28 @@ class ZmqTest inherits QUnit::Test {
         # wait for monitoring thread to exit
         c.waitForZero();
         assertEq(4, el.size());
+    }
+
+    monitorUntil(int code, *reference<list> el, *Counter c) {
+        on_exit if (c)
+            c.dec();
+        ZSocketPair zsmon1(zctx, "inproc://mon-1");
+        while (True) {
+            ZMsg msg = zsmon1.recvMsg();
+            ZFrame f1 = msg.popFrame();
+            int event_number = f1.readi2(0);
+            if (event_number & code)
+                break;
+            string estr = msg.popStr();
+            int event_code = f1.readi4(2);
+            if (m_options.verbose)
+                printf("EVENT: %s (%d): %y\n", ZmqEventCodeMap{event_number} ?? "unknown: ", event_code, estr);
+            el += (
+                "event_number": event_number,
+                "event_code": event_code,
+                "string": estr,
+            );
+        }
     }
 
     zSocketReqRepTest() {
@@ -500,15 +500,24 @@ class ZmqTest inherits QUnit::Test {
         # new context for proxied sockets
         ZContext zctx2();
 
-        code proxy = sub () {
-            ZSocketDealer writer(zctx2, "", "@tcp://127.0.0.1:*");
-            #softint port = (writer.endpoint() =~ x/:([0-9]+)/)[0];
-            # create a router
-            ZSocketRouter reader(zctx2, "router-1", ">" + writer.endpoint());
-            ZSocket::proxy(writer, reader);
-        };
+        # Counter to synchronize the proxy thread with the main thread
+        Counter c(1);
 
-        background proxy();
+        # proxy closure to be executed in the background
+        background sub () {
+            # create a router
+            ZSocketRouter reader(zctx2, "proxy-router-1", "tcp://127.0.0.1:*");
+            # connect writer
+            ZSocketDealer writer(zctx2, "proxy-writer-1", ">" + reader.endpoint());
+            # signal main thread that the context can be destroyed
+            c.dec();
+            # start the proxy
+            ZSocket::proxy(writer, reader);
+        }();
+
+        # wait for the sockets to be created before shutting down the context
+        c.waitForZero();
+        # shutdown the context to stop the proxy
         zctx2.shutdown();
     }
 }
