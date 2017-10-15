@@ -2301,7 +2301,7 @@ static list<hash<ZmqPollInfo>> ZSocket::poll(list<hash<ZmqPollInfo>> items, time
             }
         }
     }
-    assert(rv.size() == rc);
+    assert(rv->size() == rc);
     return rv.release();
 }
 

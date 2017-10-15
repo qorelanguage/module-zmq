@@ -45,7 +45,7 @@ public:
    }
 
    DLLLOCAL int subscribeIntern(ExceptionSink* xsink, const QoreString* subs_utf8) {
-      assert(subs_utf8->encoding() == QCS_UTF8);
+      assert(subs_utf8->getEncoding() == QCS_UTF8);
 
       while (true) {
          int rc = zmq_setsockopt(**this, ZMQ_SUBSCRIBE, subs_utf8 ? subs_utf8->c_str() : nullptr, subs_utf8 ? subs_utf8->size() : 0);

@@ -27,7 +27,7 @@
 #include "QC_ZContext.h"
 
 /** @defgroup zcontext_options ZContext Options
-    These constants define the possible options for the @ref Qore::ZMQ::ZContext::setOption() "ZContext::setOption()" and @ref Qore::ZMQ::ZContext::getOption() "ZContext::getOption()" methods
+    These constants plus @ref Qore::ZMQ::ZMQ_IPV6 "ZMQ_IPV6" define the possible options for the @ref Qore::ZMQ::ZContext::setOption() "ZContext::setOption()" and @ref Qore::ZMQ::ZContext::getOption() "ZContext::getOption()" methods
 */
 //@{
 //! Fix blocky behavior
@@ -63,17 +63,6 @@ const ZMQ_MAX_MSGSZ = ZMQ_MAX_MSGSZ;
     Default value: 1024
  */
 const ZMQ_MAX_SOCKETS = ZMQ_MAX_SOCKETS;
-
-//! Set IPv6 option
-/** Sets the IPv6 value for all sockets created in the context from this point onwards.
-
-    A value of 1 means IPv6 is enabled, while 0 means the socket will use only IPv4.
-
-    When IPv6 is enabled, a socket will connect to, or accept connections from, both IPv4 and IPv6 hosts.
-
-    Default value: 0
- */
-const ZMQ_IPV6 = ZMQ_IPV6;
 //@}
 
 // FIXME add ZMQ_THREAD_SCHED_POLICY and ZMQ_THREAD_PRIORITY if they can be supported in a system-independent way
