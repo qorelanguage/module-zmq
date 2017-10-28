@@ -1412,6 +1412,7 @@ zsock.setOption(ZMQ_RCVHWM, 2000);
     @throw ZSOCKET-OPTION-ERROR unknown option or invalid value type
     @throw ZSOCKET-SETOPTION-ERROR error setting option
     @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
+    @throw ZSOCKET-CONTEXT-ERROR the context is no longer valid
 */
 ZSocket::setOption(int opt, int value) {
     // enforce access from the correct thread
@@ -1469,6 +1470,7 @@ zsock.setOption(ZMQ_CURVESERVER, True);
     @throw ZSOCKET-OPTION-ERROR unknown option or invalid value type
     @throw ZSOCKET-SETOPTION-ERROR error setting option
     @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
+    @throw ZSOCKET-CONTEXT-ERROR the context is no longer valid
 */
 ZSocket::setOption(int opt, bool value) {
     // enforce access from the correct thread
@@ -1514,6 +1516,7 @@ zsock.setOption(ZMQ_CONNECT_RID, bin);
     @throw ZSOCKET-OPTION-ERROR unknown option or invalid value type
     @throw ZSOCKET-SETOPTION-ERROR error setting option
     @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
+    @throw ZSOCKET-CONTEXT-ERROR the context is no longer valid
 */
 ZSocket::setOption(int opt, data value) {
     // enforce access from the correct thread
@@ -1564,6 +1567,7 @@ int v = zsock.getOption(ZMQ_RCVHWM);
     @throw ZSOCKET-OPTION-ERROR unknown option
     @throw ZSOCKET-GETOPTION-ERROR error setting option
     @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
+    @throw ZSOCKET-CONTEXT-ERROR the context is no longer valid
 */
 auto ZSocket::getOption(int opt, int bufsize = 100) [flags=RET_VALUE_ONLY] {
     // enforce access from the correct thread
@@ -1658,6 +1662,7 @@ zsock.monitor(ZMQ_EVENT_ALL, "inproc://monitor-socket-1");
 
     @throw ZSOCKET-MONITOR-ERROR this exception is thrown if the internal call to \c zmq_socket_monitor() fails
     @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
+    @throw ZSOCKET-CONTEXT-ERROR the context is no longer valid
 
     @note This method supports only \c "inproc://" endpoints
 */
@@ -1754,6 +1759,7 @@ zsock.unbind(str);
 
     @throw ZSOCKET-UNBIND-ERROR thrown if the @ref zmqendpoints "endpoint" was invalid or the function isn't supported on the current socket
     @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
+    @throw ZSOCKET-CONTEXT-ERROR the context is no longer valid
 
 */
 nothing ZSocket::unbind(string format, ...) {
@@ -1783,6 +1789,7 @@ zsock.unbind(str);
 
     @throw ZSOCKET-CONNECT-ERROR thrown if an error occurs connecting to the @ref zmqendpoints "endpoint"
     @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
+    @throw ZSOCKET-CONTEXT-ERROR the context is no longer valid
 
     @note do not use the endpoint prefix \c ">" with this method
  */
@@ -1811,6 +1818,7 @@ zsock.disconnect(str);
 
     @throw ZSOCKET-DISCONNECT-ERROR thrown if the @ref zmqendpoints "endpoint" was invalid or the function isn't supported on the current socket
     @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
+    @throw ZSOCKET-CONTEXT-ERROR the context is no longer valid
 */
 nothing ZSocket::disconnect(string format, ...) {
     // enforce access from the correct thread
@@ -1841,6 +1849,7 @@ zsock.attach(endpoints_str, True);
     @throw ZSOCKET-CONNECT-ERROR thrown if there is a connect error
     @throw ZSOCKET-BIND-ERROR thrown if there is a bind error
     @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
+    @throw ZSOCKET-CONTEXT-ERROR the context is no longer valid
 */
 nothing ZSocket::attach(*string endpoints, bool do_bind = False) {
     // enforce access from the correct thread
@@ -1872,6 +1881,7 @@ zsock.send(msg);
 
     @throw ZSOCKET-SEND-ERROR thrown if an error occurs during the call
     @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
+    @throw ZSOCKET-CONTEXT-ERROR the context is no longer valid
 */
 nothing ZSocket::send(Qore::ZMQ::ZMsg[QoreZMsg] msg) {
     ReferenceHolder<QoreZMsg> holder(msg, xsink);
@@ -1898,6 +1908,7 @@ zsock.waitRead(10s);
 
     @throw ZSOCKET-TIMEOUT this exception is thrown if data does not arrive before the timeout expires
     @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
+    @throw ZSOCKET-CONTEXT-ERROR the context is no longer valid
 */
 nothing ZSocket::waitRead(timeout timeout_ms) {
     // enforce access from the correct thread
@@ -1917,6 +1928,7 @@ zsock.waitWrite(10s);
 
     @throw ZSOCKET-TIMEOUT this exception is thrown if the data is not sent before the timeout expires
     @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
+    @throw ZSOCKET-CONTEXT-ERROR the context is no longer valid
 */
 nothing ZSocket::waitWrite(timeout timeout_ms) {
     // enforce access from the correct thread
@@ -1938,6 +1950,7 @@ zsock.send(frame);
     @throw ZSOCKET-SEND-ERROR thrown if an error occurs during the call
     @throw ZSOCKET-SEND-WAIT-ERROR if the @ref Qore::ZMQ::ZFRAME_DONTWAIT flag is used and the message cannot be queued on the socket, this exception is thrown
     @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
+    @throw ZSOCKET-CONTEXT-ERROR the context is no longer valid
 */
 nothing ZSocket::send(Qore::ZMQ::ZFrame[QoreZFrame] frame, int flags = 0) {
     ReferenceHolder<QoreZFrame> holder(frame, xsink);
@@ -1967,6 +1980,7 @@ ZFrame frm = zsock.recvFrame();
 
     @throw ZSOCKET-RECVFRAME-ERROR thrown if an error occurs during the call
     @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
+    @throw ZSOCKET-CONTEXT-ERROR the context is no longer valid
 */
 ZFrame ZSocket::recvFrame() {
     // enforce access from the correct thread
@@ -1991,6 +2005,7 @@ ZMsg frm = zsock.recvMsg();
     @throw ZSOCKET-RECVMSG-ERROR thrown if an error occurs during the call
     @throw ZSOCKET-TIMEOUT thrown if a timeout error occurs
     @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
+    @throw ZSOCKET-CONTEXT-ERROR the context is no longer valid
 */
 ZMsg ZSocket::recvMsg() {
     // enforce access from the correct thread
@@ -2023,6 +2038,7 @@ zsock.setRecvHighWaterMark(2000);
 
     @throw ZSOCKET-SETRECVHIGHWATERMARK-ERROR if an error occurs setting the timeout option
     @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
+    @throw ZSOCKET-CONTEXT-ERROR the context is no longer valid
 
     @see
     - @ref ZSocket::setSendHighWaterMark()
@@ -2047,6 +2063,7 @@ zsock.setSendTimeout(30s);
 
     @throw ZSOCKET-SETSENDTIMEOUT-ERROR if an error occurs setting the timeout option
     @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
+    @throw ZSOCKET-CONTEXT-ERROR the context is no longer valid
 
     @see
     - @ref ZSocket::setRecvTimeout()
@@ -2073,6 +2090,7 @@ zsock.setRecvTimeout(30s);
 
     @throw ZSOCKET-SETRECVTIMEOUT-ERROR if an error occurs setting the timeout option
     @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
+    @throw ZSOCKET-CONTEXT-ERROR the context is no longer valid
 
     @see
     - @ref ZSocket::setSendTimeout()
@@ -2099,6 +2117,7 @@ zsock.setTimeout(30s);
 
     @throw ZSOCKET-SETTIMEOUT-ERROR if an error occurs setting the timeout option
     @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
+    @throw ZSOCKET-CONTEXT-ERROR the context is no longer valid
 
     @see
     - @ref ZSocket::setRecvTimeout()
@@ -2134,6 +2153,7 @@ port = router.bind("tcp://127.0.0.1:*");
     @throw ENCODING-CONVERSION-ERROR this exception could be thrown if an encoding error is encountered when converting the given string to UTF-8
     @throw ZSOCKET-SETIDENTITY-ERROR if an error occurs setting the identity option on the socket
     @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
+    @throw ZSOCKET-CONTEXT-ERROR the context is no longer valid
 
     @note
     - the identity takes affect in the next socket connection; if the socket is already connected, then it must be reconnected for the identity value set in this call to take effect
@@ -2192,6 +2212,7 @@ zsock.send(str1, str2);
     @throw ZSOCKET-SEND-DATA-ERROR an argument was included that was not a string or binary object
     @throw ZSOCKET-TIMEOUT thrown if a timeout error occurs
     @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
+    @throw ZSOCKET-CONTEXT-ERROR the context is no longer valid
  */
 nothing ZSocket::send(data val, ...) {
     // enforce access from the correct thread
@@ -2225,6 +2246,7 @@ zsock.send();
     @throw ZSOCKET-SEND-ERROR an error occurred sending the data
     @throw ZSOCKET-TIMEOUT thrown if a timeout error occurs
     @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
+    @throw ZSOCKET-CONTEXT-ERROR the context is no longer valid
 
     @note equivalent to calling ZSocket::send(string) or ZSocket::send(binary) with empty arguments
 */
@@ -2255,6 +2277,7 @@ l = ZSocket::poll(l, 2s);
 
     @throw ZSOCKET-POLL-ERROR \a socket element in the \a items argument is not assigned or there was an error in the poll operation
     @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
+    @throw ZSOCKET-CONTEXT-ERROR the context is no longer valid
 */
 static list<hash<ZmqPollInfo>> ZSocket::poll(list<hash<ZmqPollInfo>> items, timeout timeout_ms) {
     ReferenceHolder<QoreListNode> rv(new QoreListNode(pollInfoListTypeInfo), xsink);

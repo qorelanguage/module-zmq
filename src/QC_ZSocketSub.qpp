@@ -22,8 +22,6 @@
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-//#include "qore-zmq-module.h"
-
 #include "QC_ZSocketSub.h"
 
 //! The ZSocketSub class implements a ZeroMQ \c SUB socket
@@ -101,6 +99,7 @@ zsock.subscribe(str);
     @throw ENCODING-CONVERSION-ERROR this exception could be thrown if an encoding error is encountered when converting the given string to UTF-8
     @throw ZSOCKET-SUBSCRIBE-ERROR if an error occurs setting the subscription option on the socket
     @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
+    @throw ZSOCKET-CONTEXT-ERROR the context is no longer valid
 
     @see
     - unsubscribe()
@@ -135,6 +134,7 @@ zsock.unsubscribe(str);
     @throw ENCODING-CONVERSION-ERROR this exception could be thrown if an encoding error is encountered when converting the given string to UTF-8
     @throw ZSOCKET-UNSUBSCRIBE-ERROR if an error occurs setting the subscription option on the socket
     @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
+    @throw ZSOCKET-CONTEXT-ERROR the context is no longer valid
 
     @see
     - subscribe()

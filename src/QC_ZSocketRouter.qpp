@@ -117,6 +117,7 @@ router.setMandatory(True);
     @param mandatory the mandatory option for the socket
 
     @throw ZSOCKET-SETMANDATORY-ERROR this exception is thrown if there is any error setting the socket option
+    @throw ZSOCKET-CONTEXT-ERROR the context is no longer valid
 
     @see @ref ZMQ_ROUTER_MANDATORY
 */
