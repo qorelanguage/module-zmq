@@ -1376,6 +1376,17 @@ static qzmq_opt_map_t qzmq_opt_map = {
 //! The ZSocket class provides the abstract base class for ZeroMQ socket classes
 /** To poll for events with multiple sockets, use @ref ZSocket::poll()
 
+    The socket timeout is set by default to two minutes; to change the default timeout,
+    call one of:
+    - @ref Qore::ZMQ::ZSocket::setRecvTimeout() "ZSocket::setRecvTimeout()"
+    - @ref Qore::ZMQ::ZSocket::setSendTimeout() "ZSocket::setSendTimeout()"
+    - @ref Qore::ZMQ::ZSocket::setTimeout() "ZSocket::setTimeout()"
+
+    For example, to set the timeout to unlimited:
+    @code{.py}
+sock.setTimeout(-1);
+    @endcode
+
     @note
     - The ZSocket class is not designed to be accessed from multiple threads; it was created without
       locking for fast and efficient use when used from a single thread.  For methods that would be
@@ -1690,7 +1701,7 @@ int port = zsock.bind("tcp://127.0.0.1:*");
 port = zsock.bind("tcp://127.0.0.1:0");
     @endcode
 
-    For \c tcp:// endpoints, this class supports ephemeral ports if you
+    For \c tcp:// endpoints, this class supports binding on a random free port if you
     specify the port number as "*" or \ "0".
 
     @param format the format string for the @ref zmqendpoints "endpoint"
@@ -1698,8 +1709,8 @@ port = zsock.bind("tcp://127.0.0.1:0");
 
     @return the actual port number used for \c "tcp://" endpoints,
     0 for other transports. On failure, a \c ZSOCKET-BIND-ERROR exception is thrown.
-    Note that when using ephemeral ports, a port may be reused by different services without
-    clients being aware of this fact.  Protocols that run on ephemeral ports should take
+    Note that when using wildcard or random ports, a port may be reused by different services without
+    clients being aware of this fact.  Protocols that use wildcard or random ports should take
     this into account.
 
     @throw ZSOCKET-BIND-ERROR if an error occurs, this exception is thrown
@@ -1890,9 +1901,15 @@ nothing ZSocket::send(Qore::ZMQ::ZMsg[QoreZMsg] msg) {
         if (zsock->check(xsink))
             return QoreValue();
 
-        int rc = zmsg_send(msg->getPtr(), **zsock);
-        if (rc < 0)
-            zmq_error(xsink, "ZSOCKET-SEND-ERROR", "error in ZSocket::send(%s)", obj_msg->getClassName());
+        while (true) {
+            int rc = zmsg_send(msg->getPtr(), **zsock);
+            if (rc < 0) {
+                if (errno == EINTR)
+                    continue;
+                zmq_error(xsink, "ZSOCKET-SEND-ERROR", "error in ZSocket::send(%s)", obj_msg->getClassName());
+            }
+            break;
+        }
     }
     if (!msg->getPtr())
         const_cast<QoreObject*>(obj_msg)->doDelete(xsink);
@@ -1957,14 +1974,17 @@ nothing ZSocket::send(Qore::ZMQ::ZFrame[QoreZFrame] frame, int flags = 0) {
     // enforce access from the correct thread
     if (zsock->check(xsink))
         return QoreValue();
-    {
+    while (true) {
         int rc = zframe_send(frame->getPtr(), **zsock, flags);
         if (rc < 0) {
+            if (errno == EINTR)
+                continue;
             if (flags & ZFRAME_DONTWAIT && errno == EAGAIN)
                 zmq_error(xsink, "ZSOCKET-SEND-WAIT-ERROR", "error in ZSocket::send(%s)", obj_frame->getClassName());
             else
                 zmq_error(xsink, "ZSOCKET-SEND-ERROR", "error in ZSocket::send(%s)", obj_frame->getClassName());
         }
+        break;
     }
     if (!(flags & ZFRAME_REUSE) && !frame->getPtr())
         const_cast<QoreObject*>(obj_frame)->doDelete(xsink);
@@ -1986,10 +2006,16 @@ ZFrame ZSocket::recvFrame() {
     // enforce access from the correct thread
     if (zsock->check(xsink))
         return QoreValue();
-    zframe_t* frm = zframe_recv(**zsock);
-    if (!frm) {
-        zmq_error(xsink, "ZSOCKET-RECVFRAME-ERROR", "error in ZSocket::recvFrame()");
-        return QoreValue();
+    zframe_t* frm;
+    while (true) {
+        frm = zframe_recv(**zsock);
+        if (!frm) {
+            if (errno == EINTR)
+                continue;
+            zmq_error(xsink, "ZSOCKET-RECVFRAME-ERROR", "error in ZSocket::recvFrame()");
+            return QoreValue();
+        }
+        break;
     }
     return new QoreObject(QC_ZFRAME, getProgram(), new QoreZFrame(frm));
 }
@@ -2011,10 +2037,16 @@ ZMsg ZSocket::recvMsg() {
     // enforce access from the correct thread
     if (zsock->check(xsink))
         return QoreValue();
-    zmsg_t* msg = zmsg_recv(**zsock);
-    if (!msg) {
-        zmq_error(xsink, "ZSOCKET-RECVMSG-ERROR", "error in ZSocket::recvMsg()");
-        return QoreValue();
+    zmsg_t* msg;
+    while (true) {
+        msg = zmsg_recv(**zsock);
+        if (!msg) {
+            if (errno == EINTR)
+                continue;
+            zmq_error(xsink, "ZSOCKET-RECVMSG-ERROR", "error in ZSocket::recvMsg()");
+            return QoreValue();
+        }
+        break;
     }
     return new QoreObject(QC_ZMSG, getProgram(), new QoreZMsg(msg));
 }
@@ -2059,11 +2091,13 @@ zsock.setRecvHighWaterMark(2000);
 zsock.setSendTimeout(30s);
     @endcode
 
-    @param timeout_ms set the send timeout in milliseconds; like all %Qore functions and methods taking timeout values, a @ref relative_dates "relative date/time value" can be used to make the units clear (i.e. \c 2m = two minutes, etc.)
+    @param timeout_ms set the send timeout in milliseconds; negative values mean to never time out; like all %Qore functions and methods taking timeout values, a @ref relative_dates "relative date/time value" can be used to make the units clear (i.e. \c 2m = two minutes, etc.)
 
     @throw ZSOCKET-SETSENDTIMEOUT-ERROR if an error occurs setting the timeout option
     @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
     @throw ZSOCKET-CONTEXT-ERROR the context is no longer valid
+
+    @note if this method is not called, the default timeout for all send and receive operations when a new socket is created is two minutes
 
     @see
     - @ref ZSocket::setRecvTimeout()
@@ -2086,11 +2120,13 @@ nothing ZSocket::setSendTimeout(timeout timeout_ms) {
 zsock.setRecvTimeout(30s);
     @endcode
 
-    @param timeout_ms set the receive timeout in milliseconds; like all %Qore functions and methods taking timeout values, a @ref relative_dates "relative date/time value" can be used to make the units clear (i.e. \c 2m = two minutes, etc.)
+    @param timeout_ms set the receive timeout in milliseconds; negative values mean to never time out; like all %Qore functions and methods taking timeout values, a @ref relative_dates "relative date/time value" can be used to make the units clear (i.e. \c 2m = two minutes, etc.)
 
     @throw ZSOCKET-SETRECVTIMEOUT-ERROR if an error occurs setting the timeout option
     @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
     @throw ZSOCKET-CONTEXT-ERROR the context is no longer valid
+
+    @note if this method is not called, the default timeout for all send and receive operations when a new socket is created is two minutes
 
     @see
     - @ref ZSocket::setSendTimeout()
@@ -2113,11 +2149,13 @@ nothing ZSocket::setRecvTimeout(timeout timeout_ms) {
 zsock.setTimeout(30s);
     @endcode
 
-    @param timeout_ms set the send and receive timeout in milliseconds; like all %Qore functions and methods taking timeout values, a @ref relative_dates "relative date/time value" can be used to make the units clear (i.e. \c 2m = two minutes, etc.)
+    @param timeout_ms set the send and receive timeout in milliseconds; negative values mean to never time out; like all %Qore functions and methods taking timeout values, a @ref relative_dates "relative date/time value" can be used to make the units clear (i.e. \c 2m = two minutes, etc.)
 
     @throw ZSOCKET-SETTIMEOUT-ERROR if an error occurs setting the timeout option
     @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
     @throw ZSOCKET-CONTEXT-ERROR the context is no longer valid
+
+    @note if this method is not called, the default timeout for all send and receive operations when a new socket is created is two minutes
 
     @see
     - @ref ZSocket::setRecvTimeout()
@@ -2226,14 +2264,26 @@ nothing ZSocket::send(data val, ...) {
         if (q_get_data(args->retrieveEntry(i), ptr, len)) {
             xsink->raiseException("ZSOCKET-SEND-DATA-ERROR", "expecting 'string' or 'binary' argument type in position %d/%d; got '%s' instead", (int)i + 1, (int)args->size(), args->retrieveEntry(i).getTypeName());
             // send a zero-length frame to close the message
-            int rc = zmq_send(**zsock, nullptr, 0, 0);
-            if (rc < 0)
-                zmq_error(xsink, "ZSOCKET-SEND-ERROR", "error sending data");
+            while (true) {
+                int rc = zmq_send(**zsock, nullptr, 0, 0);
+                if (rc < 0) {
+                    if (errno == EINTR)
+                        continue;
+                    zmq_error(xsink, "ZSOCKET-SEND-ERROR", "error sending data");
+                }
+                break;
+            }
             break;
         }
-        int rc = zmq_send(**zsock, ptr, len, (i == args->size() - 1) ? 0 : ZMQ_SNDMORE);
-        if (rc < 0)
-            zmq_error(xsink, "ZSOCKET-SEND-ERROR", "error sending data");
+        while (true) {
+            int rc = zmq_send(**zsock, ptr, len, (i == args->size() - 1) ? 0 : ZMQ_SNDMORE);
+            if (rc < 0) {
+                if (errno == EINTR)
+                    continue;
+                zmq_error(xsink, "ZSOCKET-SEND-ERROR", "error sending data");
+            }
+            break;
+        }
     }
 }
 
@@ -2255,9 +2305,15 @@ nothing ZSocket::send() {
     if (zsock->check(xsink))
         return QoreValue();
 
-    int rc = zsock_send(**zsock, "b", nullptr, 0);
-    if (rc)
-        zmq_error(xsink, "ZSOCKET-SEND-ERROR", "error sending empty message");
+    while (true) {
+        int rc = zsock_send(**zsock, "b", nullptr, 0);
+        if (rc) {
+            if (errno == EINTR)
+                continue;
+            zmq_error(xsink, "ZSOCKET-SEND-ERROR", "error sending empty message");
+        }
+        break;
+    }
 }
 
 //! polls multiple sockets and returns all sockets with events
@@ -2310,19 +2366,24 @@ static list<hash<ZmqPollInfo>> ZSocket::poll(list<hash<ZmqPollInfo>> items, time
         pitem[li.index()].events = h->getKeyAsBigInt("events", found);
     }
 
-    int rc = zmq_poll(pitem, items->size(), timeout_ms);
-    if (rc < 0) {
-        zmq_error(xsink, "ZSOCKET-POLL-ERROR", "error polling %d socket%s", (int)items->size(), items->size() == 1 ? "" : "s");
-        return QoreValue();
-    }
-    if (rc) {
-        for (unsigned i = 0; i < items->size(); ++i) {
-            if (pitem[i].revents) {
-                ReferenceHolder<QoreHashNode> h(static_cast<const QoreHashNode*>(items->retrieve_entry(i))->copy(), xsink);
-                h->setKeyValue("events", new QoreBigIntNode(pitem[i].revents), xsink);
-                rv->push(h.release());
+    while (true) {
+        int rc = zmq_poll(pitem, items->size(), timeout_ms);
+        if (rc < 0) {
+            if (errno == EINTR)
+                continue;
+            zmq_error(xsink, "ZSOCKET-POLL-ERROR", "error polling %d socket%s", (int)items->size(), items->size() == 1 ? "" : "s");
+            return QoreValue();
+        }
+        if (rc) {
+            for (unsigned i = 0; i < items->size(); ++i) {
+                if (pitem[i].revents) {
+                    ReferenceHolder<QoreHashNode> h(static_cast<const QoreHashNode*>(items->retrieve_entry(i))->copy(), xsink);
+                    h->setKeyValue("events", new QoreBigIntNode(pitem[i].revents), xsink);
+                    rv->push(h.release());
+                }
             }
         }
+        break;
     }
     assert(rv->size() == rc);
     return rv.release();
