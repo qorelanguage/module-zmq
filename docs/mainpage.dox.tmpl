@@ -22,6 +22,24 @@
       - @ref Qore::ZMQ::ZSocketXPub "ZSocketXPub"
       - @ref Qore::ZMQ::ZSocketXSub "ZSocketXSub"
 
+    Unlike the ZeroMQ C library which uses an unlimited timeout period on socket send and
+    receive operations by default, the socket timeout in the %Qore @ref Qore::ZMQ::ZSocket "ZSocket"
+    class is set by default to two minutes; to change the default timeout,
+    call one of the following methods after creating the object:
+    - @ref Qore::ZMQ::ZSocket::setRecvTimeout() "ZSocket::setRecvTimeout()"
+    - @ref Qore::ZMQ::ZSocket::setSendTimeout() "ZSocket::setSendTimeout()"
+    - @ref Qore::ZMQ::ZSocket::setTimeout() "ZSocket::setTimeout()"
+
+    @par Timeout Example:
+    @code{.py}
+    # create a ROUTER socket on all devices on a wildcard/random port
+    ZSocketRouter sock(zctx, name, "tcp://*:*");
+    # set the default send and receive timeout to unlimited (never time out)
+    sock.setTimeout(-1);
+    # print out the URL with the actual port number
+    printf("queue URL bound to: %y\n", sock.endpoint());
+    @endcode
+
     @section zmq_examples Examples
 
     @par Example:
@@ -51,12 +69,16 @@
 
     @subsection zmqendpoints_tcp Binding TCP Endpoints
 
-    <tt>tcp://</tt> endpoints support ephemeral ports when binding if you specify the port number as \c "*" or \c 0.
+    <tt>tcp://</tt> endpoints support binding on a random free port if you specify the port number as \c "*", \c "!", or \c 0 and support binding on all interfaces if you specify the interface or host name as \c "*".
 
     <b>Examples</b>
     |!Endpoint|!Description
-    |<tt>@@tcp://127.0.0.1:0</tt>|bind to random port
-    |<tt>@@tcp://127.0.0.1:!</tt>|bind to random port
+    |<tt>@@tcp://127.0.0.1:0</tt>|bind to random port on localhost
+    |<tt>@@tcp://127.0.0.1:*</tt>|bind to random port on localhost
+    |<tt>@@tcp://127.0.0.1:!</tt>|bind to random port on localhost
+    |<tt>@@tcp://*:0</tt>|bind to random port on all interfaces
+    |<tt>@@tcp://*:*</tt>|bind to random port on all interfaces
+    |<tt>@@tcp://*:!</tt>|bind to random port on all interfaces
 
     @section zmqerrors zmq Errors
 
