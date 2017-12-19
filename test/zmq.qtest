@@ -413,6 +413,10 @@ class ZmqTest inherits QUnit::Test {
         assertEq(Subscription, msg.popStr());
         assertEq(HelloWorld, msg.popStr());
         assertEq(NOTHING, msg.popMsg());
+
+        # timeout test
+        reader.setRecvTimeout(1ms);
+        assertThrows("ZSOCKET-TIMEOUT-ERROR", \reader.recvMsg());
     }
 
     zSocketDealerRouterTest() {

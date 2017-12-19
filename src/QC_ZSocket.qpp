@@ -1999,6 +1999,7 @@ ZFrame frm = zsock.recvFrame();
     @return the frame received from the socket
 
     @throw ZSOCKET-RECVFRAME-ERROR thrown if an error occurs during the call
+    @throw ZSOCKET-TIMEOUT thrown if a timeout error occurs
     @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
     @throw ZSOCKET-CONTEXT-ERROR the context is no longer valid
 */
@@ -2012,7 +2013,10 @@ ZFrame ZSocket::recvFrame() {
         if (!frm) {
             if (errno == EINTR)
                 continue;
-            zmq_error(xsink, "ZSOCKET-RECVFRAME-ERROR", "error in ZSocket::recvFrame()");
+            if (errno == EAGAIN)
+                zmq_error(xsink, "ZSOCKET-TIMEOUT-ERROR", "timeout in ZSocket::recvFrame()");
+            else
+                zmq_error(xsink, "ZSOCKET-RECVFRAME-ERROR", "error in ZSocket::recvFrame()");
             return QoreValue();
         }
         break;
@@ -2043,7 +2047,10 @@ ZMsg ZSocket::recvMsg() {
         if (!msg) {
             if (errno == EINTR)
                 continue;
-            zmq_error(xsink, "ZSOCKET-RECVMSG-ERROR", "error in ZSocket::recvMsg()");
+            if (errno == EAGAIN)
+                zmq_error(xsink, "ZSOCKET-TIMEOUT-ERROR", "timeout in ZSocket::recvFrame()");
+            else
+                zmq_error(xsink, "ZSOCKET-RECVMSG-ERROR", "error in ZSocket::recvMsg()");
             return QoreValue();
         }
         break;
@@ -2269,7 +2276,10 @@ nothing ZSocket::send(data val, ...) {
                 if (rc < 0) {
                     if (errno == EINTR)
                         continue;
-                    zmq_error(xsink, "ZSOCKET-SEND-ERROR", "error sending data");
+                    if (errno == EAGAIN)
+                        zmq_error(xsink, "ZSOCKET-TIMEOUT-ERROR", "timeout in ZSocket::send()");
+                    else
+                        zmq_error(xsink, "ZSOCKET-SEND-ERROR", "error sending data");
                 }
                 break;
             }
@@ -2280,7 +2290,10 @@ nothing ZSocket::send(data val, ...) {
             if (rc < 0) {
                 if (errno == EINTR)
                     continue;
-                zmq_error(xsink, "ZSOCKET-SEND-ERROR", "error sending data");
+                if (errno == EAGAIN)
+                    zmq_error(xsink, "ZSOCKET-TIMEOUT-ERROR", "timeout in ZSocket::send()");
+                else
+                    zmq_error(xsink, "ZSOCKET-SEND-ERROR", "error sending data");
             }
             break;
         }
@@ -2310,7 +2323,10 @@ nothing ZSocket::send() {
         if (rc) {
             if (errno == EINTR)
                 continue;
-            zmq_error(xsink, "ZSOCKET-SEND-ERROR", "error sending empty message");
+            if (errno == EAGAIN)
+                zmq_error(xsink, "ZSOCKET-TIMEOUT-ERROR", "timeout in ZSocket::send()");
+            else
+                zmq_error(xsink, "ZSOCKET-SEND-ERROR", "error sending empty message");
         }
         break;
     }
