@@ -1915,7 +1915,7 @@ nothing ZSocket::send(Qore::ZMQ::ZMsg[QoreZMsg] msg) {
         const_cast<QoreObject*>(obj_msg)->doDelete(xsink);
 }
 
-//! Waits for data to read on the socket; if data does not arrive before the timeout expires, a \c ZSOCKET-TIMEOUT exception is thrown
+//! Waits for data to read on the socket; if data does not arrive before the timeout expires, a \c ZSOCKET-TIMEOUT-ERROR exception is thrown
 /** @par Example:
     @code{.py}
 zsock.waitRead(10s);
@@ -1923,7 +1923,7 @@ zsock.waitRead(10s);
 
     @param timeout_ms the timeout in milliseconds
 
-    @throw ZSOCKET-TIMEOUT this exception is thrown if data does not arrive before the timeout expires
+    @throw ZSOCKET-TIMEOUT-ERROR this exception is thrown if data does not arrive before the timeout expires
     @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
     @throw ZSOCKET-CONTEXT-ERROR the context is no longer valid
 */
@@ -1935,7 +1935,7 @@ nothing ZSocket::waitRead(timeout timeout_ms) {
     zsock->poll(ZMQ_POLLIN, timeout_ms, "ZSocket::waitRead", xsink);
 }
 
-//! Waits for data to be written on the socket; if data is not sent before the timeout expires, a \c ZSOCKET-TIMEOUT exception is thrown
+//! Waits for data to be written on the socket; if data is not sent before the timeout expires, a \c ZSOCKET-TIMEOUT-ERROR exception is thrown
 /** @par Example:
     @code{.py}
 zsock.waitWrite(10s);
@@ -1943,7 +1943,7 @@ zsock.waitWrite(10s);
 
     @param timeout_ms the timeout in milliseconds
 
-    @throw ZSOCKET-TIMEOUT this exception is thrown if the data is not sent before the timeout expires
+    @throw ZSOCKET-TIMEOUT-ERROR this exception is thrown if the data is not sent before the timeout expires
     @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
     @throw ZSOCKET-CONTEXT-ERROR the context is no longer valid
 */
@@ -1999,7 +1999,7 @@ ZFrame frm = zsock.recvFrame();
     @return the frame received from the socket
 
     @throw ZSOCKET-RECVFRAME-ERROR thrown if an error occurs during the call
-    @throw ZSOCKET-TIMEOUT thrown if a timeout error occurs
+    @throw ZSOCKET-TIMEOUT-ERROR thrown if a timeout error occurs
     @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
     @throw ZSOCKET-CONTEXT-ERROR the context is no longer valid
 */
@@ -2033,7 +2033,7 @@ ZMsg frm = zsock.recvMsg();
     @return the messsage received from the socket
 
     @throw ZSOCKET-RECVMSG-ERROR thrown if an error occurs during the call
-    @throw ZSOCKET-TIMEOUT thrown if a timeout error occurs
+    @throw ZSOCKET-TIMEOUT-ERROR thrown if a timeout error occurs
     @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
     @throw ZSOCKET-CONTEXT-ERROR the context is no longer valid
 */
@@ -2255,7 +2255,7 @@ zsock.send(str1, str2);
 
     @throw ZSOCKET-SEND-ERROR an error occurred sending the data
     @throw ZSOCKET-SEND-DATA-ERROR an argument was included that was not a string or binary object
-    @throw ZSOCKET-TIMEOUT thrown if a timeout error occurs
+    @throw ZSOCKET-TIMEOUT-ERROR thrown if a timeout error occurs
     @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
     @throw ZSOCKET-CONTEXT-ERROR the context is no longer valid
  */
@@ -2307,7 +2307,7 @@ zsock.send();
     @endcode
 
     @throw ZSOCKET-SEND-ERROR an error occurred sending the data
-    @throw ZSOCKET-TIMEOUT thrown if a timeout error occurs
+    @throw ZSOCKET-TIMEOUT-ERROR thrown if a timeout error occurs
     @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
     @throw ZSOCKET-CONTEXT-ERROR the context is no longer valid
 
