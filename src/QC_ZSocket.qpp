@@ -2048,7 +2048,7 @@ ZMsg ZSocket::recvMsg() {
             if (errno == EINTR)
                 continue;
             if (errno == EAGAIN)
-                zmq_error(xsink, "ZSOCKET-TIMEOUT-ERROR", "timeout in ZSocket::recvFrame()");
+                zmq_error(xsink, "ZSOCKET-TIMEOUT-ERROR", "timeout in ZSocket::recvMsg()");
             else
                 zmq_error(xsink, "ZSOCKET-RECVMSG-ERROR", "error in ZSocket::recvMsg()");
             return QoreValue();
