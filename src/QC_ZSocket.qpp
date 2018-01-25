@@ -5,7 +5,7 @@
 
   Qore Programming Language
 
-  Copyright (C) 2017 Qore Technologies, s.r.o.
+  Copyright (C) 2017 - 2018 Qore Technologies, s.r.o.
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -1677,7 +1677,7 @@ zsock.monitor(ZMQ_EVENT_ALL, "inproc://monitor-socket-1");
 
     @note This method supports only \c "inproc://" endpoints
 */
-nothing ZSocket::monitor(int events, string format, ...) {
+nothing ZSocket::monitor(int events, string[doc] format, ...) {
     // enforce access from the correct thread
     if (zsock->check(xsink))
         return QoreValue();
@@ -1718,7 +1718,7 @@ port = zsock.bind("tcp://127.0.0.1:0");
 
     @note do not use the endpoint prefix \c "@" with this method
  */
-int ZSocket::bind(string format, ...) {
+int ZSocket::bind(string[doc] format, ...) {
     // enforce access from the correct thread
     if (zsock->check(xsink))
         return QoreValue();
@@ -1773,7 +1773,7 @@ zsock.unbind(str);
     @throw ZSOCKET-CONTEXT-ERROR the context is no longer valid
 
 */
-nothing ZSocket::unbind(string format, ...) {
+nothing ZSocket::unbind(string[doc] format, ...) {
     // enforce access from the correct thread
     if (zsock->check(xsink))
         return QoreValue();
@@ -1804,7 +1804,7 @@ zsock.unbind(str);
 
     @note do not use the endpoint prefix \c ">" with this method
  */
-nothing ZSocket::connect(string format, ...) {
+nothing ZSocket::connect(string[doc] format, ...) {
     // enforce access from the correct thread
     if (zsock->check(xsink))
         return QoreValue();
@@ -1831,7 +1831,7 @@ zsock.disconnect(str);
     @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
     @throw ZSOCKET-CONTEXT-ERROR the context is no longer valid
 */
-nothing ZSocket::disconnect(string format, ...) {
+nothing ZSocket::disconnect(string[doc] format, ...) {
     // enforce access from the correct thread
     if (zsock->check(xsink))
         return QoreValue();
@@ -2259,7 +2259,7 @@ zsock.send(str1, str2);
     @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
     @throw ZSOCKET-CONTEXT-ERROR the context is no longer valid
  */
-nothing ZSocket::send(data val, ...) {
+nothing ZSocket::send(data[doc] val, ...) {
     // enforce access from the correct thread
     if (zsock->check(xsink))
         return QoreValue();
@@ -2399,9 +2399,9 @@ static list<hash<ZmqPollInfo>> ZSocket::poll(list<hash<ZmqPollInfo>> items, time
                 }
             }
         }
+        assert(rv->size() == (size_t)rc);
         break;
     }
-    assert(rv->size() == rc);
     return rv.release();
 }
 
