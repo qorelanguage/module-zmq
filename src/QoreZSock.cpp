@@ -3,7 +3,7 @@
 /*
     Qore Programming Language
 
-    Copyright (C) 2017 Qore Technologies, s.r.o.
+    Copyright (C) 2017 - 2018 Qore Technologies, s.r.o.
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -33,7 +33,7 @@
 #include <ctype.h>
 #include <string.h>
 
-static std::regex url_port_regex("^tcp://.*:(\\d+|\\*)$", std::regex_constants::ECMAScript | std::regex_constants::icase | std::regex_constants::optimize);
+static std::regex url_port_regex("^tcp://.*:(d+|\\*)$", std::regex_constants::ECMAScript | std::regex_constants::icase | std::regex_constants::optimize);
 
 int QoreZSock::poll(short events, int timeout_ms, const char* meth, ExceptionSink *xsink) {
     zmq_pollitem_t p = { sock, 0, events, 0 };
