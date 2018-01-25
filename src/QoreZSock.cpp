@@ -33,7 +33,7 @@
 #include <ctype.h>
 #include <string.h>
 
-static std::regex url_port_regex("^tcp://.*:(d+|\\*)$", std::regex_constants::ECMAScript | std::regex_constants::icase | std::regex_constants::optimize);
+static std::regex url_port_regex("^tcp://.*:(\\d+|\\*)$", std::regex_constants::ECMAScript | std::regex_constants::icase | std::regex_constants::optimize);
 
 int QoreZSock::poll(short events, int timeout_ms, const char* meth, ExceptionSink *xsink) {
     zmq_pollitem_t p = { sock, 0, events, 0 };
