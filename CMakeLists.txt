@@ -52,6 +52,8 @@ set(QPP_SRC
     src/QC_ZSocketStream.qpp
     #src/QC_ZSocketRadio.qpp
     #src/QC_ZSocketDish.qpp
+    src/QC_ZSocketServer.qpp
+    src/QC_ZSocketClient.qpp
     src/QC_ZFrame.qpp
     src/QC_ZMsg.qpp
     src/qc_zmq.qpp

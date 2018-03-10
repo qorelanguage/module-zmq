@@ -2,7 +2,7 @@
 /*
   Qore zmq module
 
-  Copyright (C) 2017 Qore Technologies, s.r.o.
+  Copyright (C) 2017 - 2018 Qore Technologies, s.r.o.
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -24,6 +24,8 @@
 
 #include <qore/Qore.h>
 
+#define ZMQ_BUILD_DRAFT_API 1
+
 #include <zmq.h>
 
 #include <stdarg.h>
@@ -42,7 +44,7 @@ DLLLOCAL extern const TypedHashDecl* hashdeclZmqPollInfo;
 class AbstractZmqThreadLocalData : public AbstractPrivateData {
 public:
     DLLLOCAL int check(ExceptionSink* xsink) const {
-        if (tid != gettid()) {
+        if (!thread_safe && tid != gettid()) {
             xsink->raiseException(getErrorString(), "this object was created in TID %d; it is an error to access it from any other thread (accessed from TID %d)", tid, gettid());
             return -1;
         }
@@ -53,11 +55,17 @@ public:
         return tid;
     }
 
+    DLLLOCAL void setThreadSafe() {
+        assert(!thread_safe);
+        thread_safe = true;
+    }
+
     //! the error string for exceptions
     virtual const char* getErrorString() const = 0;
 
 private:
     int tid = gettid();
+    bool thread_safe = false;
 };
 
 #endif

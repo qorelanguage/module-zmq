@@ -2034,7 +2034,7 @@ ZMsg frm = zsock.recvMsg();
 
     @throw ZSOCKET-RECVMSG-ERROR thrown if an error occurs during the call
     @throw ZSOCKET-TIMEOUT-ERROR thrown if a timeout error occurs
-    @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
+    @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a non-thread-safe socket and a thread other than the thread where the object was created
     @throw ZSOCKET-CONTEXT-ERROR the context is no longer valid
 */
 ZMsg ZSocket::recvMsg() {
