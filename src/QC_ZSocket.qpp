@@ -265,15 +265,13 @@ const ZMQ_CONNECT_TIMEOUT = ZMQ_CONNECT_TIMEOUT;
 /** Sets the socket's long term public key. You must set this on CURVE client sockets. You can provide
     the key as 32 binary bytes, or as a 40-character string encoded in the Z85 encoding format and
     terminated in a null byte. The public key must always be used with the matching secret key. To
-    generate a public/secret key pair, use zmq_curve_keypair(3). To derive the public key from a secret
-    key, use zmq_curve_public(3).
-
-    An option value size of 40 is supported for backwards compatibility, although it is deprecated.
+    generate a public/secret key pair, use @ref Qore::ZMQ::zmq_curve_keypair() "zmq_curve_keypair()".
+    To derive the public key from a secret key, use @ref Qore::ZMQ::zmq_curve_public() "zmq_curve_public()".
 
     <b>0MQ Socket Option Information</b>
     |!Property|!Description
     |Option value type|binary data or Z85 text string
-    |Option value size|32 or 41
+    |Option value size|32 (binary) or 40 (byte character string)
     |Default value|@ref nothing
     |Applicable socket types|all, when using TCP transport
 */
@@ -283,14 +281,13 @@ const ZMQ_CURVE_PUBLICKEY = ZMQ_CURVE_PUBLICKEY;
 /** Sets the socket's long term secret key. You must set this on both CURVE client and server sockets.
     You can provide the key as 32 binary bytes, or as a 40-character string encoded in the Z85
     encoding format and terminated in a null byte. To generate a public/secret key pair, use
-    zmq_curve_keypair(3). To derive the public key from a secret key, use zmq_curve_public(3).
-
-    An option value size of 40 is supported for backwards compatibility, although it is deprecated.
+    @ref Qore::ZMQ::zmq_curve_keypair() "zmq_curve_keypair()".
+    To derive the public key from a secret key, use @ref Qore::ZMQ::zmq_curve_public() "zmq_curve_public()".
 
     <b>0MQ Socket Option Information</b>
     |!Property|!Description
     |Option value type|binary data or Z85 text string
-    |Option value size|32 or 41
+    |Option value size|32 (binary) or 40 (byte character string)
     |Default value|@ref nothing
     |Applicable socket types|all, when using TCP transport
 */
@@ -316,14 +313,12 @@ const ZMQ_CURVE_SERVER = ZMQ_CURVE_SERVER;
 /** Sets the socket's long term server key. You must set this on CURVE client sockets. You can provide
     the key as 32 binary bytes, or as a 40-character string encoded in the Z85 encoding format and
     terminated in a null byte. This key must have been generated together with the server's secret key.
-    To generate a public/secret key pair, use zmq_curve_keypair(3).
-
-    An option value size of 40 is supported for backwards compatibility, although it is deprecated.
+    To generate a public/secret key pair, use @ref Qore::ZMQ::zmq_curve_keypair() "zmq_curve_keypair()".
 
     <b>0MQ Socket Option Information</b>
     |!Property|!Description
     |Option value type|binary data or Z85 text string
-    |Option value size|32 or 41
+    |Option value size|32 (binary) or 40 (byte character string)
     |Default value|NULL
     |Applicable socket types|all, when using TCP transport
 */
@@ -1307,6 +1302,7 @@ enum qzmq_option_type {
     QZOT_INT64 = 2,
     QZOT_STR = 3,
     QZOT_BOOL = 4,
+    QZOT_CURVEKEY = 5,
 };
 
 // zmq option to type map
@@ -1318,10 +1314,10 @@ static qzmq_opt_map_t qzmq_opt_map = {
     {ZMQ_CONNECT_RID, QZOT_BIN},
     {ZMQ_CONFLATE, QZOT_INT},
     {ZMQ_CONNECT_TIMEOUT, QZOT_INT},
-    {ZMQ_CURVE_PUBLICKEY, QZOT_BIN},
-    {ZMQ_CURVE_SECRETKEY, QZOT_BIN},
+    {ZMQ_CURVE_PUBLICKEY, QZOT_CURVEKEY},
+    {ZMQ_CURVE_SECRETKEY, QZOT_CURVEKEY},
     {ZMQ_CURVE_SERVER, QZOT_BOOL},
-    {ZMQ_CURVE_SERVERKEY, QZOT_BIN},
+    {ZMQ_CURVE_SERVERKEY, QZOT_CURVEKEY},
     {ZMQ_GSSAPI_PLAINTEXT, QZOT_BOOL},
     {ZMQ_GSSAPI_PRINCIPAL, QZOT_STR},
     {ZMQ_GSSAPI_SERVER, QZOT_BOOL},
@@ -1552,6 +1548,27 @@ ZSocket::setOption(int opt, data value) {
             rc = zsock->setSocketOption(opt, ptr, len);
             break;
 
+        case QZOT_CURVEKEY: {
+            if (value.getType() == NT_STRING) {
+                if (len != 40) {
+                    xsink->raiseException("ZSOCKET-OPTION-ERROR", "option " QLLD " requires a 40-byte string in Z85 printable format; the given string is %ld byte%s long", opt, len, len == 1 ? "" : "s");
+                    rc = 0;
+                }
+                else {
+                    rc = zsock->setSocketOption(opt, ptr, len);
+                }
+                break;
+            }
+            if (len != 32) {
+                xsink->raiseException("ZSOCKET-OPTION-ERROR", "option " QLLD " requires a 32-byte binary value; the given value is %ld byte%s long", opt, len, len == 1 ? "" : "s");
+                rc = 0;
+            }
+            else {
+                rc = zsock->setSocketOption(opt, ptr, len);
+            }
+            break;
+        }
+
         default:
             xsink->raiseException("ZSOCKET-OPTION-ERROR", "option " QLLD " does not take a binary value; please check the option description and try again with a correct value type", opt);
             rc = 0;
@@ -1628,6 +1645,7 @@ auto ZSocket::getOption(int opt, int bufsize = 100) [flags=RET_VALUE_ONLY] {
             break;
         }
 
+        case QZOT_CURVEKEY:
         case QZOT_BIN: {
             SimpleRefHolder<BinaryNode> b(new BinaryNode);
             b->preallocate(bufsize);
@@ -2076,7 +2094,7 @@ zsock.setRecvHighWaterMark(2000);
     |Applicable socket types|all
 
     @throw ZSOCKET-SETRECVHIGHWATERMARK-ERROR if an error occurs setting the timeout option
-    @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a thread other than the thread where the object was created
+    @throw ZSOCKET-THREAD-ERROR this exception is thrown if this method is called from a non-thread-safe socket and a thread other than the thread where the object was created
     @throw ZSOCKET-CONTEXT-ERROR the context is no longer valid
 
     @see

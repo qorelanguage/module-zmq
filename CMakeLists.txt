@@ -52,13 +52,19 @@ set(QPP_SRC
     src/QC_ZSocketStream.qpp
     #src/QC_ZSocketRadio.qpp
     #src/QC_ZSocketDish.qpp
-    src/QC_ZSocketServer.qpp
-    src/QC_ZSocketClient.qpp
     src/QC_ZFrame.qpp
     src/QC_ZMsg.qpp
     src/qc_zmq.qpp
     src/ql_zmq.qpp
 )
+
+if (QORE_BUILD_ZMQ_DRAFT)
+    set(QPP_SRC ${QPP_SRC}
+        src/QC_ZSocketServer.qpp
+        src/QC_ZSocketClient.qpp
+    )
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DQORE_BUILD_ZMQ_DRAFT=1")
+endif (QORE_BUILD_ZMQ_DRAFT)
 
 set(CPP_SRC
     src/zmq-module.cpp

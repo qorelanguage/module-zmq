@@ -5,7 +5,7 @@
 
     Qore Programming Language
 
-    Copyright (C) 2017 Qore Technologies, s.r.o.
+    Copyright (C) 2017 - 2018 Qore Technologies, s.r.o.
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -55,7 +55,7 @@ qclass ZSocketReq [arg=QoreZSock* sock; ns=Qore::ZMQ; vparent=ZSocket; dom=NETWO
 
 //! constructs a \c REQ zsocket with an explicit identity and endpoint
 /** @par Example
-    @code
+    @code{.py}
 ZSocketReq sock(ctx, "my-identity", "tcp://127.0.0.1:8001");
     @endcode
 
@@ -77,7 +77,7 @@ ZSocketReq::constructor(Qore::ZMQ::ZContext[QoreZContext] ctx, *string identity,
 
 //! constructs an unconnected \c REQ zsocket with a default system-assigned identity
 /** @par Example
-    @code
+    @code{.py}
 # create an unconnected REQ socket
 ZSocketReq req(zctx);
 # set the req's identity value explicitly before connecting

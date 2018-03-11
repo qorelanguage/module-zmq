@@ -5,7 +5,7 @@
 
     Qore Programming Language
 
-    Copyright (C) 2017 Qore Technologies, s.r.o.
+    Copyright (C) 2017 - 2018 Qore Technologies, s.r.o.
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -60,7 +60,7 @@ qclass ZSocketDealer [arg=QoreZSock* sock; ns=Qore::ZMQ; vparent=ZSocket; dom=NE
 
 //! constructs a \c DEALER zsocket with an explicit identity and endpoint
 /** @par Example
-    @code
+    @code{.py}
 ZSocketDealer sock(ctx, "my-identity", "tcp://127.0.0.1:8001");
     @endcode
 
@@ -82,7 +82,7 @@ ZSocketDealer::constructor(Qore::ZMQ::ZContext[QoreZContext] ctx, *string identi
 
 //! constructs an unconnected \c DEALER zsocket with a default system-assigned identity
 /** @par Example
-    @code
+    @code{.py}
 # create an unconnected DEALER socket
 ZSocketDealer dealer(zctx);
 # set the dealer's identity value explicitly before connecting

@@ -4,7 +4,7 @@
 
   Qore Programming Language
 
-  Copyright (C) 2017 Qore Technologies, s.r.o.
+  Copyright (C) 2017 - 2018 Qore Technologies, s.r.o.
 
   Permission is hereby granted, free of charge, to any person obtaining a
   copy of this software and associated documentation files (the "Software"),
@@ -37,10 +37,19 @@
 #define _Q_ZFRAME_META 0
 #endif
 
+#ifdef QORE_BUILD_ZMQ_DRAFT
+#define _Q_HAVE_DRAFT_APIS 1
+#else
+#define _Q_HAVE_DRAFT_APIS 0
+#endif
+
 /** @defgroup zmq_option_constants zmq Module Option Constants
 */
 //@{
 namespace Qore::ZMQ;
-//! indicated if the @ref Qore::ZMQ::ZFrame::meta() "ZFrame::meta()" function is avialable or not
+//! indicates if the @ref Qore::ZMQ::ZFrame::meta() "ZFrame::meta()" function is avialable or not
 const HAVE_ZFRAME_META = bool(_Q_ZFRAME_META);
+
+//! indicates if draft APIs are available or not
+const HAVE_DRAFT_APIS = bool(_Q_HAVE_DRAFT_APIS);
 //@}

@@ -5,7 +5,7 @@
 
   Qore Programming Language
 
-  Copyright (C) 2017 Qore Technologies, s.r.o.
+  Copyright (C) 2017 - 2018 Qore Technologies, s.r.o.
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -118,7 +118,7 @@ qclass ZMsg [arg=QoreZMsg* msg; ns=Qore::ZMQ];
 
 //! constructs a ZMsg from the arguments supplied
 /** @par Example:
-    @code
+    @code{.py}
 ZMsg msg(frame1, frame2);
     @endcode
 
@@ -139,7 +139,7 @@ ZMsg::constructor(...) {
 
 //! constructs a ZMsg from the list of arguments supplied
 /** @par Example:
-    @code
+    @code{.py}
 ZMsg msg(l);
     @endcode
 
@@ -160,7 +160,7 @@ ZMsg::constructor(list l) {
 
 //! copies a ZMsg object
 /** @par Example:
-    @code
+    @code{.py}
 ZMsg msg_new = msg.copy();
     @endcode
 
@@ -175,7 +175,7 @@ ZMsg::copy() {
 
 //! Serializes a multipart message to a single message frame
 /** @par Example:
-    @code
+    @code{.py}
 ZFrame frm = msg.encode();
     @endcode
 
@@ -203,7 +203,7 @@ ZFrame ZMsg::encode() [flags=CONSTANT] {
 
 //! Returns meta data property for the first frame in the message
 /** @par Example
-    @code
+    @code{.py}
 *string str = msg.meta("Socket-Type");
     @endcode
 
@@ -248,7 +248,7 @@ ZFrame ZMsg::encode() [flags=CONSTANT] {
 
 //! Pushes a frame to the end of the message; the frame is consumed by this call
 /** @par Example:
-    @code
+    @code{.py}
 msg.add(frame);
     @endcode
 
@@ -272,7 +272,7 @@ nothing ZMsg::add(Qore::ZMQ::ZFrame[QoreZFrame] frame) {
 
 //! Adds a string as a block of memory to the end of the message as a new frame
 /** @par Example:
-    @code
+    @code{.py}
 msg.add(str);
     @endcode
 
@@ -292,7 +292,7 @@ nothing ZMsg::add(string str) {
 
 //! Adds a binary object to the end of the message as a new frame
 /** @par Example:
-    @code
+    @code{.py}
 msg.add(bin);
     @endcode
 
@@ -312,7 +312,7 @@ nothing ZMsg::add(binary bin) {
 
 //! Adds a message to the end of the message as a submessage; the message argument is consumed by this call
 /** @par Example:
-    @code
+    @code{.py}
 msg.add(msg);
     @endcode
 
@@ -336,7 +336,7 @@ nothing ZMsg::add(Qore::ZMQ::ZMsg[QoreZMsg] submsg) {
 
 //! Pushes a string as a block of memory to the beginning of the message as a new frame
 /** @par Example:
-    @code
+    @code{.py}
 msg.push(str);
     @endcode
 
@@ -356,7 +356,7 @@ nothing ZMsg::push(string str) {
 
 //! Pushes a block of memory to the beginning of the message as a new frame
 /** @par Example:
-    @code
+    @code{.py}
 msg.push(bin);
     @endcode
 
@@ -376,7 +376,7 @@ nothing ZMsg::push(binary bin) {
 
 //! Pushes a frame to the beginning of the message, i.e. before all other frames; the frame is consumed by this call
 /** @par Example:
-    @code
+    @code{.py}
 msg.push(frame);
     @endcode
 
@@ -400,7 +400,7 @@ nothing ZMsg::push(Qore::ZMQ::ZFrame[QoreZFrame] frame) {
 
 //! Removes and returns the first frame from the message, if any
 /** @par Example:
-    @code
+    @code{.py}
 *ZFrame frame = msg.popFrame();
     @endcode
 
@@ -421,7 +421,7 @@ nothing ZMsg::push(Qore::ZMQ::ZFrame[QoreZFrame] frame) {
 
 //! Removes and returns the first submessage from message, if any
 /** @par Example:
-    @code
+    @code{.py}
 *ZFrame msg = msg.popMsg();
     @endcode
 
@@ -444,7 +444,7 @@ nothing ZMsg::push(Qore::ZMQ::ZFrame[QoreZFrame] frame) {
 
 //! Pops the first frame off the front of message and returns it as fresh string
 /** @par Example:
-    @code
+    @code{.py}
 *string str = msg.popStr();
     @endcode
 
@@ -469,7 +469,7 @@ nothing ZMsg::push(Qore::ZMQ::ZFrame[QoreZFrame] frame) {
 
 //! Returns the signal value, 0 or greater, if message is a signal, -1 if not
 /** @par Example:
-    @code
+    @code{.py}
 int size = msg.signal();
     @endcode
 
@@ -482,9 +482,59 @@ int ZMsg::signal() [flags=CONSTANT] {
    return zmsg_signal(**msg);
 }
 
+//! Sets a routing ID on the message for use with \c SERVER sockets
+/** @par Example:
+    @code{.py}
+msg.setRoutingId(routing_id);
+    @endcode
+
+    @param routing_id a routing ID for the message
+
+    @throw MISSING-FEATURE-ERROR thrown if the underlying czmq library is missing draft APIs; check @ref Qore::ZMQ::HAVE_DRAFT_APIS "HAVE_DRAFT_APIS" before calling this method
+
+    @note
+    - only available if the underlying library supports it; check @ref Qore::ZMQ::HAVE_DRAFT_APIS "HAVE_DRAFT_APIS" before calling this method
+*/
+nothing ZMsg::setRoutingId(int routing_id) {
+   if (msg->check(xsink))
+      return QoreValue();
+
+#ifdef QORE_BUILD_ZMQ_DRAFT
+    zmsg_set_routing_id(**msg, (int)routing_id);
+#else
+    xsink->raiseException("MISSING-FEATURE-ERROR", "the underlying czmq library is missing a function required to implement this method; check HAVE_DRAFT_APIS before calling");
+    return QoreValue();
+#endif
+}
+
+//! Returns a routing ID greater than 0 if the message is from a \c SERVER socket, 0 if not
+/** @par Example:
+    @code{.py}
+int routing_id = msg.routingId();
+    @endcode
+
+    @return a routing ID greater than 0 if the message is from a \c SERVER socket, 0 if not
+
+    @throw MISSING-FEATURE-ERROR thrown if the underlying czmq library is missing draft APIs; check @ref Qore::ZMQ::HAVE_DRAFT_APIS "HAVE_DRAFT_APIS" before calling this method
+
+    @note
+    - only available if the underlying library supports it; check @ref Qore::ZMQ::HAVE_DRAFT_APIS "HAVE_DRAFT_APIS" before calling this method
+*/
+int ZMsg::routingId() [flags=CONSTANT] {
+   if (msg->check(xsink))
+      return QoreValue();
+
+#ifdef QORE_BUILD_ZMQ_DRAFT
+   return zmsg_routing_id(**msg);
+#else
+    xsink->raiseException("MISSING-FEATURE-ERROR", "the underlying czmq library is missing a function required to implement this method; check HAVE_DRAFT_APIS before calling");
+    return QoreValue();
+#endif
+}
+
 //! Returns the number of frames in the message
 /** @par Example:
-    @code
+    @code{.py}
 int size = msg.size();
     @endcode
 
@@ -501,7 +551,7 @@ int ZMsg::size() [flags=CONSTANT] {
 
 //! Returns the byte size of all frames in the message
 /** @par Example:
-    @code
+    @code{.py}
 int size = msg.contentSize();
     @endcode
 
@@ -518,7 +568,7 @@ int ZMsg::contentSize() [flags=CONSTANT] {
 
 //! Returns @ref Qore::True "True" if two msgs have identical size and data
 /** @par Example:
-    @code
+    @code{.py}
 bool b = msg.more();
     @endcode
 
@@ -539,7 +589,7 @@ bool ZMsg::eq(ZMsg[QoreZMsg] msg2) [flags=CONSTANT] {
 
 //! Sends a message to the zsys log sink (may be stdout, or system facility)
 /** @par Example:
-    @code
+    @code{.py}
 msg.print();
     @endcode
 
@@ -554,7 +604,7 @@ nothing ZMsg::print() {
 
 //! Saves the message contents to an open file
 /** @par Example:
-    @code
+    @code{.py}
 File f();
 f.open(file_name, O_CREAT|O_WRONLY|O_TRUNC);
 msg.save(f);

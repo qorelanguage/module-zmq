@@ -24,7 +24,10 @@
 
 #include <qore/Qore.h>
 
+#ifdef QORE_BUILD_ZMQ_DRAFT
 #define ZMQ_BUILD_DRAFT_API 1
+#define CZMQ_BUILD_DRAFT_API 1
+#endif
 
 #include <zmq.h>
 
@@ -39,6 +42,7 @@ DLLLOCAL void zmq_error(ExceptionSink* xsink, const char* err, const char* desc_
 // for hashdecls
 DLLLOCAL extern const TypedHashDecl* hashdeclZmqVersionInfo;
 DLLLOCAL extern const TypedHashDecl* hashdeclZmqPollInfo;
+DLLLOCAL extern const TypedHashDecl* hashdeclZmqCurveKeyInfo;
 
 // base class for private data restricted to the thread in which it was created
 class AbstractZmqThreadLocalData : public AbstractPrivateData {
