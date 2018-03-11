@@ -490,19 +490,19 @@ msg.setRoutingId(routing_id);
 
     @param routing_id a routing ID for the message
 
-    @throw MISSING-FEATURE-ERROR thrown if the underlying czmq library is missing draft APIs; check @ref Qore::ZMQ::HAVE_DRAFT_APIS "HAVE_DRAFT_APIS" before calling this method
+    @throw MISSING-FEATURE-ERROR thrown if the underlying czmq library is missing draft APIs; check @ref Qore::ZMQ::HAVE_ZMQ_DRAFT_APIS "HAVE_ZMQ_DRAFT_APIS" before calling this method
 
     @note
-    - only available if the underlying library supports it; check @ref Qore::ZMQ::HAVE_DRAFT_APIS "HAVE_DRAFT_APIS" before calling this method
+    - only available if the underlying library supports it; check @ref Qore::ZMQ::HAVE_ZMQ_DRAFT_APIS "HAVE_ZMQ_DRAFT_APIS" before calling this method
 */
 nothing ZMsg::setRoutingId(int routing_id) {
-   if (msg->check(xsink))
-      return QoreValue();
+    if (msg->check(xsink))
+        return QoreValue();
 
 #ifdef QORE_BUILD_ZMQ_DRAFT
     zmsg_set_routing_id(**msg, (int)routing_id);
 #else
-    xsink->raiseException("MISSING-FEATURE-ERROR", "the underlying czmq library is missing a function required to implement this method; check HAVE_DRAFT_APIS before calling");
+    xsink->raiseException("MISSING-FEATURE-ERROR", "the underlying czmq library is missing a function required to implement this method; check HAVE_ZMQ_DRAFT_APIS before calling");
     return QoreValue();
 #endif
 }
@@ -515,19 +515,19 @@ int routing_id = msg.routingId();
 
     @return a routing ID greater than 0 if the message is from a \c SERVER socket, 0 if not
 
-    @throw MISSING-FEATURE-ERROR thrown if the underlying czmq library is missing draft APIs; check @ref Qore::ZMQ::HAVE_DRAFT_APIS "HAVE_DRAFT_APIS" before calling this method
+    @throw MISSING-FEATURE-ERROR thrown if the underlying czmq library is missing draft APIs; check @ref Qore::ZMQ::HAVE_ZMQ_DRAFT_APIS "HAVE_ZMQ_DRAFT_APIS" before calling this method
 
     @note
-    - only available if the underlying library supports it; check @ref Qore::ZMQ::HAVE_DRAFT_APIS "HAVE_DRAFT_APIS" before calling this method
+    - only available if the underlying library supports it; check @ref Qore::ZMQ::HAVE_ZMQ_DRAFT_APIS "HAVE_ZMQ_DRAFT_APIS" before calling this method
 */
 int ZMsg::routingId() [flags=CONSTANT] {
-   if (msg->check(xsink))
-      return QoreValue();
+    if (msg->check(xsink))
+        return QoreValue();
 
 #ifdef QORE_BUILD_ZMQ_DRAFT
-   return zmsg_routing_id(**msg);
+    return zmsg_routing_id(**msg);
 #else
-    xsink->raiseException("MISSING-FEATURE-ERROR", "the underlying czmq library is missing a function required to implement this method; check HAVE_DRAFT_APIS before calling");
+    xsink->raiseException("MISSING-FEATURE-ERROR", "the underlying czmq library is missing a function required to implement this method; check HAVE_ZMQ_DRAFT_APIS before calling");
     return QoreValue();
 #endif
 }

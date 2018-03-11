@@ -36,7 +36,8 @@ class ZmqTest inherits QUnit::Test {
         addTestCase("zsocket dealer/router", \zSocketDealerRouterTest());
         addTestCase("zmsg", \zMsgTest());
         addTestCase("proxy", \proxyTest());
-        addTestCase("crypto", \crypto());
+        addTestCase("crypto", \cryptoTest());
+        #addTestCase("draft", \draftTest());
 
         set_return_value(main());
     }
@@ -92,6 +93,16 @@ class ZmqTest inherits QUnit::Test {
         assertEq(HelloWorld.size() + 1, msg.contentSize());
         assertEq(True, frame.streq(Testing));
         assertEq(False, frame.streq(HelloWorld));
+
+        if (HAVE_ZMQ_DRAFT_APIS) {
+            assertEq(0, msg.routingId());
+            assertNothing(msg.setRoutingId(10));
+            assertEq(10, msg.routingId());
+        }
+        else {
+            assertThrows("MISSING-FEATURE-ERROR", \msg.routingId());
+            assertThrows("MISSING-FEATURE-ERROR", \msg.setRoutingId(), 10);
+        }
     }
 
     zSocketSmokeTest() {
@@ -525,7 +536,7 @@ class ZmqTest inherits QUnit::Test {
         zctx2.shutdown();
     }
 
-    crypto() {
+    cryptoTest() {
         # testing with mismatches crypto keys between the client and server results in a deadlock
         {
             # generate random keys
@@ -596,5 +607,24 @@ class ZmqTest inherits QUnit::Test {
         ZFrame idframe = msg.popFrame();
         assertEq(5, idframe.size());
         assertEq("", idframe.meta("Identity"));
+    }
+
+    draftTest() {
+        if (!HAVE_ZMQ_DRAFT_APIS) {
+            return;
+        }
+
+        /*
+        # server-client communication not working in any case
+        ZSocketServer server(zctx, "@tcp://127.0.0.1:*");
+        ZSocketClient client(zctx, ">" + server.endpoint());
+        printf("client connected to %y\n", client.endpoint());
+
+        client.send(HelloWorld);
+        printf("receiving server msg\n");
+        ZMsg msg = server.recvMsg();
+        printf("got msg\n");
+        assertGt(0, msg.routingId());
+        */
     }
 }
