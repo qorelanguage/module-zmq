@@ -4,7 +4,7 @@
 
   Qore Programming Language
 
-  Copyright (C) 2017 Qore Technologies, s.r.o.
+  Copyright (C) 2017 - 2018 Qore Technologies, s.r.o.
 
   Permission is hereby granted, free of charge, to any person obtaining a
   copy of this software and associated documentation files (the "Software"),
@@ -45,6 +45,16 @@ hashdecl Qore::ZMQ::ZmqVersionInfo {
     string version;
 }
 
+//! ZeroMQ CURVE key info hash
+/**
+*/
+hashdecl Qore::ZMQ::ZmqCurveKeyInfo {
+    //! CURVE public key as a 40-byte string in Z85 printable format
+    string pub;
+    //! CURVE secret key as a 40-byte string in Z85 printable format
+    string secret;
+}
+
 /** @defgroup zmq_functions zmq Module Functions
 */
 //@{
@@ -52,20 +62,105 @@ namespace Qore::ZMQ;
 
 //! returns a hash of ZeroMQ library information
 /** @par Example:
-    @code
+    @code{.py}
 hash h = zmq_version();
     @endcode
 
     @return a @ref ZmqVersionInfo hash of ZeroMQ library information
  */
 hash<Qore::ZMQ::ZmqVersionInfo> zmq_version() [flags=CONSTANT] {
-   int major, minor, patch;
-   zmq_version(&major, &minor, &patch);
-   QoreHashNode* h = new QoreHashNode(hashdeclZmqVersionInfo, xsink);
-   h->setKeyValue("major", new QoreBigIntNode(major), xsink);
-   h->setKeyValue("minor", new QoreBigIntNode(minor), xsink);
-   h->setKeyValue("patch", new QoreBigIntNode(patch), xsink);
-   h->setKeyValue("version", new QoreStringNodeMaker("%d.%d.%d", major, minor, patch), xsink);
-   return h;
+    int major, minor, patch;
+    zmq_version(&major, &minor, &patch);
+    QoreHashNode* h = new QoreHashNode(hashdeclZmqVersionInfo, xsink);
+    h->setKeyValue("major", new QoreBigIntNode(major), xsink);
+    h->setKeyValue("minor", new QoreBigIntNode(minor), xsink);
+    h->setKeyValue("patch", new QoreBigIntNode(patch), xsink);
+    h->setKeyValue("version", new QoreStringNodeMaker("%d.%d.%d", major, minor, patch), xsink);
+    return h;
+}
+
+//! generates a random secret and public key for Curve and returns this information in a hash
+/** @par Example:
+    @code{.py}
+hash<ZmqCurveKeyInfo> kh = zmq_curve_keypair();
+    @endcode
+
+    @return a @ref ZmqCurveKeyInfo hash for a randomly-generated secret and public key for Curve
+
+    @throw ZMQ-CURVE-KEYPAIR-ERROR an error was generated calling \c zmq_curve_keypair()
+*/
+hash<Qore::ZMQ::ZmqCurveKeyInfo> zmq_curve_keypair() [flags=RET_VALUE_ONLY] {
+    SimpleRefHolder<QoreStringNode> secret(new QoreStringNode);
+    secret->reserve(40);
+    SimpleRefHolder<QoreStringNode> pub(new QoreStringNode);
+    pub->reserve(40);
+    int rc = zmq_curve_keypair((char*)pub->c_str(), (char*)secret->c_str());
+    if (rc) {
+        zmq_error(xsink, "ZMQ-CURVE-KEYPAIR-ERROR", "failed to generate Curve keypair");
+        return QoreValue();
+    }
+    pub->terminate(40);
+    secret->terminate(40);
+    ReferenceHolder<QoreHashNode> h(new QoreHashNode(hashdeclZmqCurveKeyInfo, xsink), xsink);
+    h->setKeyValue("pub", pub.release(), xsink);
+    h->setKeyValue("secret", secret.release(), xsink);
+    return h.release();
+}
+
+//! generate a Curve public key from a secret/private key
+/** @par Example:
+    @code{.py}
+string public = zmq_curve_public(priv);
+    @endcode
+
+    @param secret a 40-byte Curve secret/private key in Z85 printable format
+
+    @return a Curve public key in Z85 printable format from the given secret key
+
+    @throw ZMQ-CURVE-PUBLIC-ERROR an error was generated calling \c zmq_curve_public()
+*/
+string zmq_curve_public(string secret) [flags=RET_VALUE_ONLY] {
+    SimpleRefHolder<QoreStringNode> pub(new QoreStringNode);
+    pub->reserve(40);
+    int rc = zmq_curve_public((char*)pub->c_str(), (char*)secret->c_str());
+    if (rc) {
+        zmq_error(xsink, "ZMQ-CURVE-PUBLIC-ERROR", "failed to generate Curve public key from secret/private key");
+        return QoreValue();
+    }
+    pub->terminate(40);
+    return pub.release();
+}
+
+//! returns a string in Z85 printable format corresponding to the given binary value with a length divisible by 4
+/** @par Example:
+    @code{.py}
+string z85str = zmq_z85_encode(bin);
+    @endcode
+
+    @param data a binary value with a length divisible by 4
+
+    @return a string in Z85 printable format corresponding to the argument
+
+    @throw ZMQ-Z85-ENCODE-ERROR an error was generated calling \c zmq_z85_encode()
+
+    @note Curve keys should be 32 bytes long
+*/
+string zmq_z85_encode(binary data) [flags=RET_VALUE_ONLY] {
+    // ensure that the size is evenly divisible by 4
+    size_t len = data->size() / 4 * 4;
+    if (len != data->size()) {
+        zmq_error(xsink, "ZMQ-Z85-ENCODE-ERROR", "the argument's size (%ld) is not evenly divisible by 4", data->size());
+        return QoreValue();
+    }
+    SimpleRefHolder<QoreStringNode> str(new QoreStringNode);
+    len = data->size() / 4 + data->size();
+    str->reserve(len);
+    char* p = zmq_z85_encode((char*)str->c_str(), (const uint8_t*)data->getPtr(), data->size());
+    if (!p) {
+        zmq_error(xsink, "ZMQ-Z85-ENCODE-ERROR", "zmq_z85_encode() returned an error");
+        return QoreValue();
+    }
+    str->terminate(len);
+    return str.release();
 }
 //@}

@@ -5,7 +5,7 @@
 
   Qore Programming Language
 
-  Copyright (C) 2017 Qore Technologies, s.r.o.
+  Copyright (C) 2017 - 2018 Qore Technologies, s.r.o.
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -36,7 +36,7 @@ qclass ZSocketRadio [arg=QoreRadioZSock* zsock; ns=Qore::ZMQ; vparent=ZSocket; d
 
 //! constructs a RADIO zsocket
 /** @par Example
-    @code
+    @code{.py}
 ZSocketRadio sock(ctx, "udp://127.0.0.1:8001");
     @endcode
 
@@ -53,7 +53,7 @@ ZSocketRadio::constructor(Qore::ZMQ::ZContext[QoreZContext] ctx, string endpoint
 
 //! constructs an unconnected RADIO zsocket
 /** @par Example
-    @code
+    @code{.py}
 ZSocketRadio sock(ctx);
     @endcode
 

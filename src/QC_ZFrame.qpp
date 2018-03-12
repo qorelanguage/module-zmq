@@ -5,19 +5,19 @@
 
   Qore Programming Language
 
-  Copyright (C) 2017 Qore Technologies, s.r.o.
+  Copyright (C) 2017 - 2018 Qore Technologies, s.r.o.
 
   This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Sublic
+  modify it under the terms of the GNU Lesser General Public
   License as sublished by the Free Software Foundation; either
   version 2.1 of the License, or (at your option) any later version.
 
   This library is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Sublic License for more details.
+  Lesser General Public License for more details.
 
-  You should have received a copy of the GNU Lesser General Sublic
+  You should have received a copy of the GNU Lesser General Public
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
@@ -51,7 +51,7 @@ qclass ZFrame [arg=QoreZFrame* frame; ns=Qore::ZMQ];
 
 //! constructs an empty ZFrame
 /** @par Example
-    @code
+    @code{.py}
 ZFrame frame();
     @endcode
  */
@@ -61,7 +61,7 @@ ZFrame::constructor() {
 
 //! constructs a ZFrame from the string supplied
 /** @par Example
-    @code
+    @code{.py}
 ZFrame frame(str);
     @endcode
 
@@ -73,7 +73,7 @@ ZFrame::constructor(string str) {
 
 //! constructs a ZFrame from the binary data supplied
 /** @par Example
-    @code
+    @code{.py}
 ZFrame frame(bin);
     @endcode
 
@@ -85,7 +85,7 @@ ZFrame::constructor(binary b) {
 
 //! copies a ZFrame object
 /** @par Example
-    @code
+    @code{.py}
 ZFrame frame_new = frame.copy();
     @endcode
  */
@@ -95,7 +95,7 @@ ZFrame::copy() {
 
 //! Returns the byte size of the frame's data
 /** @par Example
-    @code
+    @code{.py}
 int size = frame.size();
     @endcode
  */
@@ -105,7 +105,7 @@ int ZFrame::size() [flags=CONSTANT] {
 
 //! Decodes a serialized message frame created by @ref Qore::ZMQ::ZMsg::encode() "ZMsg::encode()" and returns a new message object
 /** @par Example:
-    @code
+    @code{.py}
 ZMsg msg = frame.decode();
     @endcode
 
@@ -132,7 +132,7 @@ ZMsg ZFrame::decode() [flags=CONSTANT] {
 
 //! Returns meta data property for the frame
 /** @par Example
-    @code
+    @code{.py}
 *string str = frame.meta("Socket-Type");
     @endcode
 
@@ -169,7 +169,7 @@ ZMsg ZFrame::decode() [flags=CONSTANT] {
 
 //! Returns frame data encoded as printable hex string, useful for ØMQ UUIDs
 /** @par Example
-    @code
+    @code{.py}
 string str = frame.strhex();
     @endcode
 
@@ -184,7 +184,7 @@ string ZFrame::strhex() [flags=CONSTANT] {
 
 //! Returns the frame's contents as a binary object
 /** @par Example
-    @code
+    @code{.py}
 binary b = frame.bin();
     @endcode
 
@@ -199,7 +199,7 @@ binary ZFrame::bin() [flags=CONSTANT] {
 
 //! Returns the frame's MORE indicator
 /** @par Example
-    @code
+    @code{.py}
 bool b = frame.more();
     @endcode
 
@@ -211,7 +211,7 @@ bool ZFrame::more() [flags=CONSTANT] {
 
 //! Returns @ref Qore::True "True" if two frames have identical size and data
 /** @par Example
-    @code
+    @code{.py}
 bool b = frame.eq(frm);
     @endcode
 
@@ -227,7 +227,7 @@ bool ZFrame::eq(ZFrame[QoreZFrame] frm) [flags=CONSTANT] {
 
 //! Returns @ref Qore::True "True" if the frame body is equal to the string excluding the terminating null
 /** @par Example
-    @code
+    @code{.py}
 bool b = frame.streq(str);
     @endcode
 
@@ -241,7 +241,7 @@ bool ZFrame::streq(string str) [flags=CONSTANT] {
 
 //! Reads a signed 16-bit integer from the given offset in the frame
 /** @par Example:
-    @code
+    @code{.py}
 int i = frame.readi2(0);
     @endcode
 
@@ -264,7 +264,7 @@ int ZFrame::readi2(int offset) {
 
 //! Reads a signed 32-bit integer from the given offset in the frame
 /** @par Example:
-    @code
+    @code{.py}
 int i = frame.readi4(0);
     @endcode
 
@@ -287,7 +287,7 @@ int ZFrame::readi4(int offset) {
 
 //! Sends a message to the zsys log sink (may be stdout, or system facility)
 /** @par Example
-    @code
+    @code{.py}
 frame.print("my-frame");
     @endcode
 

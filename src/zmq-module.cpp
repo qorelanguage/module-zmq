@@ -2,7 +2,7 @@
 /*
     Qore zmq module
 
-    Copyright (C) 2017 Qore Technologies, s.r.o.
+    Copyright (C) 2017 - 2018 Qore Technologies, s.r.o.
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -35,9 +35,11 @@ const QoreTypeInfo* pollInfoListTypeInfo;
 
 // for hashdecls
 const TypedHashDecl* hashdeclZmqVersionInfo,
-    * hashdeclZmqPollInfo;
+    * hashdeclZmqPollInfo,
+    * hashdeclZmqCurveKeyInfo;
 DLLLOCAL TypedHashDecl* init_hashdecl_ZmqVersionInfo(QoreNamespace& ns);
 DLLLOCAL TypedHashDecl* init_hashdecl_ZmqPollInfo(QoreNamespace& ns);
+DLLLOCAL TypedHashDecl* init_hashdecl_ZmqCurveKeyInfo(QoreNamespace& ns);
 
 DLLLOCAL QoreClass* initZContextClass(QoreNamespace& ns);
 DLLLOCAL QoreClass* initZSocketClass(QoreNamespace& ns);
@@ -53,10 +55,12 @@ DLLLOCAL QoreClass* initZSocketXPubClass(QoreNamespace& ns);
 DLLLOCAL QoreClass* initZSocketXSubClass(QoreNamespace& ns);
 DLLLOCAL QoreClass* initZSocketPairClass(QoreNamespace& ns);
 DLLLOCAL QoreClass* initZSocketStreamClass(QoreNamespace& ns);
+#ifdef QORE_BUILD_ZMQ_DRAFT
+DLLLOCAL QoreClass* initZSocketServerClass(QoreNamespace& ns);
+DLLLOCAL QoreClass* initZSocketClientClass(QoreNamespace& ns);
+#endif
 //DLLLOCAL QoreClass* initZSocketRadioClass(QoreNamespace& ns);
 //DLLLOCAL QoreClass* initZSocketDishClass(QoreNamespace& ns);
-//DLLLOCAL QoreClass* initZSocketServerClass(QoreNamespace& ns);
-//DLLLOCAL QoreClass* initZSocketClientClass(QoreNamespace& ns);
 //DLLLOCAL QoreClass* initZSocketScatterClass(QoreNamespace& ns);
 //DLLLOCAL QoreClass* initZSocketGatherClass(QoreNamespace& ns);
 //DLLLOCAL QoreClass* initZSocketDGramClass(QoreNamespace& ns);
@@ -91,6 +95,7 @@ static QoreStringNode* zmq_module_init() {
 
     hashdeclZmqVersionInfo = init_hashdecl_ZmqVersionInfo(zmqns);
     hashdeclZmqPollInfo = init_hashdecl_ZmqPollInfo(zmqns);
+    hashdeclZmqCurveKeyInfo = init_hashdecl_ZmqCurveKeyInfo(zmqns);
 
     // complex types
     // list<hash<ZmqPollInfo>>
@@ -112,13 +117,15 @@ static QoreStringNode* zmq_module_init() {
     zmqns.addSystemClass(initZSocketXSubClass(zmqns));
     zmqns.addSystemClass(initZSocketPairClass(zmqns));
     zmqns.addSystemClass(initZSocketStreamClass(zmqns));
+#ifdef QORE_BUILD_ZMQ_DRAFT
+    zmqns.addSystemClass(initZSocketServerClass(zmqns));
+    zmqns.addSystemClass(initZSocketClientClass(zmqns));
     //zmqns.addSystemClass(initZSocketRadioClass(zmqns));
     //zmqns.addSystemClass(initZSocketDishClass(zmqns));
-    //zmqns.addSystemClass(initZSocketServerClass(zmqns));
-    //zmqns.addSystemClass(initZSocketClientClass(zmqns));
     //zmqns.addSystemClass(initZSocketScatterClass(zmqns));
     //zmqns.addSystemClass(initZSocketGatherClass(zmqns));
     //zmqns.addSystemClass(initZSocketDGramClass(zmqns));
+#endif
 
     init_zmq_constants(zmqns);
     init_zmq_functions(zmqns);

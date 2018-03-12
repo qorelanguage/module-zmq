@@ -36,6 +36,8 @@ class ZmqTest inherits QUnit::Test {
         addTestCase("zsocket dealer/router", \zSocketDealerRouterTest());
         addTestCase("zmsg", \zMsgTest());
         addTestCase("proxy", \proxyTest());
+        addTestCase("crypto", \cryptoTest());
+        #addTestCase("draft", \draftTest());
 
         set_return_value(main());
     }
@@ -91,6 +93,16 @@ class ZmqTest inherits QUnit::Test {
         assertEq(HelloWorld.size() + 1, msg.contentSize());
         assertEq(True, frame.streq(Testing));
         assertEq(False, frame.streq(HelloWorld));
+
+        if (HAVE_ZMQ_DRAFT_APIS) {
+            assertEq(0, msg.routingId());
+            assertNothing(msg.setRoutingId(10));
+            assertEq(10, msg.routingId());
+        }
+        else {
+            assertThrows("MISSING-FEATURE-ERROR", \msg.routingId());
+            assertThrows("MISSING-FEATURE-ERROR", \msg.setRoutingId(), 10);
+        }
     }
 
     zSocketSmokeTest() {
@@ -388,7 +400,6 @@ class ZmqTest inherits QUnit::Test {
         assertEq(0, msg.size());
         assertEq(0, msg.contentSize());
         assertEq(NOTHING, msg.popStr());
-
     }
 
     zSocketPubSubTest() {
@@ -523,5 +534,97 @@ class ZmqTest inherits QUnit::Test {
         c.waitForZero();
         # shutdown the context to stop the proxy
         zctx2.shutdown();
+    }
+
+    cryptoTest() {
+        # testing with mismatches crypto keys between the client and server results in a deadlock
+        {
+            # generate random keys
+            hash<ZmqCurveKeyInfo> server_kh = zmq_curve_keypair();
+            # test once with the same keys on both sides
+            doCrypto(server_kh.secret, server_kh.pub, server_kh.secret, server_kh.pub);
+            hash<ZmqCurveKeyInfo> client_kh = zmq_curve_keypair();
+            doCrypto(server_kh.secret, server_kh.pub, client_kh.secret, client_kh.pub);
+        }
+
+        {
+            string server_secret = zmq_z85_encode(get_random_bytes(32));
+            string server_pub = zmq_curve_public(server_secret);
+            string client_secret = zmq_z85_encode(get_random_bytes(32));
+            string client_pub = zmq_curve_public(client_secret);
+            doCrypto(server_secret, server_pub, client_secret, client_pub);
+        }
+
+        {
+            binary server_secret = get_random_bytes(32);
+            string server_pub = zmq_curve_public(zmq_z85_encode(server_secret));
+            binary client_secret = get_random_bytes(32);
+            string client_pub = zmq_curve_public(zmq_z85_encode(client_secret));
+            doCrypto(server_secret, server_pub, client_secret, client_pub);
+        }
+
+        # unencrypted test
+        doCrypto();
+
+        assertThrows("ZMQ-Z85-ENCODE-ERROR", \zmq_z85_encode(), get_random_bytes(31));
+        assertThrows("ZSOCKET-OPTION-ERROR", sub () { ZSocketReq sock(zctx); sock.setOption(ZMQ_CURVE_SECRETKEY, get_random_bytes(31)); });
+        assertThrows("ZSOCKET-OPTION-ERROR", sub () { ZSocketReq sock(zctx); sock.setOption(ZMQ_CURVE_SECRETKEY, get_random_string(39)); });
+        assertThrows("ZSOCKET-OPTION-ERROR", sub () { ZSocketReq sock(zctx); sock.setOption(ZMQ_CURVE_PUBLICKEY, get_random_bytes(31)); });
+        assertThrows("ZSOCKET-OPTION-ERROR", sub () { ZSocketReq sock(zctx); sock.setOption(ZMQ_CURVE_PUBLICKEY, get_random_string(39)); });
+        assertThrows("ZSOCKET-OPTION-ERROR", sub () { ZSocketReq sock(zctx); sock.setOption(ZMQ_CURVE_SERVERKEY, get_random_bytes(31)); });
+        assertThrows("ZSOCKET-OPTION-ERROR", sub () { ZSocketReq sock(zctx); sock.setOption(ZMQ_CURVE_SERVERKEY, get_random_string(39)); });
+    }
+
+    private doCrypto(*data server_secret, *data server_pub, *data client_secret, *data client_pub) {
+        ZSocketRouter server(zctx);
+        if (server_secret) {
+            server.setOption(ZMQ_CURVE_SERVER, 1);
+            server.setOption(ZMQ_CURVE_SECRETKEY, server_secret);
+            server.setOption(ZMQ_CURVE_PUBLICKEY, server_pub);
+        }
+
+        server.bind("tcp://127.0.0.1:*");
+
+        softint port = (server.endpoint() =~ x/:([0-9]+)/)[0];
+
+        assertEq(NOTHING, server.unbind("tcp://127.0.0.1:" + port));
+        port = server.bind("tcp://127.0.0.1:*");
+        assertEq("tcp://127.0.0.1:" + port, server.endpoint());
+
+        # create a dealer with the default identity
+        ZSocketDealer client(zctx);
+        if (server_secret) {
+            client.setOption(ZMQ_CURVE_SERVER, 0);
+            client.setOption(ZMQ_CURVE_SERVERKEY, server_pub);
+            client.setOption(ZMQ_CURVE_SECRETKEY, client_secret);
+            client.setOption(ZMQ_CURVE_PUBLICKEY, client_pub);
+        }
+
+        client.connect(server.endpoint());
+        client.send(HelloWorld);
+        ZMsg msg = server.recvMsg();
+        assertEq(2, msg.size());
+        ZFrame idframe = msg.popFrame();
+        assertEq(5, idframe.size());
+        assertEq("", idframe.meta("Identity"));
+    }
+
+    draftTest() {
+        if (!HAVE_ZMQ_DRAFT_APIS) {
+            return;
+        }
+
+        /*
+        # server-client communication not working in any case
+        ZSocketServer server(zctx, "@tcp://127.0.0.1:*");
+        ZSocketClient client(zctx, ">" + server.endpoint());
+        printf("client connected to %y\n", client.endpoint());
+
+        client.send(HelloWorld);
+        printf("receiving server msg\n");
+        ZMsg msg = server.recvMsg();
+        printf("got msg\n");
+        assertGt(0, msg.routingId());
+        */
     }
 }

@@ -5,7 +5,7 @@
 
   Qore Programming Language
 
-  Copyright (C) 2017 Qore Technologies, s.r.o.
+  Copyright (C) 2017 - 2018 Qore Technologies, s.r.o.
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -74,7 +74,7 @@ qclass ZContext [arg=QoreZContext* ctx; ns=Qore::ZMQ; dom=NETWORK];
 
 //! constructs a ZContext object
 /** @par Example:
-    @code
+    @code{.py}
 ZContext ctx();
     @endcode
  */
@@ -91,7 +91,7 @@ ZContext::copy() {
 
 //! Sets the given option on the context
 /** @par Example:
-    @code
+    @code{.py}
 ctx.setOption(ZMQ_IPV6, 1);
     @endcode
 
@@ -108,7 +108,7 @@ nothing ZContext::setOption(int opt, int value) {
 
 //! Retrieves the value of the given option on the context
 /** @par Example:
-    @code
+    @code{.py}
 int val = ctx.getOption(ZMQ_IPV6);
     @endcode
 
@@ -129,7 +129,7 @@ int ZContext::getOption(int opt) [flags=RET_VALUE_ONLY] {
 
 //! Shuts the context down
 /** @par Example:
-    @code
+    @code{.py}
 ctx.shutdown();
     @endcode
 

@@ -1,23 +1,23 @@
 /* -*- mode: c++; indent-tabs-mode: nil -*- */
-/** @file QC_ZSocketXSub.h defines the c++ implementation of the ZSocketXSub class */
+/** @file QC_ZSocketSub.h defines the c++ implementation of the ZSocketSub class */
 /*
-  QC_ZSocketXSub.h
+  QC_ZSocketSub.h
 
   Qore Programming Language
 
-  Copyright (C) 2017 Qore Technologies, s.r.o.
+  Copyright (C) 2017 - 2018 Qore Technologies, s.r.o.
 
   This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Sublic
+  modify it under the terms of the GNU Lesser General Public
   License as sublished by the Free Software Foundation; either
   version 2.1 of the License, or (at your option) any later version.
 
   This library is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Sublic License for more details.
+  Lesser General Public License for more details.
 
-  You should have received a copy of the GNU Lesser General Sublic
+  You should have received a copy of the GNU Lesser General Public
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */

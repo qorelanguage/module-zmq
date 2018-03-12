@@ -5,7 +5,7 @@
 
   Qore Programming Language
 
-  Copyright (C) 2017 Qore Technologies, s.r.o.
+  Copyright (C) 2017 - 2018 Qore Technologies, s.r.o.
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -99,7 +99,7 @@ qclass ZSocketStream [arg=QoreZSock* sock; ns=Qore::ZMQ; vparent=ZSocket; dom=NE
 
 //! constructs a \c STREAM zsocket
 /** @par Example
-    @code
+    @code{.py}
 ZSocketStream sock(ctx, "tcp://127.0.0.1:8001");
     @endcode
 
@@ -116,7 +116,7 @@ ZSocketStream::constructor(Qore::ZMQ::ZContext[QoreZContext] ctx, string endpoin
 
 //! constructs an unconnected \c STREAM zsocket
 /** @par Example
-    @code
+    @code{.py}
 ZSocketStream sock(ctx);
     @endcode
 

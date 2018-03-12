@@ -58,6 +58,14 @@ set(QPP_SRC
     src/ql_zmq.qpp
 )
 
+if (QORE_BUILD_ZMQ_DRAFT)
+    set(QPP_SRC ${QPP_SRC}
+        src/QC_ZSocketServer.qpp
+        src/QC_ZSocketClient.qpp
+    )
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DQORE_BUILD_ZMQ_DRAFT=1")
+endif (QORE_BUILD_ZMQ_DRAFT)
+
 set(CPP_SRC
     src/zmq-module.cpp
     src/QoreZSock.cpp
