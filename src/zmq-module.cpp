@@ -29,10 +29,6 @@ DLLLOCAL void preinitZSocketClass();
 DLLLOCAL void preinitZFrameClass();
 DLLLOCAL void preinitZMsgClass();
 
-// complex types
-// list<hash<ZmqPollInfo>>
-const QoreTypeInfo* pollInfoListTypeInfo;
-
 // for hashdecls
 const TypedHashDecl* hashdeclZmqVersionInfo,
     * hashdeclZmqPollInfo,
@@ -96,10 +92,6 @@ static QoreStringNode* zmq_module_init() {
     hashdeclZmqVersionInfo = init_hashdecl_ZmqVersionInfo(zmqns);
     hashdeclZmqPollInfo = init_hashdecl_ZmqPollInfo(zmqns);
     hashdeclZmqCurveKeyInfo = init_hashdecl_ZmqCurveKeyInfo(zmqns);
-
-    // complex types
-    // list<hash<ZmqPollInfo>>
-    pollInfoListTypeInfo = qore_get_complex_list_type(hashdeclZmqPollInfo->getTypeInfo(false));
 
     zmqns.addSystemClass(initZFrameClass(zmqns));
     zmqns.addSystemClass(initZMsgClass(zmqns));

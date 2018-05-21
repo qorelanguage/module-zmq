@@ -1,25 +1,25 @@
 /* -*- mode: c++; indent-tabs-mode: nil -*- */
 /** @file ZSocket.qpp defines the ZSocket class */
 /*
-  QC_ZSocket.qpp
+    QC_ZSocket.qpp
 
-  Qore Programming Language
+    Qore Programming Language
 
-  Copyright (C) 2017 - 2018 Qore Technologies, s.r.o.
+    Copyright (C) 2017 - 2018 Qore Technologies, s.r.o.
 
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 2.1 of the License, or (at your option) any later version.
+    This library is free software; you can redistribute it and/or
+    modify it under the terms of the GNU Lesser General Public
+    License as published by the Free Software Foundation; either
+    version 2.1 of the License, or (at your option) any later version.
 
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+    Lesser General Public License for more details.
 
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+    You should have received a copy of the GNU Lesser General Public
+    License along with this library; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
 #include "zmq-module.h"
@@ -2370,7 +2370,7 @@ l = ZSocket::poll(l, 2s);
     @throw ZSOCKET-CONTEXT-ERROR the context is no longer valid
 */
 static list<hash<ZmqPollInfo>> ZSocket::poll(list<hash<ZmqPollInfo>> items, timeout timeout_ms) {
-    ReferenceHolder<QoreListNode> rv(new QoreListNode(pollInfoListTypeInfo), xsink);
+    ReferenceHolder<QoreListNode> rv(new QoreListNode(hashdeclZmqPollInfo->getTypeInfo(false)), xsink);
 
     if (items->empty())
         return rv.release();
@@ -2380,14 +2380,14 @@ static list<hash<ZmqPollInfo>> ZSocket::poll(list<hash<ZmqPollInfo>> items, time
     zmq_pollitem_t pitem[items->size()];
     ConstListIterator li(items);
     while (li.next()) {
-        const QoreHashNode* h = static_cast<const QoreHashNode*>(li.getValue());
-        const AbstractQoreNode* p = h->getKeyValue("socket");
-        if (get_node_type(p) != NT_OBJECT) {
-            xsink->raiseException("ZSOCKET-POLL-ERROR", "items element %d/%d is assigned type '%s'; expecting 'ZSocket' object", (int)li.index() + 1, (int)items->size(), get_type_name(p));
+        const QoreHashNode* h = li.getValue().get<const QoreHashNode>();
+        QoreValue p = h->getKeyValue("socket");
+        if (p.getType() != NT_OBJECT) {
+            xsink->raiseException("ZSOCKET-POLL-ERROR", "items element %d/%d is assigned type '%s'; expecting 'ZSocket' object", (int)li.index() + 1, (int)items->size(), p.getTypeName());
             return QoreValue();
         }
 
-        QoreZSock* zsock = pdlh.add(static_cast<const QoreObject*>(p), CID_ZSOCKET);
+        QoreZSock* zsock = pdlh.add(p.get<const QoreObject>(), CID_ZSOCKET);
         if (!zsock)
             return QoreValue();
 
@@ -2411,9 +2411,9 @@ static list<hash<ZmqPollInfo>> ZSocket::poll(list<hash<ZmqPollInfo>> items, time
         if (rc) {
             for (unsigned i = 0; i < items->size(); ++i) {
                 if (pitem[i].revents) {
-                    ReferenceHolder<QoreHashNode> h(static_cast<const QoreHashNode*>(items->retrieve_entry(i))->copy(), xsink);
-                    h->setKeyValue("events", new QoreBigIntNode(pitem[i].revents), xsink);
-                    rv->push(h.release());
+                    ReferenceHolder<QoreHashNode> h(items->retrieveEntry(i).get<const QoreHashNode>()->copy(), xsink);
+                    h->setKeyValue("events", pitem[i].revents, xsink);
+                    rv->push(h.release(), xsink);
                 }
             }
         }
