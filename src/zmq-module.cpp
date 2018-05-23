@@ -149,5 +149,5 @@ void zmq_error(ExceptionSink* xsink, const char* err, const char* desc_fmt, ...)
     desc.concat(": ");
     desc.concat(zmq_strerror(errno));
 
-    xsink->raiseExceptionArg(errno == ETERM ? "ZSOCKET-CONTEXT-ERROR" : err, new QoreBigIntNode(errno), desc.c_str());
+    xsink->raiseExceptionArg(errno == ETERM ? "ZSOCKET-CONTEXT-ERROR" : err, errno, desc.c_str());
 }
