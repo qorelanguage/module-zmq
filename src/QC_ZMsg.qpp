@@ -1,25 +1,25 @@
 /* -*- mode: c++; indent-tabs-mode: nil -*- */
 /** @file ZMsg.qpp defines the ZMsg class */
 /*
-  QC_ZMsg.qpp
+    QC_ZMsg.qpp
 
-  Qore Programming Language
+    Qore Programming Language
 
-  Copyright (C) 2017 - 2018 Qore Technologies, s.r.o.
+    Copyright (C) 2017 - 2018 Qore Technologies, s.r.o.
 
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as sublished by the Free Software Foundation; either
-  version 2.1 of the License, or (at your option) any later version.
+    This library is free software; you can redistribute it and/or
+    modify it under the terms of the GNU Lesser General Public
+    License as sublished by the Free Software Foundation; either
+    version 2.1 of the License, or (at your option) any later version.
 
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+    Lesser General Public License for more details.
 
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+    You should have received a copy of the GNU Lesser General Public
+    License along with this library; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
 #include "zmq-module.h"
@@ -32,79 +32,70 @@
 #include <stdio.h>
 
 int QoreZMsg::addFrames(const QoreListNode* l, ExceptionSink* xsink) {
-   ConstListIterator i(l);
-   while (i.next()) {
-      if (addFrame(i.getValue(), i.index(), i.max(), xsink))
-          return -1;
-   }
-   return 0;
-}
-
-int QoreZMsg::addFrames(const QoreValueList* l, ExceptionSink* xsink) {
-   ConstValueListIterator i(l);
-   while (i.next()) {
-      if (addFrame(i.getValue(), i.index(), i.max(), xsink))
-          return -1;
-   }
-   return 0;
+    ConstListIterator i(l);
+    while (i.next()) {
+        if (addFrame(i.getValue(), i.index(), i.max(), xsink))
+            return -1;
+    }
+    return 0;
 }
 
 int QoreZMsg::addFrame(const QoreValue v, int i, int max, ExceptionSink* xsink) {
-   switch (v.getType()) {
-      case NT_OBJECT: {
-         const QoreObject* obj = v.get<const QoreObject>();
-         TryPrivateDataRefHolder<QoreZFrame> frame(obj, CID_ZFRAME, xsink);
-         if (*xsink)
-            return -1;
-         if (!frame) {
-            TryPrivateDataRefHolder<QoreZMsg> zmsg(obj, CID_ZMSG, xsink);
+    switch (v.getType()) {
+        case NT_OBJECT: {
+            const QoreObject* obj = v.get<const QoreObject>();
+            TryPrivateDataRefHolder<QoreZFrame> frame(obj, CID_ZFRAME, xsink);
             if (*xsink)
-               return -1;
-            if (!zmsg) {
-               xsink->raiseException("ZMSG-ERROR", "don't know how to add object of class \"%s\" in position %d/%d", obj->getClassName(), i, max);
-               return -1;
+                return -1;
+            if (!frame) {
+                TryPrivateDataRefHolder<QoreZMsg> zmsg(obj, CID_ZMSG, xsink);
+                if (*xsink)
+                    return -1;
+                if (!zmsg) {
+                    xsink->raiseException("ZMSG-ERROR", "don't know how to add object of class \"%s\" in position %d/%d", obj->getClassName(), i, max);
+                    return -1;
+                }
+                int rc = zmsg_addmsg(msg, zmsg->getPtr());
+                if (rc) {
+                    zmq_error(xsink, "ZMSG-ERROR", "error in zmsg_addmsg()");
+                    return -1;
+                }
             }
-            int rc = zmsg_addmsg(msg, zmsg->getPtr());
+            else {
+                int rc = zmsg_append(msg, frame->getPtr());
+                if (rc) {
+                    zmq_error(xsink, "ZMSG-ERROR", "error in zmsg_append()");
+                    return -1;
+                }
+            }
+            const_cast<QoreObject*>(obj)->doDelete(xsink);
+            if (*xsink)
+                return -1;
+            break;
+        }
+        case NT_STRING: {
+            const QoreStringNode* str = v.get<const QoreStringNode>();
+            int rc = zmsg_addmem(msg, str->c_str(), str->size());
             if (rc) {
-               zmq_error(xsink, "ZMSG-ERROR", "error in zmsg_addmsg()");
-               return -1;
+                zmq_error(xsink, "ZMSG-ERROR", "error in zmsg_addmem()");
+                return -1;
             }
-         }
-         else {
-            int rc = zmsg_append(msg, frame->getPtr());
+            break;
+        }
+        case NT_BINARY: {
+            const BinaryNode* b = v.get<const BinaryNode>();
+            int rc = zmsg_addmem(msg, b->getPtr(), b->size());
             if (rc) {
-               zmq_error(xsink, "ZMSG-ERROR", "error in zmsg_append()");
-               return -1;
+                zmq_error(xsink, "ZMSG-ERROR", "error in zmsg_addmem()");
+                return -1;
             }
-         }
-         const_cast<QoreObject*>(obj)->doDelete(xsink);
-         if (*xsink)
+            break;
+        }
+        default:
+            xsink->raiseException("ZMSG-ERROR", "don't know how to add type \"%s\" in position %d/%d", v.getTypeName(), i, max);
             return -1;
-         break;
-      }
-      case NT_STRING: {
-         const QoreStringNode* str = v.get<const QoreStringNode>();
-         int rc = zmsg_addmem(msg, str->c_str(), str->size());
-         if (rc) {
-            zmq_error(xsink, "ZMSG-ERROR", "error in zmsg_addmem()");
-            return -1;
-         }
-         break;
-      }
-      case NT_BINARY: {
-         const BinaryNode* b = v.get<const BinaryNode>();
-         int rc = zmsg_addmem(msg, b->getPtr(), b->size());
-         if (rc) {
-            zmq_error(xsink, "ZMSG-ERROR", "error in zmsg_addmem()");
-            return -1;
-         }
-         break;
-      }
-      default:
-         xsink->raiseException("ZMSG-ERROR", "don't know how to add type \"%s\" in position %d/%d", v.getTypeName(), i, max);
-         return -1;
-   }
-   return 0;
+    }
+    return 0;
 }
 
 //! The ZMsg class implements a ZeroMQ message
@@ -131,10 +122,10 @@ ZMsg msg(frame1, frame2);
     @throw ZMSG-ERROR unsupported data type passed as an argument
  */
 ZMsg::constructor(...) {
-   ReferenceHolder<QoreZMsg> msg(new QoreZMsg, xsink);
-   if (args && msg->addFrames(args, xsink))
-      return;
-   self->setPrivate(CID_ZMSG, msg.release());
+    ReferenceHolder<QoreZMsg> msg(new QoreZMsg, xsink);
+    if (args && msg->addFrames(args, xsink))
+        return;
+    self->setPrivate(CID_ZMSG, msg.release());
 }
 
 //! constructs a ZMsg from the list of arguments supplied
@@ -152,10 +143,10 @@ ZMsg msg(l);
     @throw ZMSG-ERROR unsupported data type passed as an argument
  */
 ZMsg::constructor(list l) {
-   ReferenceHolder<QoreZMsg> msg(new QoreZMsg, xsink);
-   if (msg->addFrames(l, xsink))
-      return;
-   self->setPrivate(CID_ZMSG, msg.release());
+    ReferenceHolder<QoreZMsg> msg(new QoreZMsg, xsink);
+    if (msg->addFrames(l, xsink))
+        return;
+    self->setPrivate(CID_ZMSG, msg.release());
 }
 
 //! copies a ZMsg object
@@ -167,10 +158,10 @@ ZMsg msg_new = msg.copy();
     @throw ZMSG-THREAD-ERROR this exception is thrown when the object is used in a thread other than the one that created it
  */
 ZMsg::copy() {
-   if (msg->check(xsink))
-      return;
+    if (msg->check(xsink))
+        return;
 
-   self->setPrivate(CID_ZMSG, new QoreZMsg(*msg));
+    self->setPrivate(CID_ZMSG, new QoreZMsg(*msg));
 }
 
 //! Serializes a multipart message to a single message frame
@@ -187,15 +178,15 @@ ZFrame frm = msg.encode();
     @see @ref Qore::ZMQ::ZFrame::decode() "ZFrame::decode()"
 */
 ZFrame ZMsg::encode() [flags=CONSTANT] {
-   if (msg->check(xsink))
-      return QoreValue();
+    if (msg->check(xsink))
+        return QoreValue();
 
 #ifdef HAVE_ZMSG_ENCODE_TO_ZFRAME
-   return new QoreObject(QC_ZFRAME, getProgram(), new QoreZFrame(zmsg_encode(**msg)));
+    return new QoreObject(QC_ZFRAME, getProgram(), new QoreZFrame(zmsg_encode(**msg)));
 #elif defined(HAVE_ZMSG_ENCODE_TO_BUFFER)
-   byte* p;
-   size_t len = zmsg_encode(**msg, &p);
-   return new QoreObject(QC_ZFRAME, getProgram(), new QoreZFrame(p, len));
+    byte* p;
+    size_t len = zmsg_encode(**msg, &p);
+    return new QoreObject(QC_ZFRAME, getProgram(), new QoreZFrame(p, len));
 #else
 #error do not know how to use the zmsg_encode() function
 #endif
@@ -225,24 +216,24 @@ ZFrame ZMsg::encode() [flags=CONSTANT] {
  */
 *string ZMsg::meta(string property) [flags=CONSTANT] {
 #ifdef HAVE_ZFRAME_META
-   if (msg->check(xsink))
-      return QoreValue();
+    if (msg->check(xsink))
+        return QoreValue();
 
-   TempEncodingHelper prop(property, QCS_UTF8, xsink);
-   if (*xsink)
-      return QoreValue();
+    TempEncodingHelper prop(property, QCS_UTF8, xsink);
+    if (*xsink)
+        return QoreValue();
 
-   zframe_t* frame = zmsg_first(**msg);
-   if (!frame)
-      return QoreValue();
+    zframe_t* frame = zmsg_first(**msg);
+    if (!frame)
+        return QoreValue();
 
-   // note that the zcmq documentation is incorrect; a non-null return value must not
-   // be free()d; it is implemented with zmq_msg_gets() which returns a string that
-   // belongs to the zmq_msg_t object
-   const char* val = zframe_meta(frame, prop->c_str());
-   return val ? QoreValue(new QoreStringNode(val, QCS_UTF8)) : QoreValue();
+    // note that the zcmq documentation is incorrect; a non-null return value must not
+    // be free()d; it is implemented with zmq_msg_gets() which returns a string that
+    // belongs to the zmq_msg_t object
+    const char* val = zframe_meta(frame, prop->c_str());
+    return val ? QoreValue(new QoreStringNode(val, QCS_UTF8)) : QoreValue();
 #else
-   xsink->raiseException("MISSING-FEATURE-ERROR", "the underlying czmq library is missing a function required to implement this method; check HAVE_ZFRAME_META before calling");
+    xsink->raiseException("MISSING-FEATURE-ERROR", "the underlying czmq library is missing a function required to implement this method; check HAVE_ZFRAME_META before calling");
 #endif
 }
 
@@ -258,16 +249,16 @@ msg.add(frame);
     @throw ZMSG-THREAD-ERROR this exception is thrown when the object is used in a thread other than the one that created it
 */
 nothing ZMsg::add(Qore::ZMQ::ZFrame[QoreZFrame] frame) {
-   ReferenceHolder<QoreZFrame> holder(frame, xsink);
+    ReferenceHolder<QoreZFrame> holder(frame, xsink);
 
-   if (msg->check(xsink))
-      return QoreValue();
+    if (msg->check(xsink))
+        return QoreValue();
 
-   int rc = zmsg_append(**msg, frame->getPtr());
-   if (rc)
-      zmq_error(xsink, "ZMSG-APPEND-ERROR", "error in zmsg_append()");
-   if (!frame->getPtr())
-      const_cast<QoreObject*>(obj_frame)->doDelete(xsink);
+    int rc = zmsg_append(**msg, frame->getPtr());
+    if (rc)
+        zmq_error(xsink, "ZMSG-APPEND-ERROR", "error in zmsg_append()");
+    if (!frame->getPtr())
+        const_cast<QoreObject*>(obj_frame)->doDelete(xsink);
 }
 
 //! Adds a string as a block of memory to the end of the message as a new frame
@@ -282,12 +273,12 @@ msg.add(str);
     @throw ZMSG-THREAD-ERROR this exception is thrown when the object is used in a thread other than the one that created it
  */
 nothing ZMsg::add(string str) {
-   if (msg->check(xsink))
-      return QoreValue();
+    if (msg->check(xsink))
+        return QoreValue();
 
-   int rc = zmsg_addmem(**msg, str->c_str(), str->size());
-   if (rc)
-      zmq_error(xsink, "ZMSG-ADD-ERROR", "error in zmsg_addmem()");
+    int rc = zmsg_addmem(**msg, str->c_str(), str->size());
+    if (rc)
+        zmq_error(xsink, "ZMSG-ADD-ERROR", "error in zmsg_addmem()");
 }
 
 //! Adds a binary object to the end of the message as a new frame
@@ -302,12 +293,12 @@ msg.add(bin);
     @throw ZMSG-THREAD-ERROR this exception is thrown when the object is used in a thread other than the one that created it
  */
 nothing ZMsg::add(binary bin) {
-   if (msg->check(xsink))
-      return QoreValue();
+    if (msg->check(xsink))
+        return QoreValue();
 
-   int rc = zmsg_addmem(**msg, bin->getPtr(), bin->size());
-   if (rc)
-      zmq_error(xsink, "ZMSG-ADD-ERROR", "error in zmsg_addmem()");
+    int rc = zmsg_addmem(**msg, bin->getPtr(), bin->size());
+    if (rc)
+        zmq_error(xsink, "ZMSG-ADD-ERROR", "error in zmsg_addmem()");
 }
 
 //! Adds a message to the end of the message as a submessage; the message argument is consumed by this call
@@ -322,16 +313,16 @@ msg.add(msg);
     @throw ZMSG-THREAD-ERROR this exception is thrown when the object is used in a thread other than the one that created it
  */
 nothing ZMsg::add(Qore::ZMQ::ZMsg[QoreZMsg] submsg) {
-   ReferenceHolder<QoreZMsg> holder(submsg, xsink);
+    ReferenceHolder<QoreZMsg> holder(submsg, xsink);
 
-   if (msg->check(xsink) || submsg->check(xsink))
-      return QoreValue();
+    if (msg->check(xsink) || submsg->check(xsink))
+        return QoreValue();
 
-   int rc = zmsg_addmsg(**msg, submsg->getPtr());
-   if (rc)
-      zmq_error(xsink, "ZMSG-ADD-ERROR", "error in zmsg_addmsg()");
-   if (!submsg->getPtr())
-      const_cast<QoreObject*>(obj_submsg)->doDelete(xsink);
+    int rc = zmsg_addmsg(**msg, submsg->getPtr());
+    if (rc)
+        zmq_error(xsink, "ZMSG-ADD-ERROR", "error in zmsg_addmsg()");
+    if (!submsg->getPtr())
+        const_cast<QoreObject*>(obj_submsg)->doDelete(xsink);
 }
 
 //! Pushes a string as a block of memory to the beginning of the message as a new frame
@@ -346,12 +337,12 @@ msg.push(str);
     @throw ZMSG-THREAD-ERROR this exception is thrown when the object is used in a thread other than the one that created it
  */
 nothing ZMsg::push(string str) {
-   if (msg->check(xsink))
-      return QoreValue();
+    if (msg->check(xsink))
+        return QoreValue();
 
-   int rc = zmsg_pushmem(**msg, str->c_str(), str->size());
-   if (rc)
-      zmq_error(xsink, "ZMSG-ADD-ERROR", "error in zmsg_pushmem()");
+    int rc = zmsg_pushmem(**msg, str->c_str(), str->size());
+    if (rc)
+        zmq_error(xsink, "ZMSG-ADD-ERROR", "error in zmsg_pushmem()");
 }
 
 //! Pushes a block of memory to the beginning of the message as a new frame
@@ -366,12 +357,12 @@ msg.push(bin);
     @throw ZMSG-THREAD-ERROR this exception is thrown when the object is used in a thread other than the one that created it
  */
 nothing ZMsg::push(binary bin) {
-   if (msg->check(xsink))
-      return QoreValue();
+    if (msg->check(xsink))
+        return QoreValue();
 
-   int rc = zmsg_pushmem(**msg, bin->getPtr(), bin->size());
-   if (rc)
-      zmq_error(xsink, "ZMSG-PUSH-ERROR", "error in zmsg_pushmem()");
+    int rc = zmsg_pushmem(**msg, bin->getPtr(), bin->size());
+    if (rc)
+        zmq_error(xsink, "ZMSG-PUSH-ERROR", "error in zmsg_pushmem()");
 }
 
 //! Pushes a frame to the beginning of the message, i.e. before all other frames; the frame is consumed by this call
@@ -386,16 +377,16 @@ msg.push(frame);
     @throw ZMSG-THREAD-ERROR this exception is thrown when the object is used in a thread other than the one that created it
 */
 nothing ZMsg::push(Qore::ZMQ::ZFrame[QoreZFrame] frame) {
-   ReferenceHolder<QoreZFrame> holder(frame, xsink);
+    ReferenceHolder<QoreZFrame> holder(frame, xsink);
 
-   if (msg->check(xsink))
-      return QoreValue();
+    if (msg->check(xsink))
+        return QoreValue();
 
-   int rc = zmsg_prepend(**msg, frame->getPtr());
-   if (rc)
-      zmq_error(xsink, "ZMSG-PREPEND-ERROR", "error in zmsg_prepend()");
-   if (!frame->getPtr())
-      const_cast<QoreObject*>(obj_frame)->doDelete(xsink);
+    int rc = zmsg_prepend(**msg, frame->getPtr());
+    if (rc)
+        zmq_error(xsink, "ZMSG-PREPEND-ERROR", "error in zmsg_prepend()");
+    if (!frame->getPtr())
+        const_cast<QoreObject*>(obj_frame)->doDelete(xsink);
 }
 
 //! Removes and returns the first frame from the message, if any
@@ -409,14 +400,14 @@ nothing ZMsg::push(Qore::ZMQ::ZFrame[QoreZFrame] frame) {
     @throw ZMSG-THREAD-ERROR this exception is thrown when the object is used in a thread other than the one that created it
  */
 *ZFrame ZMsg::popFrame() {
-   if (msg->check(xsink))
-      return QoreValue();
+    if (msg->check(xsink))
+        return QoreValue();
 
-   zframe_t* frame = zmsg_pop(**msg);
-   if (!frame)
-      return QoreValue();
+    zframe_t* frame = zmsg_pop(**msg);
+    if (!frame)
+        return QoreValue();
 
-   return new QoreObject(QC_ZFRAME, getProgram(), new QoreZFrame(frame));
+    return new QoreObject(QC_ZFRAME, getProgram(), new QoreZFrame(frame));
 }
 
 //! Removes and returns the first submessage from message, if any
@@ -432,17 +423,17 @@ nothing ZMsg::push(Qore::ZMQ::ZFrame[QoreZFrame] frame) {
     @note this call consumes the first frame whether it's a submessage or not
  */
 *ZMsg ZMsg::popMsg() {
-   if (msg->check(xsink))
-      return QoreValue();
+    if (msg->check(xsink))
+        return QoreValue();
 
-   zmsg_t* nmsg = zmsg_popmsg(**msg);
-   if (!nmsg)
-      return QoreValue();
+    zmsg_t* nmsg = zmsg_popmsg(**msg);
+    if (!nmsg)
+        return QoreValue();
 
-   return new QoreObject(QC_ZMSG, getProgram(), new QoreZMsg(nmsg));
+    return new QoreObject(QC_ZMSG, getProgram(), new QoreZMsg(nmsg));
 }
 
-//! Pops the first frame off the front of message and returns it as fresh string
+//! Pops the first frame off the front of message and returns it as a string
 /** @par Example:
     @code{.py}
 *string str = msg.popStr();
@@ -455,16 +446,41 @@ nothing ZMsg::push(Qore::ZMQ::ZFrame[QoreZFrame] frame) {
     @throw ZMSG-THREAD-ERROR this exception is thrown when the object is used in a thread other than the one that created it
 */
 *string ZMsg::popStr(*string encoding) {
-   if (msg->check(xsink))
-      return QoreValue();
+    if (msg->check(xsink))
+        return QoreValue();
 
-   char* str = zmsg_popstr(**msg);
-   if (!str)
-      return QoreValue();
+    char* str = zmsg_popstr(**msg);
+    if (!str)
+        return QoreValue();
 
-   const QoreEncoding* qe = encoding ? QEM.findCreate(encoding) : QCS_DEFAULT;
-   size_t len = strlen(str);
-   return new QoreStringNode(str, len, len + 1, qe);
+    const QoreEncoding* qe = encoding ? QEM.findCreate(encoding) : QCS_DEFAULT;
+    size_t len = strlen(str);
+    return new QoreStringNode(str, len, len + 1, qe);
+}
+
+//! Pops the first frame off the front of message and returns it as a binary value
+/** @par Example:
+    @code{.py}
+*binary str = msg.popBin();
+    @endcode
+
+    @return a binary value corresponding to the first frame which is removed from the message; if no frame is present @ref nothing is returned
+
+    @throw ZMSG-THREAD-ERROR this exception is thrown when the object is used in a thread other than the one that created it
+*/
+*binary ZMsg::popBin(*string encoding) {
+    if (msg->check(xsink))
+        return QoreValue();
+
+    zframe_t* frame = zmsg_pop(**msg);
+    if (!frame)
+        return QoreValue();
+    ON_BLOCK_EXIT(zframe_destroy, &frame);
+
+    size_t size = zframe_size(frame);
+    if (!size)
+        return QoreValue();
+    return new BinaryNode(zframe_strdup(frame), size);
 }
 
 //! Returns the signal value, 0 or greater, if message is a signal, -1 if not
@@ -476,10 +492,10 @@ int size = msg.signal();
     @throw ZMSG-THREAD-ERROR this exception is thrown when the object is used in a thread other than the one that created it
  */
 int ZMsg::signal() [flags=CONSTANT] {
-   if (msg->check(xsink))
-      return QoreValue();
+    if (msg->check(xsink))
+        return QoreValue();
 
-   return zmsg_signal(**msg);
+    return zmsg_signal(**msg);
 }
 
 //! Sets a routing ID on the message for use with \c SERVER sockets
@@ -543,10 +559,10 @@ int size = msg.size();
     @see contentSize()
  */
 int ZMsg::size() [flags=CONSTANT] {
-   if (msg->check(xsink))
-      return QoreValue();
+    if (msg->check(xsink))
+        return QoreValue();
 
-   return zmsg_size(**msg);
+    return zmsg_size(**msg);
 }
 
 //! Returns the byte size of all frames in the message
@@ -560,10 +576,10 @@ int size = msg.contentSize();
     @see size()
  */
 int ZMsg::contentSize() [flags=CONSTANT] {
-   if (msg->check(xsink))
-      return QoreValue();
+    if (msg->check(xsink))
+        return QoreValue();
 
-   return zmsg_content_size(**msg);
+    return zmsg_content_size(**msg);
 }
 
 //! Returns @ref Qore::True "True" if two msgs have identical size and data
@@ -579,12 +595,12 @@ bool b = msg.more();
     @throw ZMSG-THREAD-ERROR this exception is thrown when the object is used in a thread other than the one that created it
 */
 bool ZMsg::eq(ZMsg[QoreZMsg] msg2) [flags=CONSTANT] {
-   ReferenceHolder<QoreZMsg> holder(msg2, xsink);
+    ReferenceHolder<QoreZMsg> holder(msg2, xsink);
 
-   if (msg->check(xsink))
-      return QoreValue();
+    if (msg->check(xsink))
+        return QoreValue();
 
-   return zmsg_eq(**msg, **msg2);
+    return zmsg_eq(**msg, **msg2);
 }
 
 //! Sends a message to the zsys log sink (may be stdout, or system facility)
@@ -596,10 +612,10 @@ msg.print();
     @throw ZMSG-THREAD-ERROR this exception is thrown when the object is used in a thread other than the one that created it
 */
 nothing ZMsg::print() {
-   if (msg->check(xsink))
-      return QoreValue();
+    if (msg->check(xsink))
+        return QoreValue();
 
-   zmsg_print(**msg);
+    zmsg_print(**msg);
 }
 
 //! Saves the message contents to an open file
@@ -622,23 +638,23 @@ msg.save(f);
     to arbitrary change.
 */
 nothing ZMsg::save(Qore::File[File] file) {
-   ReferenceHolder<File> holder(file, xsink);
+    ReferenceHolder<File> holder(file, xsink);
 
-   if (msg->check(xsink))
-      return QoreValue();
+    if (msg->check(xsink))
+        return QoreValue();
 
-   if (!file->isOpen()) {
-      xsink->raiseException("ZMSG-SAVE-ERROR", "File is not open");
-      return QoreValue();
-   }
+    if (!file->isOpen()) {
+        xsink->raiseException("ZMSG-SAVE-ERROR", "File is not open");
+        return QoreValue();
+    }
 
-   FILE* f = fdopen(dup(file->getFD()), "w");
-   if (!f) {
-      xsink->raiseErrnoException("ZMSG-SAVE-ERROR", errno, "error writing to File");
-      return QoreValue();
-   }
-   ON_BLOCK_EXIT(fclose, f);
-   int rc = zmsg_save(**msg, f);
-   if (rc)
-      zmq_error(xsink, "ZMSG-SAVE-ERROR", "error in zmsg_save()");
+    FILE* f = fdopen(dup(file->getFD()), "w");
+    if (!f) {
+        xsink->raiseErrnoException("ZMSG-SAVE-ERROR", errno, "error writing to File");
+        return QoreValue();
+    }
+    ON_BLOCK_EXIT(fclose, f);
+    int rc = zmsg_save(**msg, f);
+    if (rc)
+        zmq_error(xsink, "ZMSG-SAVE-ERROR", "error in zmsg_save()");
 }

@@ -85,6 +85,11 @@ class ZmqTest inherits QUnit::Test {
         assertEq(0, msg.contentSize());
 
         msg.add(Testing);
+        assertEq(1, msg.size());
+        assertEq(binary(Testing), msg.popBin());
+        assertEq(0, msg.size());
+
+        msg.add(Testing);
         msg.add(new ZMsg(HelloWorld));
         assertEq(2, msg.size());
         assertEq(HelloWorld.size() + Testing.size() + 1, msg.contentSize());

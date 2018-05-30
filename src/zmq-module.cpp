@@ -29,10 +29,6 @@ DLLLOCAL void preinitZSocketClass();
 DLLLOCAL void preinitZFrameClass();
 DLLLOCAL void preinitZMsgClass();
 
-// complex types
-// list<hash<ZmqPollInfo>>
-const QoreTypeInfo* pollInfoListTypeInfo;
-
 // for hashdecls
 const TypedHashDecl* hashdeclZmqVersionInfo,
     * hashdeclZmqPollInfo,
@@ -97,10 +93,6 @@ static QoreStringNode* zmq_module_init() {
     hashdeclZmqPollInfo = init_hashdecl_ZmqPollInfo(zmqns);
     hashdeclZmqCurveKeyInfo = init_hashdecl_ZmqCurveKeyInfo(zmqns);
 
-    // complex types
-    // list<hash<ZmqPollInfo>>
-    pollInfoListTypeInfo = qore_get_complex_list_type(hashdeclZmqPollInfo->getTypeInfo(false));
-
     zmqns.addSystemClass(initZFrameClass(zmqns));
     zmqns.addSystemClass(initZMsgClass(zmqns));
 
@@ -157,5 +149,5 @@ void zmq_error(ExceptionSink* xsink, const char* err, const char* desc_fmt, ...)
     desc.concat(": ");
     desc.concat(zmq_strerror(errno));
 
-    xsink->raiseExceptionArg(errno == ETERM ? "ZSOCKET-CONTEXT-ERROR" : err, new QoreBigIntNode(errno), desc.c_str());
+    xsink->raiseExceptionArg(errno == ETERM ? "ZSOCKET-CONTEXT-ERROR" : err, errno, desc.c_str());
 }

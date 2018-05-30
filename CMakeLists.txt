@@ -8,7 +8,7 @@ set (VERSION_PATCH 0)
 
 set(PROJECT_VERSION "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}")
 
-find_package(Qore 0.8.13 REQUIRED)
+find_package(Qore 0.9 REQUIRED)
 
 include("${CMAKE_SOURCE_DIR}/cmake/find-zmq.cmake")
 include("${CMAKE_SOURCE_DIR}/cmake/find-czmq.cmake")
