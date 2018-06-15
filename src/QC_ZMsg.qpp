@@ -449,13 +449,24 @@ nothing ZMsg::push(Qore::ZMQ::ZFrame[QoreZFrame] frame) {
     if (msg->check(xsink))
         return QoreValue();
 
-    char* str = zmsg_popstr(**msg);
-    if (!str)
-        return QoreValue();
-
     const QoreEncoding* qe = encoding ? QEM.findCreate(encoding) : QCS_DEFAULT;
-    size_t len = strlen(str);
-    return new QoreStringNode(str, len, len + 1, qe);
+
+    zframe_t* frame = zmsg_pop(**msg);
+    if (!frame)
+        return QoreValue();
+    ON_BLOCK_EXIT(zframe_destroy, &frame);
+
+    size_t size = zframe_size(frame);
+    if (!size)
+        return QoreValue();
+    // zframe_strdup() does handle embedded nulls and returns nullptr on OOM
+    char* p = zframe_strdup(frame);
+    if (!p) {
+        xsink->outOfMemory();
+        return QoreValue();
+    }
+
+    return new QoreStringNode(p, size, size + 1, qe);
 }
 
 //! Pops the first frame off the front of message and returns it as a binary value
