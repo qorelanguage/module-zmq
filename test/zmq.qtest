@@ -19,6 +19,7 @@ class ZmqTest inherits QUnit::Test {
         const Subscription = "TEST";
         const DealerIdentity = "testDealer";
         const Bin = <ab00cd>;
+        const StrBin = "hi\0there";
 
         const MAXINT32 = (pow(2, 31) - 1).toInt();
     }
@@ -522,6 +523,14 @@ class ZmqTest inherits QUnit::Test {
         idframe = msg.popFrame();
         binary b = msg.popBin();
         assertEq(Bin, b);
+
+        # test sending a string message with an embedded null
+        writer.send(StrBin);
+        msg = reader.recvMsg();
+        idframe = msg.popFrame();
+        string str = msg.popStr();
+        assertEq(StrBin, str);
+        assertEq(StrBin.size(), str.size());
     }
 
     proxyTest() {
