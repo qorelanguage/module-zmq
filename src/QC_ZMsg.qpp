@@ -480,7 +480,13 @@ nothing ZMsg::push(Qore::ZMQ::ZFrame[QoreZFrame] frame) {
     size_t size = zframe_size(frame);
     if (!size)
         return QoreValue();
-    return new BinaryNode(zframe_strdup(frame), size);
+    // zframe_strdup() does handle embedded nulls and returns nullptr on OOM
+    char* p = zframe_strdup(frame);
+    if (!p) {
+        xsink->outOfMemory();
+        return QoreValue();
+    }
+    return new BinaryNode(p, size);
 }
 
 //! Returns the signal value, 0 or greater, if message is a signal, -1 if not
