@@ -113,7 +113,7 @@ nothing ZSocketSub::subscribe(*string subs) {
 
     TempEncodingHelper subs_utf8;
 
-    if (subs && subs_utf8.set(subs, QCS_UTF8, xsink))
+    if (subs && !subs_utf8.set(subs, QCS_UTF8, xsink))
         return QoreValue();
 
     zsock->subscribeIntern(xsink, *subs_utf8);
@@ -148,7 +148,7 @@ nothing ZSocketSub::unsubscribe(*string subs) {
 
     TempEncodingHelper subs_utf8;
 
-    if (subs && subs_utf8.set(subs, QCS_UTF8, xsink))
+    if (subs && !subs_utf8.set(subs, QCS_UTF8, xsink))
         return QoreValue();
 
     while (true) {
