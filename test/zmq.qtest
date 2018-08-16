@@ -416,9 +416,6 @@ class ZmqTest inherits QUnit::Test {
         assertEq(NOTHING, writer.unbind("tcp://127.0.0.1:" + port));
         port = writer.bind("tcp://127.0.0.1:0");
         ZSocketSub reader(zctx, ">" + writer.endpoint(), Subscription);
-        #ZSocketSub reader = new ZSocketSub(zctx);
-        #reader.connect(writer.endpoint());
-        #reader.subscribe(Subscription);
 
         assertEq("tcp://127.0.0.1:" + port, writer.endpoint());
         writer.send(new ZMsg("XXX", HelloWorld));
@@ -453,6 +450,8 @@ class ZmqTest inherits QUnit::Test {
         msg = reader2.recvMsg();
         assertEq(2, msg.size());
         assertEq(Subscription.size() + HelloWorld.size(), msg.contentSize());
+
+        assertThrows("ENCODING-CONVERSION-ERROR", \reader.subscribe(), <ff00>.toString());
     }
 
     zSocketDealerRouterTest() {
