@@ -416,10 +416,15 @@ class ZmqTest inherits QUnit::Test {
         assertEq(NOTHING, writer.unbind("tcp://127.0.0.1:" + port));
         port = writer.bind("tcp://127.0.0.1:0");
         ZSocketSub reader(zctx, ">" + writer.endpoint(), Subscription);
+        #ZSocketSub reader = new ZSocketSub(zctx);
+        #reader.connect(writer.endpoint());
+        #reader.subscribe(Subscription);
+
         assertEq("tcp://127.0.0.1:" + port, writer.endpoint());
         writer.send(new ZMsg("XXX", HelloWorld));
-        assertThrows("ZSOCKET-TIMEOUT", \reader.waitRead(), 500ms);
-        writer.send(new ZMsg(Subscription, HelloWorld));
+        assertThrows("ZSOCKET-TIMEOUT", \reader.waitRead(), 10ms);
+        ZMsg hwm(Subscription, HelloWorld);
+        writer.send(hwm);
         ZMsg msg = reader.recvMsg();
         assertEq(2, msg.size());
         assertEq(Subscription.size() + HelloWorld.size(), msg.contentSize());
@@ -435,6 +440,19 @@ class ZmqTest inherits QUnit::Test {
         # timeout test
         reader.setRecvTimeout(1ms);
         assertThrows("ZSOCKET-TIMEOUT-ERROR", \reader.recvMsg());
+
+        # issue #2944: test ZSocketSub.subscribe()
+        ZSocketSub reader2(zctx);
+        reader2.connect(writer.endpoint());
+        reader2.subscribe(Subscription);
+
+        writer.send(hwm);
+        msg = reader.recvMsg();
+        assertEq(2, msg.size());
+        assertEq(Subscription.size() + HelloWorld.size(), msg.contentSize());
+        msg = reader2.recvMsg();
+        assertEq(2, msg.size());
+        assertEq(Subscription.size() + HelloWorld.size(), msg.contentSize());
     }
 
     zSocketDealerRouterTest() {
