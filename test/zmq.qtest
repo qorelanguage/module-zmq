@@ -415,11 +415,16 @@ class ZmqTest inherits QUnit::Test {
 
         assertEq(NOTHING, writer.unbind("tcp://127.0.0.1:" + port));
         port = writer.bind("tcp://127.0.0.1:0");
-        ZSocketSub reader(zctx, ">" + writer.endpoint(), Subscription);
+        # issue #2944: test ZSocketSub.subscribe()
+        ZSocketSub reader(zctx);
+        reader.connect(writer.endpoint());
+        reader.subscribe(Subscription);
+
         assertEq("tcp://127.0.0.1:" + port, writer.endpoint());
         writer.send(new ZMsg("XXX", HelloWorld));
-        assertThrows("ZSOCKET-TIMEOUT", \reader.waitRead(), 500ms);
-        writer.send(new ZMsg(Subscription, HelloWorld));
+        assertThrows("ZSOCKET-TIMEOUT", \reader.waitRead(), 10ms);
+        ZMsg hwm(Subscription, HelloWorld);
+        writer.send(hwm);
         ZMsg msg = reader.recvMsg();
         assertEq(2, msg.size());
         assertEq(Subscription.size() + HelloWorld.size(), msg.contentSize());
@@ -431,6 +436,8 @@ class ZmqTest inherits QUnit::Test {
         assertEq(Subscription, msg.popStr());
         assertEq(HelloWorld, msg.popStr());
         assertEq(NOTHING, msg.popMsg());
+
+        assertThrows("ENCODING-CONVERSION-ERROR", \reader.subscribe(), <0123>.toString("UCS-4"));
 
         # timeout test
         reader.setRecvTimeout(1ms);
