@@ -187,8 +187,6 @@ ZFrame ZMsg::encode() [flags=CONSTANT] {
     byte* p;
     size_t len = zmsg_encode(**msg, &p);
     return new QoreObject(QC_ZFRAME, getProgram(), new QoreZFrame(p, len));
-#else
-#error do not know how to use the zmsg_encode() function
 #endif
 }
 

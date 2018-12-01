@@ -119,8 +119,6 @@ ZMsg ZFrame::decode() [flags=CONSTANT] {
    msg = zmsg_decode(**frame);
 #elif defined(HAVE_ZMSG_ENCODE_TO_BUFFER)
    msg = zmsg_decode(zframe_data(**frame), zframe_size(**frame));
-#else
-#error do not know how to use the zmsg_encode() function
 #endif
    if (!msg) {
       zmq_error(xsink, "ZFRAME-DECODE-ERROR", "error in ZFrame::decode()");
