@@ -322,7 +322,7 @@ class ZmqTest inherits QUnit::Test {
         delete reader;
         # wait for monitoring thread to exit
         c.waitForZero();
-        assertEq(4, el.size());
+        assertGe(4, el.size());
     }
 
     monitorUntil(int code, *reference<list> el, *Counter c) {
