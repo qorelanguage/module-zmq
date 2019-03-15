@@ -437,11 +437,26 @@ class ZmqTest inherits QUnit::Test {
         assertEq(HelloWorld, msg.popStr());
         assertEq(NOTHING, msg.popMsg());
 
+        # issue #3359: test ignoring trailing args with no value
+        writer.send("TEST", NOTHING);
+        msg = reader.recvMsg();
+        assertEq(1, msg.size());
+        assertEq("TEST", msg.popStr());
+
+        writer.send("TEST", NOTHING, NOTHING, NOTHING);
+        msg = reader.recvMsg();
+        assertEq(1, msg.size());
+        assertEq("TEST", msg.popStr());
+
         assertThrows("ENCODING-CONVERSION-ERROR", \reader.subscribe(), <0123>.toString("UCS-4"));
 
         # timeout test
         reader.setRecvTimeout(1ms);
         assertThrows("ZSOCKET-TIMEOUT-ERROR", \reader.recvMsg());
+
+        # do negative test on a new socket
+        writer = new ZSocketPub(zctx, "@tcp://127.0.0.1:*");
+        assertThrows("ZSOCKET-SEND-DATA-ERROR", \writer.send(), ("TEST", NOTHING, "x"));
     }
 
     zSocketDealerRouterTest() {

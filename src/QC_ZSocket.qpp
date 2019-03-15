@@ -5,7 +5,7 @@
 
     Qore Programming Language
 
-    Copyright (C) 2017 - 2018 Qore Technologies, s.r.o.
+    Copyright (C) 2017 - 2019 Qore Technologies, s.r.o.
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -60,6 +60,23 @@ private:
     pd_vec_t pd_vec;
     ExceptionSink* xsink;
 };
+
+static void send_empty_msg(void* zsock, ExceptionSink* xsink) {
+    while (true) {
+        int rc = zsock_send(zsock, "b", nullptr, 0);
+        if (rc) {
+            if (errno == EINTR) {
+                continue;
+            }
+            if (errno == EAGAIN) {
+                zmq_error(xsink, "ZSOCKET-TIMEOUT-ERROR", "timeout in ZSocket::send()");
+            } else {
+                zmq_error(xsink, "ZSOCKET-SEND-ERROR", "error sending empty message");
+            }
+        }
+        break;
+    }
+}
 
 //! ZeroMQ poll info hash
 /** for use with @ref Qore::ZMQ::ZSocket::poll() "ZSocket::poll()""
@@ -2267,7 +2284,9 @@ zsock.send(str1, str2);
     @endcode
 
     @param val the string or binary value to send as a frame over the socket; no encoding convertions are performed on strings
-    @param ... additional arguments must be strings or binary objects or a \c ZSOCKET-SEND-DATA-ERROR will be thrown
+    @param ... additional arguments must be strings or binary objects or a \c ZSOCKET-SEND-DATA-ERROR will be thrown;
+    trailing arguments will no value will be ignored, otherwise all additional arguments must be a string or a binary
+    value or a \c ZSOCKET-SEND-DATA-ERROR exception will be raised
 
     The @ref ZMQ_SNDMORE flag is set on all frames except the last
 
@@ -2282,12 +2301,26 @@ nothing ZSocket::send(data[doc] val, ...) {
     if (zsock->check(xsink))
         return QoreValue();
 
+    // issue #3359: ignore trailing NOTHING args
+    size_t size = args->size();
+    while (args->retrieveEntry(size - 1).isNothing()) {
+        --size;
+    }
+    if (!size) {
+        send_empty_msg(**zsock, xsink);
+        return QoreValue();
+    }
+
     // send all arguments
-    for (unsigned i = 0; i < args->size(); ++i) {
+    for (size_t i = 0; i < size; ++i) {
+        QoreValue arg = args->retrieveEntry(i);
+
         const char* ptr;
         size_t len;
-        if (q_get_data(args->retrieveEntry(i), ptr, len)) {
-            xsink->raiseException("ZSOCKET-SEND-DATA-ERROR", "expecting 'string' or 'binary' argument type in position %d/%d; got '%s' instead", (int)i + 1, (int)args->size(), args->retrieveEntry(i).getTypeName());
+        if (q_get_data(arg, ptr, len)) {
+            xsink->raiseException("ZSOCKET-SEND-DATA-ERROR",
+                "expecting 'string' or 'binary' argument type in position %d/%d; got '%s' instead",
+                (int)i + 1, (int)size, arg.getTypeName());
             // send a zero-length frame to close the message
             while (true) {
                 int rc = zmq_send(**zsock, nullptr, 0, 0);
@@ -2304,7 +2337,7 @@ nothing ZSocket::send(data[doc] val, ...) {
             break;
         }
         while (true) {
-            int rc = zmq_send(**zsock, ptr, len, (i == args->size() - 1) ? 0 : ZMQ_SNDMORE);
+            int rc = zmq_send(**zsock, ptr, len, (i == size - 1) ? 0 : ZMQ_SNDMORE);
             if (rc < 0) {
                 if (errno == EINTR)
                     continue;
@@ -2313,6 +2346,10 @@ nothing ZSocket::send(data[doc] val, ...) {
                 else
                     zmq_error(xsink, "ZSOCKET-SEND-ERROR", "error sending data");
             }
+            break;
+        }
+
+        if (*xsink) {
             break;
         }
     }
@@ -2336,18 +2373,7 @@ nothing ZSocket::send() {
     if (zsock->check(xsink))
         return QoreValue();
 
-    while (true) {
-        int rc = zsock_send(**zsock, "b", nullptr, 0);
-        if (rc) {
-            if (errno == EINTR)
-                continue;
-            if (errno == EAGAIN)
-                zmq_error(xsink, "ZSOCKET-TIMEOUT-ERROR", "timeout in ZSocket::send()");
-            else
-                zmq_error(xsink, "ZSOCKET-SEND-ERROR", "error sending empty message");
-        }
-        break;
-    }
+    send_empty_msg(**zsock, xsink);
 }
 
 //! polls multiple sockets and returns all sockets with events
