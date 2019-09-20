@@ -12,7 +12,6 @@ set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 
 find_package(Qore 0.9 REQUIRED)
 find_package(ZMQ REQUIRED)
-find_package(CZMQ REQUIRED)
 
 include_directories(${CZMQ_INCLUDE_DIRS})
 include_directories(${ZMQ_INCLUDE_DIRS})
