@@ -73,6 +73,11 @@ set(CPP_SRC
 
 qore_wrap_qpp_value(QPP_SOURCES ${QPP_SRC})
 
+foreach (it ${QPP_SOURCES})
+    GET_FILENAME_COMPONENT(_outfile ${it} NAME_WE)
+    set(QPP_DOX ${QPP_DOX} ${CMAKE_CURRENT_BINARY_DIR}/${_outfile}.dox.h)
+endforeach()
+
 set(module_name "zmq")
 
 set(QORE_DOX_TMPL_SRC
@@ -85,6 +90,9 @@ include_directories(${CMAKE_SOURCE_DIR}/src)
 target_include_directories(${module_name} PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>)
 
 target_link_libraries(${module_name} ${ZMQ_LIBRARIES} ${CZMQ_LIBRARIES})
+
+set(MODULE_DOX_INPUT ${CMAKE_CURRENT_BINARY_DIR}/mainpage.dox ${QPP_DOX})
+string(REPLACE ";" " " MODULE_DOX_INPUT "${MODULE_DOX_INPUT}")
 
 qore_binary_module(${module_name} ${PROJECT_VERSION})
 
