@@ -74,6 +74,23 @@ class ZmqTest inherits QUnit::Test {
         assertEq(True, is_readable(fn));
         assertEq(True, hstat(fn).size > 0);
 
+        # negative test for thread exceptions
+        {
+            Queue q();
+            code test = sub () {
+                try {
+                    int i = msg.size();
+                    remove i;
+                    q.push({});
+                } catch (hash<ExceptionInfo> ex) {
+                    q.push(ex);
+                }
+            };
+            background test();
+            hash<auto> v = q.get();
+            assertEq("ZMSG-THREAD-ERROR", v.err);
+        }
+
         msg.add(new ZMsg(HelloWorld));
         # calling ZMsg::popMsg() when the frame is not a message consumes the first frame
         assertEq(NOTHING, msg.popMsg());
@@ -105,8 +122,7 @@ class ZmqTest inherits QUnit::Test {
             assertEq(0, msg.routingId());
             assertNothing(msg.setRoutingId(10));
             assertEq(10, msg.routingId());
-        }
-        else {
+        } else {
             assertThrows("MISSING-FEATURE-ERROR", \msg.routingId());
             assertThrows("MISSING-FEATURE-ERROR", \msg.setRoutingId(), 10);
         }
@@ -124,6 +140,23 @@ class ZmqTest inherits QUnit::Test {
 %endif
         # SUB sockets cannot send messages
         assertThrows("ZSOCKET-SEND-ERROR", \sock.send(), "test");
+
+        # negative test for thread exceptions
+        {
+            Queue q();
+            code test = sub () {
+                try {
+                    string endpoint = sock.endpoint();
+                    remove endpoint;
+                    q.push({});
+                } catch (hash<ExceptionInfo> ex) {
+                    q.push(ex);
+                }
+            };
+            background test();
+            hash<auto> v = q.get();
+            assertEq("ZSOCKET-THREAD-ERROR", v.err);
+        }
 
         assertThrows("ZSOCKET-BIND-ERROR", sub () { new ZSocketSub(zctx, "@tcp://127.0.0.1:xxx", "xxx"); });
         sock = new ZSocketSub(zctx, "", "xxx");

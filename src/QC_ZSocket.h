@@ -5,7 +5,7 @@
 
     Qore Programming Language
 
-    Copyright (C) 2017 - 2018 Qore Technologies, s.r.o.
+    Copyright (C) 2017 - 2020 Qore Technologies, s.r.o.
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -129,8 +129,6 @@ public:
     virtual const char* getTypeName() const = 0;
 
 protected:
-    int tid = gettid();
-
     DLLLOCAL virtual ~QoreZSock() {
         zmq_close(sock);
     }
