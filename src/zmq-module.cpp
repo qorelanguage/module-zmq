@@ -2,7 +2,7 @@
 /*
     Qore zmq module
 
-    Copyright (C) 2017 - 2018 Qore Technologies, s.r.o.
+    Copyright (C) 2017 - 2021 Qore Technologies, s.r.o.
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -80,7 +80,7 @@ DLLEXPORT char qore_module_license_str[] = "MIT";
 DLLLOCAL void init_zmq_functions(QoreNamespace& ns);
 DLLLOCAL void init_zmq_constants(QoreNamespace& ns);
 
-QoreNamespace zmqns("ZMQ");
+QoreNamespace zmqns("Qore::ZMQ");
 
 static QoreStringNode* zmq_module_init() {
     zmqns.addSystemClass(initZContextClass(zmqns));
