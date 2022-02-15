@@ -5,7 +5,7 @@
 %global user_module_dir %{mydatarootdir}/qore-modules/
 
 Name:           qore-zmq-module
-Version:        1.0.0
+Version:        1.0.1
 Release:        1
 Summary:        Qorus Integration Engine - Qore zmq module
 License:        MIT
@@ -47,6 +47,9 @@ make DESTDIR=%{buildroot} install %{?_smp_mflags}
 %{module_dir}
 
 %changelog
+* Tue Feb 15 2022 David Nichols <david@qore.org>
+- updated to v1.0.1
+
 * Wed Jan 27 2022 David Nichols <david@qore.org>
 - initial 1.0.0 release
 

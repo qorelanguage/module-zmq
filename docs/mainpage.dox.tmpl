@@ -144,6 +144,11 @@ ZMsg msg = server.recvMsg();
 
     @section zmqreleasenotes zmq Module Release Notes
 
+    @subsection zmq_1_0_1 zmq Module Version 1.0.1
+    - fixed a crash with newer versions of ZeroMQ where \c zmq_ctx_destroy() cannot be called after \c zmq_ctx_term()
+      as it will cause a core dump
+      (<a href="https://github.com/qorelanguage/qore/issues/4446">issue 4446</a>)
+
     @subsection zmq_1_0 zmq Module Version 1.0
     - initial public release
 */
