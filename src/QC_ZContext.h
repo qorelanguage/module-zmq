@@ -30,31 +30,31 @@
 
 class QoreZContext : public AbstractPrivateData {
 public:
-   // creates the object
-   DLLLOCAL QoreZContext() : ctx(zmq_ctx_new()) {
-   }
+    // creates the object
+    DLLLOCAL QoreZContext() : ctx(zmq_ctx_new()) {
+    }
 
-   DLLLOCAL void* operator*() {
-      return ctx;
-   }
+    DLLLOCAL void* operator*() {
+        return ctx;
+    }
 
-   DLLLOCAL const void* operator*() const {
-      return ctx;
-   }
+    DLLLOCAL const void* operator*() const {
+        return ctx;
+    }
 
 protected:
-   DLLLOCAL virtual ~QoreZContext() {
-      while (true) {
-         int rc = zmq_ctx_term(ctx);
-         if (rc && errno == EINTR)
-            continue;
-         break;
-      }
-      zmq_ctx_destroy(ctx);
-   }
+    DLLLOCAL virtual ~QoreZContext() {
+        while (true) {
+            int rc = zmq_ctx_term(ctx);
+            if (rc && errno == EINTR) {
+                continue;
+            }
+            break;
+        }
+    }
 
 private:
-   void* ctx;
+    void* ctx;
 };
 
 DLLLOCAL extern QoreClass* QC_ZCONTEXT;
