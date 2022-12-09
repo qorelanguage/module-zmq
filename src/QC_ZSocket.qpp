@@ -90,19 +90,19 @@ hashdecl Qore::ZMQ::ZmqPollInfo {
 
 /** @defgroup zsocket_poll_constants ZSocket Poll Constants
 */
-//@{
+///@{
 //! for polling for read events
 const ZMQ_POLLIN = ZMQ_POLLIN;
 
 //! for polling for write events
 const ZMQ_POLLOUT = ZMQ_POLLOUT;
-//@}
+///@}
 
 /** @defgroup zsocket_events ZSocket Events
     These constants define event codes for @ref Qore::ZMQ::ZSocket::monitor() "ZSocket::monitor()"
     and are meant to be combined with binary or to create a socket event mask.
 */
-//@{
+///@{
 //! mask for all events
 const ZMQ_EVENT_ALL = 0xFFFF;
 
@@ -190,14 +190,14 @@ const ZmqEventStringMap = (
     "ZMQ_EVENT_DISCONNECTED": 0x0200,
     "ZMQ_EVENT_MONITOR_STOPPED": 0x0400,
 );
-//@}
+///@}
 
 /** @defgroup zsocket_options ZSocket Options
     These constants define socket option codes for
     @ref Qore::ZMQ::ZSocket::setOption() "ZSocket::setOption()"
     and @ref Qore::ZMQ::ZSocket::getOption() "ZSocket::getOption()"
 */
-//@{
+///@{
 //! Set I/O thread affinity
 /** The ZMQ_AFFINITY option shall set the I/O thread affinity for newly created connections on the specified socket.
 
@@ -1311,7 +1311,7 @@ const ZmqOptionStringMap = (
     "ZMQ_VMCI_BUFFER_MAX_SIZE": ZMQ_VMCI_BUFFER_MAX_SIZE,
     "ZMQ_VMCI_CONNECT_TIMEOUT": ZMQ_VMCI_CONNECT_TIMEOUT,
 );
-//@}
+///@}
 
 enum qzmq_option_type {
     QZOT_INT = 0,

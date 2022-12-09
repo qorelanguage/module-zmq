@@ -29,7 +29,7 @@
 /** @defgroup zcontext_options ZContext Options
     These constants plus @ref Qore::ZMQ::ZMQ_IPV6 "ZMQ_IPV6" define the possible options for the @ref Qore::ZMQ::ZContext::setOption() "ZContext::setOption()" and @ref Qore::ZMQ::ZContext::getOption() "ZContext::getOption()" methods
 */
-//@{
+///@{
 //! Fix blocky behavior
 /** When ZMQ_BLOCKY is set to false, all new sockets are given a linger timeout of zero.
 
@@ -63,7 +63,7 @@ const ZMQ_MAX_MSGSZ = ZMQ_MAX_MSGSZ;
     Default value: 1024
  */
 const ZMQ_MAX_SOCKETS = ZMQ_MAX_SOCKETS;
-//@}
+///@}
 
 // FIXME add ZMQ_THREAD_SCHED_POLICY and ZMQ_THREAD_PRIORITY if they can be supported in a system-independent way
 

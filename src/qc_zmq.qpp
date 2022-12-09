@@ -45,11 +45,11 @@
 
 /** @defgroup zmq_option_constants zmq Module Option Constants
 */
-//@{
+///@{
 namespace Qore::ZMQ;
 //! indicates if the @ref Qore::ZMQ::ZFrame::meta() "ZFrame::meta()" function is avialable or not
 const HAVE_ZFRAME_META = bool(_Q_ZFRAME_META);
 
 //! indicates if draft APIs are available or not
 const HAVE_ZMQ_DRAFT_APIS = bool(_Q_HAVE_ZMQ_DRAFT_APIS);
-//@}
+///@}

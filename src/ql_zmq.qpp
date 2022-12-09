@@ -57,7 +57,7 @@ hashdecl Qore::ZMQ::ZmqCurveKeyInfo {
 
 /** @defgroup zmq_functions zmq Module Functions
 */
-//@{
+///@{
 namespace Qore::ZMQ;
 
 //! returns a hash of ZeroMQ library information
@@ -163,4 +163,4 @@ string zmq_z85_encode(binary data) [flags=RET_VALUE_ONLY] {
     str->terminate(len);
     return str.release();
 }
-//@}
+///@}

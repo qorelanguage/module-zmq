@@ -33,7 +33,7 @@
 /** @defgroup zframe_flags ZFrame Send Flags
     These values can be combined with bitwise-or when sending frames on a socket
 */
-//@{
+///@{
 //! sets the "more" bit on the frame; i.e. that the frame is part of a multipart message
 const ZFRAME_MORE = ZFRAME_MORE;
 
@@ -42,7 +42,7 @@ const ZFRAME_REUSE = ZFRAME_REUSE;
 
 //! sets the "don't wait" bit on the frame; specifies that send operations should be performed in non-blocking mode
 const ZFRAME_DONTWAIT = ZFRAME_DONTWAIT;
-//@}
+///@}
 
 //! The ZFrame class implements a ZeroMQ frame
 /** This class does not support modifications after the constructor in order to remain lock-free
