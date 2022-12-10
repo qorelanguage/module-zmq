@@ -2211,11 +2211,13 @@ nothing ZSocket::setTimeout(timeout timeout_ms) {
         return QoreValue();
 
     int v = timeout_ms;
-    if (zsock->setSocketOption(ZMQ_RCVTIMEO, &v, sizeof v))
+    if (zsock->setSocketOption(ZMQ_RCVTIMEO, &v, sizeof v)) {
         zmq_error(xsink, "ZSOCKET-SETTIMEOUT-ERROR", "error setting receive timeout in ZSocket::setTimeout()");
+    }
     v = timeout_ms;
-    if (zsock->setSocketOption(ZMQ_SNDTIMEO, &v, sizeof v))
+    if (zsock->setSocketOption(ZMQ_SNDTIMEO, &v, sizeof v)) {
         zmq_error(xsink, "ZSOCKET-SETTIMEOUT-ERROR", "error setting send timeout in ZSocket::setTimeout()");
+    }
 }
 
 //! Sets the socket identity string
