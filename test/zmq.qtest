@@ -370,8 +370,10 @@ class ZmqTest inherits QUnit::Test {
                 break;
             string estr = msg.popStr();
             int event_code = f1.readi4(2);
-            if (m_options.verbose)
-                printf("EVENT: %s (%d): %y\n", ZmqEventCodeMap{event_number} ?? "unknown: ", event_code, estr);
+            if (m_options.verbose) {
+                printf("EVENT: %s (%d): %y\n", ZmqEventCodeMap{event_number} ?? sprintf("unknown(%d)", event_number),
+                    event_code, estr);
+            }
             el += (
                 "event_number": event_number,
                 "event_code": event_code,
@@ -381,7 +383,7 @@ class ZmqTest inherits QUnit::Test {
     }
 
     zSocketReqRepTest() {
-        ZSocketRep reader(zctx, "", "@tcp://*:*");
+        ZSocketRep reader(zctx, "", "@tcp://127.0.0.1:*");
         softint port = (reader.endpoint() =~ x/:([0-9]+)/)[0];
 
         assertEq(NOTHING, reader.unbind(reader.endpoint()));
@@ -421,17 +423,35 @@ class ZmqTest inherits QUnit::Test {
         # now we can send another message
         writer.send(HelloWorld);
 
+        assertEq(NOTHING, reader.unbind(reader.endpoint()));
+        delete reader;
+
         # try connecting first, sending a message and then binding and reading the message
         string endpoint = writer.endpoint();
         delete writer;
-        delete reader;
 
         writer = new ZSocketReq(zctx);
         writer.connect(endpoint);
         writer.send(HelloWorld);
 
         reader = new ZSocketRep(zctx);
-        reader.bind("tcp://*:" + port);
+
+        {
+            int tries = 0;
+            while (True) {
+                try {
+                    reader.bind("tcp://127.0.0.1:" + port);
+                    break;
+                } catch (hash<ExceptionInfo> ex) {
+                    if (ex.err == "ZSOCKET-BIND-ERROR" && ex.arg == EADDRINUSE && (++tries < 3)) {
+                        stderr.printf("%s: %s; retrying in 1 second...\n", ex.err, ex.desc);
+                        sleep(1);
+                        continue;
+                    }
+                    rethrow;
+                }
+            }
+        }
 
         msg = reader.recvMsg();
         assertEq(1, msg.size());
